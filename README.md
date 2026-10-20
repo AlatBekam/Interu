@@ -154,6 +154,38 @@ npm run dist
 
 ---
 
+## 4a. Build from source — step by step
+
+For someone cloning this repo for the first time. Requires only **Node.js 20+** (see
+§2 — no Rust / MSVC / Visual Studio tools). Run these in **PowerShell** from the repo root.
+
+```powershell
+# 1. Get the dependencies (reads package-lock.json; also downloads the Electron binary).
+#    node_modules/ is NOT in the repo — this step rebuilds it (~600 MB, normal).
+npm install
+
+# 2. (optional) Run it in dev mode to check it works — Vite HMR, closes with the window.
+npm run dev
+
+# 3. (optional) Sanity checks before packaging.
+npm run typecheck     # type-check Node + web sides
+npm run build         # production build → out/
+npm run smoke         # launches the built bundle, expects RUY_SMOKE_RESULT: RENDER_OK
+
+# 4. Build the distributable Windows app → release/
+npm run dist          # installer + portable exe   (what you ship)
+# or, just the unpacked folder (faster, for local testing):
+npm run dist:dir      # → release/win-unpacked/
+```
+
+The finished artifacts land in `release/` — see §5 for which file is which. The first
+`npm run dist` needs internet **once** to fetch NSIS packaging resources (~8 MB).
+
+> If `npm run dist` fails with `Cannot create symbolic link … winCodeSign`, see the
+> Developer-Mode fix under §4 ("Build & package in one go").
+
+---
+
 ## 5. Build outputs (in `release/`) — don't confuse them
 
 | Artifact | Type | What it is / how to use it |
