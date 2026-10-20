@@ -1,0 +1,8 @@
+node_modules/
+out/
+release/
+dist/
+*.log
+.DS_Store
+# Generated icon raster/ico (regenerated via `npm run icons`)
+# build/icon.ico and icon.png are kept; nothing else is ignored in build/

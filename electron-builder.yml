@@ -1,0 +1,41 @@
+appId: com.interu.cyberops
+productName: Interu
+copyright: Copyright © 2026 RUY Cybersecurity Team
+
+directories:
+  output: release
+  buildResources: build
+
+# Only the compiled electron-vite output plus package.json is shipped.
+files:
+  - out/**/*
+  - package.json
+
+# Strip source maps etc. from the final asar.
+asarUnpack: []
+
+win:
+  icon: build/icon.ico
+  target:
+    - target: nsis       # -> Setup .exe installer
+      arch: [x64]
+    - target: portable   # -> single-file portable .exe
+      arch: [x64]
+  artifactName: ${productName} ${version} ${arch}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowElevation: true
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Interu
+  deleteAppDataOnUninstall: false
+  artifactName: Interu-Setup-${version}.exe
+
+portable:
+  artifactName: Interu-Portable-${version}.exe
+
+# Keep electron-builder from attempting to codesign (no cert in this environment).
+forceCodeSigning: false

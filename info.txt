@@ -1,0 +1,169 @@
+================================================================================
+  INTERU — CYBER OPERATIONS
+  by RUY CYBERSECURITY TEAM
+  Kartika Cyber Hackathon 2026 — Kategori 01: Penindakan (Offensive Tech)
+================================================================================
+
+1. APA INI
+--------------------------------------------------------------------------------
+Interu adalah PLATFORM OPERASI SIBER OFENSIF all-in-one buatan Indonesia,
+berbentuk aplikasi DESKTOP WINDOWS (Electron + React + TypeScript).
+
+Satu aplikasi menggabungkan:
+  - Web Security Suite gaya Burp Suite (Proxy, Repeater, Intruder, dll)
+  - Modul Operations (Scanner, Vulnerabilities, Threat Monitor, Firewall)
+  - Reporting
+Dilengkapi SCOPE / AUTHORIZATION (legal-by-design): fitur "Live" hanya boleh
+menyerang host yang didaftarkan ke Scope (yang kita punya izinnya).
+
+Identitas visual: "Dark Kingdom" (hitam obsidian + perak + navy) + mode Light.
+
+PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
+(lab sendiri / server berizin). Ada juga mode Simulation untuk latihan aman.
+
+
+2. STATUS KESELURUHAN
+--------------------------------------------------------------------------------
+  [#####-----] ~50% menuju "produk lomba siap pakai"
+
+  Web Security Suite (Burp)  : SELESAI & FUNGSIONAL (bisa dipakai beneran)
+  Operations                 : MASIH MOCK (UI + data palsu) -> perlu di-realkan
+  Analysis / Reports         : MASIH MOCK -> perlu di-realkan
+  Rule Engine (Detection)    : BELUM ADA -> ini PR terbesar & paling "wow"
+
+
+3. STACK & CARA MENJALANKAN
+--------------------------------------------------------------------------------
+Stack  : Electron 33 + React 18 + TypeScript + Vite (electron-vite),
+         packaging pakai electron-builder, MITM pakai node-forge.
+
+A) CUMA MAU PAKAI (tanpa ngoding):
+   - Jalankan file installer: Interu-Setup-1.0.0.exe  (atau Portable .exe)
+   - Kalau SmartScreen muncul -> More info -> Run anyway (wajar, belum signed)
+   - Setelah install, cari "Interu" di pencarian Windows / shortcut Desktop
+
+B) MAU NGODING / NGEMBANGIN BARENG:
+   1. Install Node.js LTS (v20+; dibangun pakai v24) dari nodejs.org
+   2. Extract source (TANPA folder: node_modules, out, release)
+   3. Buka terminal di folder project, jalankan:
+        npm install        -> restore semua dependency
+        npm run dev         -> mode development (hot reload)
+        npm run build       -> build produksi ke folder out/
+        npm run dist        -> build + bikin installer .exe ke folder release/
+   - Wajib ikutkan package-lock.json biar versi sama persis.
+   - Kalau 'npm run dist' error 'Cannot create symbolic link ... winCodeSign':
+     lihat README (ada solusi pre-extract / nyalain Developer Mode).
+
+Struktur penting:
+  src/main/        -> proses Electron (window, proxy, MITM CA, HTTP engine)
+    index.ts       -> window + semua IPC
+    proxy.ts       -> forward proxy + HTTPS MITM
+    ca.ts          -> root CA + cert per-host (untuk MITM)
+    http.ts        -> HTTP client asli (Repeater/Intruder/Target live)
+  src/preload/     -> jembatan aman renderer <-> main
+  src/shared/      -> tipe & scope gate dipakai bareng
+  src/renderer/src/
+    pages/web/     -> Web Security Suite (Proxy, Repeater, Intruder, Target,
+                      Decoder, Comparer, Sequencer, BrowserSim)
+    pages/         -> Dashboard, NetworkScanner, Vulnerabilities, ThreatMonitor,
+                      Firewall, Reports, Settings
+    components/    -> Sidebar, TopBar, ThemeToggle, ContextMenu, Crest, ui
+    data/          -> mock.ts, burp.ts (data simulasi)
+    store/         -> store.ts (settings+persist), transfer.ts (send-to bus)
+    lib/http.ts    -> parse raw request, curl, sendLive
+
+
+4. STATUS PER-MODUL (jujur: REAL vs MOCK)
+--------------------------------------------------------------------------------
+== WEB SECURITY SUITE (SELESAI / REAL) ==
+  [DONE] Proxy        : Forward proxy ASLI + HTTPS MITM (dekripsi TLS).
+                        - Start di 127.0.0.1:8080, Intercept Forward/Drop/Edit
+                        - Open Browser (browser asli lewat proxy, auto-trust CA)
+                        - Export CA (buat browser eksternal)
+                        - HTTP History live + Inspector
+                        - Klik kanan baris: Send to Repeater/Intruder, Copy URL,
+                          Copy as curl, Inspect
+  [DONE] Repeater     : Live (kirim HTTP asli) + Simulation
+  [DONE] Intruder     : Live (serang payload asli) + Simulation
+  [DONE] Target/Site  : Live content discovery (fuzzing path asli) + sim map
+                        + klik kanan: Send to Repeater/Intruder
+  [DONE] Decoder      : URL/Base64/Hex/HTML/ASCII encode-decode (offline, REAL)
+  [DONE] Comparer     : Diff dua response (LCS, offline, REAL)
+  [DONE] Sequencer    : Analisa entropi token (hitungan REAL, token masih sampel)
+  [DONE] Scope gate   : semua Live digerbang host berizin
+
+== OPERATIONS (MASIH MOCK — PERLU DIBIKIN REAL) ==
+  [MOCK] Dashboard        : statistik & grafik dari data palsu
+  [MOCK] Network Scanner  : "scan" cuma animasi + host palsu
+                            -> TODO: port scan ASLI (Node net, scope-gated)
+  [MOCK] Vulnerabilities  : katalog CVE statis
+                            -> TODO: isi dari hasil scan asli + Rule Engine
+  [MOCK] Threat Monitor   : feed event simulasi (boleh tetap demo)
+  [MOCK] Firewall Rules   : editor rule lokal (tak ngaruh ke firewall asli)
+
+== ANALYSIS (MASIH MOCK) ==
+  [MOCK] Reports          : rangkuman dari data palsu, export .txt/.json
+                            -> TODO: laporan dari temuan ASLI + PDF + Bahasa Indo
+
+== DETECTION (BELUM ADA) ==
+  [TODO] Rule Engine      : belum dibuat sama sekali
+
+
+5. SISA YANG HARUS DIBIKIN (ROADMAP — urut prioritas)
+--------------------------------------------------------------------------------
+PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")
+  [ ] Aturan sebagai DATA (array of rules): kondisi -> temuan+severity+saran
+  [ ] Tahap 1 PASIF: baca sinyal dari traffic proxy & hasil scan
+        (header hilang, banner versi -> CVE, pesan error SQL, dll) => "Suspected"
+  [ ] Tahap 2 VERIFIKASI (oracle): buktikan dulu sebelum jadi temuan
+        - error-based / boolean-based / time-based / out-of-band (OOB)
+        - cuma yang TERBUKTI jadi "Confirmed" (anti false-positive)
+  [ ] Tingkat keyakinan: Suspected vs Confirmed (dipisah)
+  [ ] Tempel BUKTI di tiap temuan (request/response/timing)
+
+PRIORITAS 2 — OPERATIONS JADI REAL
+  [ ] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
+        deteksi port/service/banner
+  [ ] Vulnerabilities: tampil dari temuan Confirmed (Rule Engine) + hasil scan
+  [ ] (Opsional) Threat Monitor: baca log lokal asli; kalau tidak, biarkan demo
+  [ ] (Opsional) Firewall: ekspor rule / integrasi Windows Firewall (hati-hati)
+
+PRIORITAS 3 — ANALYSIS (nilai jual besar)
+  [ ] ATTACK PATH GRAPH: visual node recon->vuln->akses (dari temuan Confirmed)
+  [ ] Auto-report: laporan profesional Bahasa Indonesia + export PDF
+  [ ] Pemetaan MITRE ATT&CK di tiap temuan (metadata, murah, kelihatan pro)
+
+CROSS-CUTTING
+  [ ] Audit log tiap aksi (legal-by-design, disukai juri militer)
+  [ ] (Opsional rilis) Code signing pakai sertifikat (hilangin SmartScreen)
+  [ ] HTTPS MITM: sudah jalan; next bisa tambah CA install helper otomatis
+
+CATATAN STRATEGI (buat lomba):
+  - Jangan pamer 15 menu setengah jadi. Kunci 1 ALUR DEMO MULUS:
+    target -> scan/proxy -> Rule Engine nemu & buktikan -> Attack Path Graph ->
+    laporan otomatis. Itu "momen wow" yang bikin juri melongo.
+  - Tekankan: mandiri/buatan Indonesia, legal-by-design, bisa jadi alat latihan
+    Tentara Siber (mode Simulation).
+
+
+6. CATATAN PENTING
+--------------------------------------------------------------------------------
+  - Installer belum DI-SIGN -> SmartScreen muncul sekali, klik "Run anyway".
+    Antivirus kadang curiga (wajar untuk tool proxy/MITM) -> whitelist.
+  - Proxy dengerin di 127.0.0.1 saja. Saat Start/Open Browser, Windows Firewall
+    bisa minta izin -> Allow.
+  - Mode LIVE (nembak target asli) WAJIB isi Scope dulu. Tanpa itu ditolak.
+  - Open Browser: kalau Intercept ON, halaman "nahan" nunggu di-Forward
+    (app otomatis maju minta Forward). Kalau mau browsing santai, matikan
+    Intercept dulu.
+  - HTTPS di browser eksternal butuh "Export CA" lalu di-trust di OS/browser.
+    Open Browser bawaan Interu sudah auto-trust (langsung kebaca).
+  - Semua data di modul MOCK = demo, bukan aktivitas sistem beneran.
+
+7. TIM
+--------------------------------------------------------------------------------
+  RUY CYBERSECURITY TEAM
+  Produk: INTERU — Cyber Operations
+  Versi: 1.0.0 (tahap: UI + Web Suite fungsional; Operations/Analysis/Detection
+         masih dikembangkan)
+================================================================================
