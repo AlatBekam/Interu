@@ -5,8 +5,11 @@ import tls from 'node:tls'
 import { sendHttp } from './http'
 import { startProxy, stopProxy, setIntercept, resolveIntercept, isRunning, getPort } from './proxy'
 import { exportCA } from './ca'
+import { runScan, cancelScan } from './scan'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
+import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, MAX_ATTEMPTS } from '../shared/scan'
+import type { ScanRequest, ScanResult, ScanEvent } from '../shared/scan'
 
 function mainAppWindow(): BrowserWindow | null {
   const windows = BrowserWindow.getAllWindows()
@@ -131,6 +134,61 @@ if (!gotLock) {
     }
     return sendHttp(req)
   })
+
+  // --- Real TCP connect scanner, gated by the operator-declared scope ---
+  let scanSeq = 1
+  ipcMain.handle('ruy:scan:tcp', async (_e, payload: { req: ScanRequest; scope: string[]; scanId?: number }): Promise<ScanResult> => {
+    const { req, scope } = payload || ({} as { req: ScanRequest; scope: string[] })
+    if (!req || !req.target || !req.target.trim()) return { ok: false, error: 'Target kosong.' }
+
+    const exp = expandTargets(req.target)
+    if (exp.error) return { ok: false, error: exp.error }
+    if (exp.ips.length === 0) return { ok: false, error: 'Tidak ada IP yang bisa di-scan dari target itu.' }
+
+    // Scope gate: every target IP must be authorized (exact IP or a CIDR in scope).
+    const gate = targetsInScope(exp.ips, scope || [])
+    if (!gate.ok) {
+      return {
+        ok: false,
+        blocked: true,
+        error: `IP ${gate.offending} di luar Authorized scope. Tambahkan host/CIDR yang kamu punya izinnya (mis. 10.20.0.0/24) di Scope dulu.`
+      }
+    }
+
+    const profile = req.profile === 'quick' || req.profile === 'deep' ? req.profile : 'standard'
+    const ports = profilePorts(profile)
+    const attempts = exp.ips.length * ports.length
+    if (attempts > MAX_ATTEMPTS) {
+      return {
+        ok: false,
+        error: `Target terlalu besar: ${exp.ips.length} IP × ${ports.length} port = ${attempts} percobaan (maks ${MAX_ATTEMPTS}). Persempit range atau pakai profil lebih ringan.`
+      }
+    }
+
+    const scanId = payload?.scanId && payload.scanId > 0 ? payload.scanId : scanSeq++
+    const emit = (ev: ScanEvent): void => emitToRenderer('ruy:scan:progress', ev)
+    try {
+      const { summary, hosts } = await runScan(
+        {
+          scanId,
+          target: req.target.trim(),
+          profile,
+          ips: exp.ips,
+          ports,
+          grabBanner: profileGrabsBanner(profile),
+          timeoutMs: req.timeoutMs && req.timeoutMs > 0 ? req.timeoutMs : 1200,
+          concurrency: 256
+        },
+        emit
+      )
+      return { ok: true, scanId, summary, hosts }
+    } catch (e) {
+      const error = (e as Error).message || 'scan failed'
+      emit({ type: 'error', scanId, error })
+      return { ok: false, scanId, error }
+    }
+  })
+  ipcMain.handle('ruy:scan:cancel', (_e, scanId: number) => { cancelScan(scanId); return { ok: true } })
 
   // --- Real intercepting forward proxy ---
   ipcMain.handle('ruy:proxy:start', (_e, port: number) => startProxy(port || 8080, emitToRenderer))

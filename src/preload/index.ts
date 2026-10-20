@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { HttpReq, HttpRes } from '../shared/http'
+import type { ScanRequest, ScanResult, ScanEvent } from '../shared/scan'
 
 // The renderer cannot make raw cross-origin requests under the app's CSP, so
 // real HTTP traffic (Repeater / live modules) goes through the main process via
@@ -14,6 +15,17 @@ const api = {
   http: {
     send: (req: HttpReq, scope: string[]): Promise<HttpRes> =>
       ipcRenderer.invoke('ruy:http', { req, scope })
+  },
+  scan: {
+    run: (req: ScanRequest, scope: string[], scanId: number): Promise<ScanResult> =>
+      ipcRenderer.invoke('ruy:scan:tcp', { req, scope, scanId }),
+    cancel: (scanId: number): Promise<{ ok: boolean }> =>
+      ipcRenderer.invoke('ruy:scan:cancel', scanId),
+    onProgress: (cb: (ev: ScanEvent) => void): (() => void) => {
+      const l = (_e: unknown, d: unknown): void => cb(d as ScanEvent)
+      ipcRenderer.on('ruy:scan:progress', l)
+      return () => ipcRenderer.removeListener('ruy:scan:progress', l)
+    }
   },
   proxy: {
     start: (port: number): Promise<{ ok: boolean; port?: number; error?: string }> =>
