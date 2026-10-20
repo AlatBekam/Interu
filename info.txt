@@ -67,7 +67,8 @@ Struktur penting:
                       Decoder, Comparer, Sequencer, BrowserSim)
     pages/         -> Dashboard, NetworkScanner, Vulnerabilities, ThreatMonitor,
                       Firewall, Reports, Settings
-    components/    -> Sidebar, TopBar, ThemeToggle, ContextMenu, Crest, ui
+    components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu, Crest,
+                      icons, ui
     data/          -> mock.ts, burp.ts (data simulasi)
     store/         -> store.ts (settings+persist), transfer.ts (send-to bus)
     lib/http.ts    -> parse raw request, curl, sendLive

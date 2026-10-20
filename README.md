@@ -10,17 +10,18 @@ editor, reporting and settings. It ships with **two themes** and a **Light/Dark 
 the top-right**: the default **"Dark Kingdom"** (obsidian black, cold white & silver type,
 midnight / royal-navy accents) and **"Silver Daylight"** (light).
 
-> **Development stages.** This repository is the **UI stage**: every module is a UI driven
-> by deterministic mock data. A later stage is intended to wire these screens to real
-> engines — and any real scanning / proxying / testing must only ever run against systems
-> **you are authorized to test.** The current build performs none of that.
+> **Development status (~50%).** The **Web Security Suite is real and functional**
+> (intercepting HTTPS-MITM proxy, live Repeater / Intruder / Target, and fully offline
+> Decoder / Comparer / Sequencer). The **Operations** modules (Dashboard, Network Scanner,
+> Vulnerabilities, Threat Monitor, Firewall) and **Reports** are still **mock / simulated
+> UI** awaiting real engines, and the **Rule Engine (Detection)** is not built yet.
 
-> ⚠️ **This is a UI-only prototype.** Every security module uses **deterministic mock
-> data** and local interactions. There is **no AI, no backend, no database server, no
-> cloud service, and no external API.** Nothing is scanned, intercepted, tested, or
-> executed against your real system or network. The interface labels all activity as
-> **SIMULATED** so it can never be mistaken for genuine system activity. The app needs
-> **no internet access** for its core functionality.
+> ⚠️ **Authorized use only — legal by design.** Every "Live" action is
+> **authorization-gated by Scope**: real requests only reach hosts you add to the Scope
+> list (empty by default → nothing allowed). Use it only against systems you own or are
+> **authorized to test** (your own lab / permitted servers). A **Simulation** mode is
+> provided for safe offline practice. There is **no backend, no database server, no cloud
+> service, and no external API** — the app runs fully local.
 
 ---
 
@@ -42,7 +43,7 @@ The project uses **only Electron** (no Tauri files are mixed in).
 
 ## 1a. Modules
 
-**Web Security Suite** (Burp-style, all simulated / UI-only):
+**Web Security Suite** (Burp-style — real & functional, scope-gated):
 
 Every live module is **authorization-gated**: real requests only go to hosts you add
 to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
@@ -63,9 +64,9 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 **Operations & analysis** (kept from the original build): Dashboard, Network Scanner,
 Vulnerabilities, Threat Monitor, Firewall Rules, Reports, Settings.
 
-> Decoder, Comparer and Sequencer's maths are genuinely functional and run entirely
-> offline. The networked-looking modules (Proxy, Repeater, Intruder, Target) are canned
-> demo data — nothing is sent, intercepted, or tested.
+> Decoder, Comparer and Sequencer run entirely offline. Proxy, Repeater, Intruder and
+> Target send **real traffic** in their Live modes (gated by Scope), and also ship a
+> Simulation mode for offline demos.
 
 ### Theme
 
@@ -93,7 +94,7 @@ need to install Node.js or any runtime** to launch it.
 ## 3. Project structure
 
 ```
-kartikacyber/
+Interu/
 ├─ electron.vite.config.ts     # electron-vite: main / preload / renderer builds
 ├─ electron-builder.yml        # Windows packaging (NSIS installer + portable)
 ├─ package.json                # scripts & dependencies
@@ -105,20 +106,33 @@ kartikacyber/
 ├─ scripts/
 │  └─ generate-icons.mjs       # renders the crest → PNG/ICO (pure JS, no ImageMagick)
 └─ src/
-   ├─ main/index.ts            # Electron main process (window, security, smoke test)
-   ├─ preload/index.ts         # minimal context-isolated bridge (window.ruy)
+   ├─ main/                    # Electron main process (Node side)
+   │  ├─ index.ts              #   window, security, IPC, smoke test
+   │  ├─ proxy.ts              #   forward proxy + HTTPS MITM
+   │  ├─ ca.ts                 #   root CA + per-host certs (for MITM)
+   │  └─ http.ts               #   real HTTP client (Live Repeater/Intruder/Target)
+   ├─ preload/                 # minimal context-isolated bridge (window.ruy)
+   │  ├─ index.ts
+   │  └─ index.d.ts
+   ├─ shared/                  # types + scope gate shared by main & renderer
+   │  ├─ http.ts
+   │  └─ proxy.ts
    └─ renderer/                # the React UI
       ├─ index.html            # locked-down offline CSP
       └─ src/
          ├─ App.tsx            # HashRouter routes + theme/motion appliers
-         ├─ components/        # Sidebar, TopBar, ThemeToggle, Crest, icons, UI
+         ├─ main.tsx           # React entry
+         ├─ styles/global.css  # global styling
+         ├─ components/        # Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
+         │                     #   Crest, icons, ui
          ├─ pages/             # Dashboard, NetworkScanner, Vulnerabilities,
          │  │                  #   ThreatMonitor, Firewall, Reports, Settings
          │  └─ web/            # Web Security Suite: Target, Proxy, BrowserSim,
          │                     #   Repeater, Intruder, Sequencer, Decoder, Comparer
          ├─ data/mock.ts       # simulated data for the ops modules
          ├─ data/burp.ts       # simulated HTTP history / payloads / tokens
-         └─ store/store.ts     # shared settings store + localStorage + reset
+         ├─ lib/http.ts        # parse raw request, curl, sendLive
+         └─ store/             # store.ts (settings+persist), transfer.ts (send-to bus)
 ```
 
 ---
@@ -190,9 +204,9 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 
 | Artifact | Type | What it is / how to use it |
 |---|---|---|
-| **`RUY-Cybersecurity-Platform-Setup-1.0.0.exe`** | **Installer** (NSIS) | Double-click to **install**. Lets you choose the folder, creates Start-menu & desktop shortcuts, and registers an uninstaller. Recommended for normal use. |
-| **`RUY-Cybersecurity-Platform-Portable-1.0.0.exe`** | **Portable** | A single self-contained exe. Double-click to **run without installing** (it self-extracts to a temp dir). Good for a USB stick / no-install demo. |
-| `win-unpacked/RUY Cybersecurity Platform.exe` | **Unpacked build** | The raw packaged app the installer deploys. Useful for testing the production build directly; not the artifact you distribute. |
+| **`Interu-Setup-1.0.0.exe`** | **Installer** (NSIS) | Double-click to **install**. Lets you choose the folder, creates Start-menu & desktop shortcuts, and registers an uninstaller. Recommended for normal use. |
+| **`Interu-Portable-1.0.0.exe`** | **Portable** | A single self-contained exe. Double-click to **run without installing** (it self-extracts to a temp dir). Good for a USB stick / no-install demo. |
+| `win-unpacked/Interu.exe` | **Unpacked build** | The raw packaged app the installer deploys. Useful for testing the production build directly; not the artifact you distribute. |
 | `*.blockmap`, `builder-debug.yml` | Build metadata | Generated by electron-builder; not something you run. |
 
 > The **development executable** is *not* in `release/` — "development" means
@@ -202,8 +216,8 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 
 ## 6. Application & window
 
-- Product name / window title: **RUY Cybersecurity Platform**
-- App identifier: `com.ruy.cybersecurity`
+- Product name: **Interu** — window title: **Interu — Cyber Operations**
+- App identifier: `com.interu.cyberops`
 - Minimum window size **1024 × 680**, opens at 1340 × 860; **maximize / minimize /
   resize / close** all work via the native window frame.
 - Single-instance (a second launch focuses the existing window).
