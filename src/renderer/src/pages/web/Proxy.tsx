@@ -9,6 +9,8 @@ import BrowserSim from './BrowserSim'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
 import { setTransfer } from '../../store/transfer'
 import { originOf, toCurl, rawFromParts } from '../../lib/http'
+import { analyzeHttpResponse } from '../../../../shared/rules'
+import { addFindings } from '../../store/findings'
 
 type Tab = 'request' | 'response'
 
@@ -59,6 +61,8 @@ export default function Proxy() {
     const offLog = window.ruy.proxy.onLog((d) => {
       const e = d as ProxyLogEntry
       setLogs((prev) => [e, ...prev].slice(0, 500))
+      // Passive detection: feed each captured response to the Rule Engine.
+      if (e.response) addFindings(analyzeHttpResponse(e))
     })
     const offInt = window.ruy.proxy.onIntercept((d) => {
       const h = d as HeldRequest

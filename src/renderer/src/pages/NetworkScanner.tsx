@@ -6,6 +6,8 @@ import ScopeBar from '../components/ScopeBar'
 import { MOCK_HOSTS, HostResult, severityPill, Severity } from '../data/mock'
 import { usePersistentState, useSettings } from '../store/store'
 import { profilePorts, ScanHost, ScanEvent, ScanProfile, ScanSummary } from '../../../shared/scan'
+import { analyzeScan } from '../../../shared/rules'
+import { addFindings } from '../store/findings'
 
 type Phase = 'idle' | 'scanning' | 'done'
 type Mode = 'live' | 'sim'
@@ -146,6 +148,11 @@ export default function NetworkScanner() {
       // The resolved result is authoritative (covers hosts that streamed late).
       if (res.hosts) setFound(res.hosts.map(liveToDisplay))
       if (res.summary) setSummary(res.summary)
+      // Feed the Rule Engine with real open-port/banner signals.
+      if (res.hosts && res.hosts.length) {
+        const added = addFindings(analyzeScan(res.hosts))
+        if (added > 0) setLog((l) => [...l, `> rule engine: ${added} new finding(s) — see Rule Engine / Vulnerabilities`])
+      }
       setPhase('done')
     } catch (e) {
       setNote(`⚠️ ${(e as Error).message}`)

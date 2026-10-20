@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
 import Dashboard from './pages/Dashboard'
 import NetworkScanner from './pages/NetworkScanner'
+import RuleEngine from './pages/RuleEngine'
 import Vulnerabilities from './pages/Vulnerabilities'
 import ThreatMonitor from './pages/ThreatMonitor'
 import Firewall from './pages/Firewall'
@@ -38,6 +39,8 @@ export default function App() {
           <Route path="/web/comparer" element={<Comparer />} />
           {/* Operations */}
           <Route path="/scanner" element={<NetworkScanner />} />
+          {/* Detection */}
+          <Route path="/detection" element={<RuleEngine />} />
           <Route path="/vulnerabilities" element={<Vulnerabilities />} />
           <Route path="/threats" element={<ThreatMonitor />} />
           <Route path="/firewall" element={<Firewall />} />

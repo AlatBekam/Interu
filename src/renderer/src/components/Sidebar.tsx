@@ -15,7 +15,8 @@ import {
   IconCode,
   IconColumns,
   IconSequence,
-  IconGlobe
+  IconGlobe,
+  IconShieldAlert
 } from './icons'
 
 const NAV = [
@@ -31,6 +32,8 @@ const NAV = [
 
   { to: '/scanner', label: 'Network Scanner', icon: IconScan, group: 'Operations' },
   { to: '/vulnerabilities', label: 'Vulnerabilities', icon: IconBug, group: 'Operations' },
+
+  { to: '/detection', label: 'Rule Engine', icon: IconShieldAlert, group: 'Detection' },
   { to: '/threats', label: 'Threat Monitor', icon: IconRadar, group: 'Operations' },
   { to: '/firewall', label: 'Firewall Rules', icon: IconFirewall, group: 'Operations' },
 
