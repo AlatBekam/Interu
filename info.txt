@@ -24,12 +24,14 @@ PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
 
 2. STATUS KESELURUHAN
 --------------------------------------------------------------------------------
-  [#####-----] ~50% menuju "produk lomba siap pakai"
+  [######----] ~65% menuju "produk lomba siap pakai"
 
   Web Security Suite (Burp)  : SELESAI & FUNGSIONAL (bisa dipakai beneran)
-  Operations                 : MASIH MOCK (UI + data palsu) -> perlu di-realkan
+  Network Scanner            : REAL — TCP connect scan asli, scope-gated  (BARU)
+  Rule Engine (Detection)    : DASAR JADI — template data-driven, Suspected/
+                               Confirmed + active oracle (scope-gated)    (BARU)
+  Operations lain            : MASIH MOCK (Dashboard, Threat Monitor, Firewall)
   Analysis / Reports         : MASIH MOCK -> perlu di-realkan
-  Rule Engine (Detection)    : BELUM ADA -> ini PR terbesar & paling "wow"
 
 
 3. STACK & CARA MENJALANKAN
@@ -55,22 +57,28 @@ B) MAU NGODING / NGEMBANGIN BARENG:
      lihat README (ada solusi pre-extract / nyalain Developer Mode).
 
 Struktur penting:
-  src/main/        -> proses Electron (window, proxy, MITM CA, HTTP engine)
-    index.ts       -> window + semua IPC
+  src/main/        -> proses Electron (window, proxy, MITM CA, HTTP, scanner)
+    index.ts       -> window + semua IPC (termasuk ruy:scan:tcp)
     proxy.ts       -> forward proxy + HTTPS MITM
     ca.ts          -> root CA + cert per-host (untuk MITM)
     http.ts        -> HTTP client asli (Repeater/Intruder/Target live)
-  src/preload/     -> jembatan aman renderer <-> main
-  src/shared/      -> tipe & scope gate dipakai bareng
+    scan.ts        -> TCP connect scanner ASLI (Node net) + banner grab  (BARU)
+  src/preload/     -> jembatan aman renderer <-> main (http, proxy, scan)
+  src/shared/      -> dipakai bareng main & renderer:
+    http.ts        -> tipe HTTP + scope gate host (hostInScope)
+    proxy.ts       -> tipe event proxy
+    scan.ts        -> parse target CIDR/range, daftar port, ipInScope      (BARU)
+    rules.ts       -> Rule Engine: template data-driven + matcher + CVE    (BARU)
   src/renderer/src/
     pages/web/     -> Web Security Suite (Proxy, Repeater, Intruder, Target,
                       Decoder, Comparer, Sequencer, BrowserSim)
-    pages/         -> Dashboard, NetworkScanner, Vulnerabilities, ThreatMonitor,
-                      Firewall, Reports, Settings
+    pages/         -> Dashboard, NetworkScanner (REAL), RuleEngine (BARU),
+                      Vulnerabilities, ThreatMonitor, Firewall, Reports, Settings
     components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu, Crest,
                       icons, ui
     data/          -> mock.ts, burp.ts (data simulasi)
-    store/         -> store.ts (settings+persist), transfer.ts (send-to bus)
+    store/         -> store.ts (settings+persist), transfer.ts (send-to bus),
+                      findings.ts (store temuan Rule Engine)               (BARU)
     lib/http.ts    -> parse raw request, curl, sendLive
 
 
@@ -93,12 +101,16 @@ Struktur penting:
   [DONE] Sequencer    : Analisa entropi token (hitungan REAL, token masih sampel)
   [DONE] Scope gate   : semua Live digerbang host berizin
 
-== OPERATIONS (MASIH MOCK — PERLU DIBIKIN REAL) ==
+== OPERATIONS (SEBAGIAN REAL) ==
+  [DONE] Network Scanner  : TCP connect scan ASLI (Node net), scope-gated.
+                            - Target IP / CIDR / range / list, parse otomatis
+                            - Profile Quick/Standard/Deep (deep = banner/versi)
+                            - open/closed/filtered nyata, progress streaming,
+                              bisa di-Stop (cancel); + mode Simulation (mock lama)
+                            - hasil otomatis difeed ke Rule Engine
+  [DONE] Vulnerabilities  : toggle Live (temuan Rule Engine, Confirmed/Suspected
+                            + bukti + CVE) / Demo catalog (mock lama tetap ada)
   [MOCK] Dashboard        : statistik & grafik dari data palsu
-  [MOCK] Network Scanner  : "scan" cuma animasi + host palsu
-                            -> TODO: port scan ASLI (Node net, scope-gated)
-  [MOCK] Vulnerabilities  : katalog CVE statis
-                            -> TODO: isi dari hasil scan asli + Rule Engine
   [MOCK] Threat Monitor   : feed event simulasi (boleh tetap demo)
   [MOCK] Firewall Rules   : editor rule lokal (tak ngaruh ke firewall asli)
 
@@ -106,26 +118,36 @@ Struktur penting:
   [MOCK] Reports          : rangkuman dari data palsu, export .txt/.json
                             -> TODO: laporan dari temuan ASLI + PDF + Bahasa Indo
 
-== DETECTION (BELUM ADA) ==
-  [TODO] Rule Engine      : belum dibuat sama sekali
+== DETECTION (DASAR JADI) ==
+  [DONE] Rule Engine      : engine ala-Nuclei, template sebagai DATA (27 template).
+                            - Matcher: status/word/regex/time, kombinasi and/or
+                            - Pasif: makan hasil Network Scanner (port/banner->CVE)
+                              + respons Proxy (header hilang, cookie, error SQL)
+                            - Aktif (oracle): kirim GET /.git/config, /.env, dll
+                              lewat HTTP sender scope-gated -> Confirmed + bukti
+                            - Keyakinan jujur: Confirmed (teramati) vs Suspected
+                            - Halaman Detection: library template + active checks
+                            -> TODO: tambah template, oracle boolean/time/OOB,
+                               Attack Path Graph
 
 
 5. SISA YANG HARUS DIBIKIN (ROADMAP — urut prioritas)
 --------------------------------------------------------------------------------
-PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")
-  [ ] Aturan sebagai DATA (array of rules): kondisi -> temuan+severity+saran
-  [ ] Tahap 1 PASIF: baca sinyal dari traffic proxy & hasil scan
+PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")  [DASAR JADI]
+  [x] Aturan sebagai DATA (array of rules): kondisi -> temuan+severity+saran
+  [x] Tahap 1 PASIF: baca sinyal dari traffic proxy & hasil scan
         (header hilang, banner versi -> CVE, pesan error SQL, dll) => "Suspected"
-  [ ] Tahap 2 VERIFIKASI (oracle): buktikan dulu sebelum jadi temuan
-        - error-based / boolean-based / time-based / out-of-band (OOB)
-        - cuma yang TERBUKTI jadi "Confirmed" (anti false-positive)
-  [ ] Tingkat keyakinan: Suspected vs Confirmed (dipisah)
-  [ ] Tempel BUKTI di tiap temuan (request/response/timing)
+  [~] Tahap 2 VERIFIKASI (oracle): active HTTP probe (mis. /.git/config, /.env)
+        sudah jalan & scope-gated -> "Confirmed"
+        [ ] sisa: boolean-based / time-based / out-of-band (OOB)
+  [x] Tingkat keyakinan: Suspected vs Confirmed (dipisah)
+  [x] Tempel BUKTI di tiap temuan (evidence: header/port/body/status yang cocok)
 
 PRIORITAS 2 — OPERATIONS JADI REAL
-  [ ] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
+  [x] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
         deteksi port/service/banner
-  [ ] Vulnerabilities: tampil dari temuan Confirmed (Rule Engine) + hasil scan
+  [x] Vulnerabilities: tampil dari temuan Rule Engine (Confirmed/Suspected)
+        + toggle demo catalog
   [ ] (Opsional) Threat Monitor: baca log lokal asli; kalau tidak, biarkan demo
   [ ] (Opsional) Firewall: ekspor rule / integrasi Windows Firewall (hati-hati)
 
@@ -165,6 +187,6 @@ CATATAN STRATEGI (buat lomba):
 --------------------------------------------------------------------------------
   RUY CYBERSECURITY TEAM
   Produk: INTERU — Cyber Operations
-  Versi: 1.0.0 (tahap: UI + Web Suite fungsional; Operations/Analysis/Detection
-         masih dikembangkan)
+  Versi: 1.0.0 (tahap: Web Suite + Network Scanner REAL, Rule Engine dasar jadi;
+         Dashboard/Threat Monitor/Firewall/Reports masih dikembangkan)
 ================================================================================

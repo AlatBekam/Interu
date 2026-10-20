@@ -10,11 +10,13 @@ editor, reporting and settings. It ships with **two themes** and a **Light/Dark 
 the top-right**: the default **"Dark Kingdom"** (obsidian black, cold white & silver type,
 midnight / royal-navy accents) and **"Silver Daylight"** (light).
 
-> **Development status (~50%).** The **Web Security Suite is real and functional**
-> (intercepting HTTPS-MITM proxy, live Repeater / Intruder / Target, and fully offline
-> Decoder / Comparer / Sequencer). The **Operations** modules (Dashboard, Network Scanner,
-> Vulnerabilities, Threat Monitor, Firewall) and **Reports** are still **mock / simulated
-> UI** awaiting real engines, and the **Rule Engine (Detection)** is not built yet.
+> **Development status (~65%).** The **Web Security Suite is real and functional**
+> (intercepting HTTPS-MITM proxy, live Repeater / Intruder / Target, offline
+> Decoder / Comparer / Sequencer). The **Network Scanner** now runs a **real TCP connect
+> scan** (scope-gated), and a **basic Rule Engine (Detection)** matches data-driven,
+> Nuclei-style templates over scanner/proxy signals (*Suspected*) plus scope-gated active
+> probes (*Confirmed*), surfaced in **Vulnerabilities**. Still mock / simulated UI:
+> Dashboard, Threat Monitor, Firewall, and Reports.
 
 > ⚠️ **Authorized use only — legal by design.** Every "Live" action is
 > **authorization-gated by Scope**: real requests only reach hosts you add to the Scope
@@ -59,14 +61,22 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 | **Sequencer** | **Real Shannon-entropy** analysis (quality score + per-position bars). |
 
 > Real traffic is handled in the Electron main process (`src/main/http.ts`,
-> `src/main/proxy.ts`) and gated by the operator scope (`src/shared/http.ts`).
+> `src/main/proxy.ts`, `src/main/scan.ts`) and gated by the operator scope
+> (`src/shared/http.ts`, `src/shared/scan.ts`).
 
-**Operations & analysis** (kept from the original build): Dashboard, Network Scanner,
-Vulnerabilities, Threat Monitor, Firewall Rules, Reports, Settings.
+**Operations & Detection:**
 
-> Decoder, Comparer and Sequencer run entirely offline. Proxy, Repeater, Intruder and
-> Target send **real traffic** in their Live modes (gated by Scope), and also ship a
-> Simulation mode for offline demos.
+| Module | Status |
+|---|---|
+| **Network Scanner** | **Real TCP connect scan** (Node `net`, scope-gated): target as IP / CIDR / range / list, Quick / Standard / Deep profiles (deep grabs banners/versions), real open/closed/filtered with streamed progress and cancel; plus a Simulation mode. Results feed the Rule Engine. |
+| **Rule Engine** (Detection) | **Nuclei-style detection engine.** Data-driven templates (status/word/regex/time matchers, severity, CVE, remediation, MITRE). Passive over scanner results + captured proxy responses → *Suspected / Confirmed*; scope-gated active HTTP probes (e.g. `/.git/config`, `/.env`) prove findings → *Confirmed* with evidence. |
+| **Vulnerabilities** | Live findings from the Rule Engine (Confirmed/Suspected + evidence + CVE), with a Demo-catalog toggle. |
+
+**Still simulated (UI / mock):** Dashboard, Threat Monitor, Firewall Rules, Reports, Settings.
+
+> Decoder, Comparer and Sequencer run entirely offline. Proxy, Repeater, Intruder,
+> Target, the Network Scanner and the Rule Engine's active checks send **real traffic**
+> (gated by Scope); the scanner and passive detection also work from already-captured data.
 
 ### Theme
 
@@ -110,13 +120,16 @@ Interu/
    │  ├─ index.ts              #   window, security, IPC, smoke test
    │  ├─ proxy.ts              #   forward proxy + HTTPS MITM
    │  ├─ ca.ts                 #   root CA + per-host certs (for MITM)
-   │  └─ http.ts               #   real HTTP client (Live Repeater/Intruder/Target)
+   │  ├─ http.ts               #   real HTTP client (Live Repeater/Intruder/Target)
+   │  └─ scan.ts               #   real TCP connect scanner + banner grab
    ├─ preload/                 # minimal context-isolated bridge (window.ruy)
    │  ├─ index.ts
    │  └─ index.d.ts
-   ├─ shared/                  # types + scope gate shared by main & renderer
-   │  ├─ http.ts
-   │  └─ proxy.ts
+   ├─ shared/                  # shared by main & renderer (framework-free)
+   │  ├─ http.ts               #   HTTP types + host scope gate (hostInScope)
+   │  ├─ proxy.ts              #   proxy event types
+   │  ├─ scan.ts               #   target parsing (IP/CIDR/range) + ipInScope
+   │  └─ rules.ts              #   Rule Engine: data-driven templates + matchers
    └─ renderer/                # the React UI
       ├─ index.html            # locked-down offline CSP
       └─ src/
@@ -125,14 +138,16 @@ Interu/
          ├─ styles/global.css  # global styling
          ├─ components/        # Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
          │                     #   Crest, icons, ui
-         ├─ pages/             # Dashboard, NetworkScanner, Vulnerabilities,
-         │  │                  #   ThreatMonitor, Firewall, Reports, Settings
+         ├─ pages/             # Dashboard, NetworkScanner, RuleEngine,
+         │  │                  #   Vulnerabilities, ThreatMonitor, Firewall,
+         │  │                  #   Reports, Settings
          │  └─ web/            # Web Security Suite: Target, Proxy, BrowserSim,
          │                     #   Repeater, Intruder, Sequencer, Decoder, Comparer
          ├─ data/mock.ts       # simulated data for the ops modules
          ├─ data/burp.ts       # simulated HTTP history / payloads / tokens
          ├─ lib/http.ts        # parse raw request, curl, sendLive
-         └─ store/             # store.ts (settings+persist), transfer.ts (send-to bus)
+         └─ store/             # store.ts (settings+persist), transfer.ts (send-to
+                               #   bus), findings.ts (Rule Engine findings store)
 ```
 
 ---
