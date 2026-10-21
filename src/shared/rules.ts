@@ -8,9 +8,9 @@
 //   - captured HTTP responses from the Proxy         (analyzeHttpResponse)
 //   - active, scope-gated HTTP probes                (buildActiveRequest + matchActive)
 //
-// Confidence is honest: directly-observed facts (open port, missing header,
-// banner contents) are "confirmed"; inferences (banner → CVE, error strings)
-// stay "suspected" until an active oracle proves them. Framework-free so the
+// Confidence is honest: directly-observed facts (missing header, cookie flags,
+// active-probe hits) are "confirmed"; inferences (service guessed from a port
+// number, banner → CVE, error strings) stay "suspected". Framework-free so the
 // main process, preload and renderer can all import it.
 
 import type { ScanHost } from './scan'
