@@ -4,60 +4,106 @@
 
 ## Status
 
-⚪ **SIMULASI** — "Scan" hanyalah animasi berbasis timer yang memunculkan host dari `MOCK_HOSTS`. Tidak ada paket yang dikirim, tidak ada port yang diprobe, tidak ada antarmuka jaringan yang disentuh. Konsol sendiri mencetak `> no packets are sent on the real network`.
+✅ **NYATA** (dengan fallback simulasi) — Mode **Live** melakukan **TCP connect scan** sungguhan lewat modul Node `net` di main process, dijaga **scope gate**. Mode **Simulation** (animasi `MOCK_HOSTS`) tetap ada untuk demo tanpa jaringan dan otomatis dipakai bila bridge `window.ruy.scan` tidak tersedia.
 
 ## Tujuan fitur
 
-Mensimulasikan penemuan host & service (host discovery + port/service). Menampilkan progress bar, daftar host yang "ditemukan", konsol gaya terminal, dan tabel detail port/service setelah selesai.
+Menemukan host aktif dan port TCP terbuka pada target yang **diizinkan** (IP / CIDR / range), mengambil banner versi (profil `deep`), lalu mengirim hasilnya ke Rule Engine agar langsung menjadi temuan di Vulnerabilities.
 
-## Cara kerja saat ini
+## Cara kerja
 
-Tombol **Run Scan** memanggil `start()`:
-
-1. Set fase `scanning`, reset progress & hasil.
-2. `setInterval` 140 ms, total 36 langkah.
-3. Tiap kelipatan 6 langkah → ambil `MOCK_HOSTS[idx]`, tambahkan ke daftar + log.
-4. Pada langkah ke-36 → fase `done`, progress 100%, tabel "Service Detail" muncul.
-
-`target` dan `profile` disimpan via `usePersistentState` (`scanner.target`, `scanner.profile`) tapi **tidak memengaruhi hasil** — hasil selalu enam host yang sama. Timer dibersihkan saat unmount dan saat **Stop**.
+1. Renderer memanggil `window.ruy.scan.run({target, profile}, settings.scope, scanId)` → IPC `ruy:scan:tcp`.
+2. Main: `expandTargets()` mengurai target → daftar IPv4; `targetsInScope()` menolak bila **satu saja** IP di luar scope (`blocked: true`).
+3. Main menolak bila `IP × port > MAX_ATTEMPTS` (262144).
+4. `runScan()` membuka koneksi paralel (pool **256**), timeout per koneksi default 1200 ms (di-clamp ke [100, 10000] bila dikirim).
+   - `connect` → **open**, `ECONNREFUSED` → **closed**, timeout/error lain → **filtered**.
+   - Profil `deep`: banner grab pada port terbuka — handshake TLS di port TLS (443, 8443, 993, …), `HEAD /` di port HTTP (80, 8080, 9200, …), selain itu menunggu greeting (SSH/FTP/SMTP).
+   - Host dianggap **up** bila ada port open atau closed (RST); host yang semua port-nya filtered tidak dilaporkan.
+5. Progres dialirkan lewat event `ruy:scan:progress` (`start` / `log` / `progress` / `host` / `done` / `error`), di-throttle ±5×/detik.
+6. Hasil akhir (otoritatif) → tabel; `analyzeScan(hosts)` → `addFindings()` (lihat [041 Rule Engine](041_rule-engine.md)).
 
 ```mermaid
-flowchart TD
-  RUN["klik Run Scan"] --> I["setInterval 140ms, 36 langkah"]
-  I --> STEP{"langkah % 6 == 0?"}
-  STEP -- ya --> H["ambil MOCK_HOSTS[idx] → tabel + log"]
-  STEP -- tidak --> P["update progress %"]
-  I --> DONE{"langkah >= 36?"}
-  DONE -- ya --> FIN["fase 'done' → tabel Service Detail"]
+sequenceDiagram
+  participant UI as NetworkScanner.tsx
+  participant P as preload window.ruy.scan
+  participant M as main index.ts
+  participant S as main scan.ts
+  participant R as rules.ts + findings store
+  UI->>P: run(req, scope, scanId)
+  P->>M: invoke ruy:scan:tcp
+  M->>M: expandTargets + targetsInScope + MAX_ATTEMPTS
+  alt di luar scope / terlalu besar
+    M-->>UI: ok:false (blocked)
+  else diizinkan
+    M->>S: runScan (pool 256, net.Socket)
+    S-->>UI: event ruy:scan:progress
+    S-->>M: summary + hosts
+    M-->>UI: ScanResult
+    UI->>R: analyzeScan(hosts) -> addFindings
+  end
 ```
+
+### Format target (`expandTargets`)
+
+| Bentuk | Contoh | Catatan |
+| --- | --- | --- |
+| IP tunggal | `010.0.0.1` | Dinormalisasi → `10.0.0.1` (yang di-gate = yang di-scan) |
+| CIDR | `10.20.0.0/24` | Mask wajib 1–2 digit; network & broadcast dibuang untuk /0–/30 |
+| Range | `10.0.0.10-10.0.0.50` atau `10.0.0.10-50` | Range terbalik ditolak |
+| Daftar | `10.0.0.1, 10.0.0.5` | Dipisah koma/spasi, di-dedupe |
+| Hostname | `example.com` | **Ditolak** — scanner berbasis IP |
+
+Batas: `MAX_IPS` = 4096 IP per target.
+
+### Profil
+
+| Profil | Jumlah port | Banner grab |
+| --- | --- | --- |
+| `quick` | 103 (top-100 gaya nmap) | tidak |
+| `standard` | 705 (top-100 + port umum) | tidak |
+| `deep` | 705 (sama dengan standard) | **ya** |
 
 ## File terkait
 
 | File | Fungsi / data utama |
-|------|---------------------|
-| [../src/renderer/src/pages/NetworkScanner.tsx](../src/renderer/src/pages/NetworkScanner.tsx) | `start()`, `stop()`, state `phase/progress/found/log` |
-| [../src/renderer/src/data/mock.ts](../src/renderer/src/data/mock.ts) | `MOCK_HOSTS`, tipe `HostResult`, `severityPill` |
-| [../src/renderer/src/store/store.ts](../src/renderer/src/store/store.ts) | `usePersistentState` untuk `scanner.target`/`scanner.profile` |
+| --- | --- |
+| [../src/main/scan.ts](../src/main/scan.ts) | `runScan`, `probePort`, `grabBanner`, `parseBanner`, `cancelScan`, pool koneksi |
+| [../src/shared/scan.ts](../src/shared/scan.ts) | Tipe `ScanEvent`/`ScanResult`, `expandTargets`, `profilePorts`, `ipInScope`, `targetsInScope`, `MAX_IPS`, `MAX_ATTEMPTS` |
+| [../src/main/index.ts](../src/main/index.ts) | Handler `ruy:scan:tcp` (scope gate, clamp timeout, concurrency 256) & `ruy:scan:cancel` |
+| [../src/preload/index.ts](../src/preload/index.ts) | `window.ruy.scan.run / cancel / onProgress` |
+| [../src/renderer/src/pages/NetworkScanner.tsx](../src/renderer/src/pages/NetworkScanner.tsx) | Toggle Live/Simulation, `startLive`, `startSim`, `runRef`, umpan ke Rule Engine |
+| [../src/renderer/src/components/ScopeBar.tsx](../src/renderer/src/components/ScopeBar.tsx) | Editor Authorized scope (tampil di mode Live) |
+| [../src/renderer/src/data/mock.ts](../src/renderer/src/data/mock.ts) | `MOCK_HOSTS` untuk mode Simulation |
+| [../src/shared/scope.test.ts](../src/shared/scope.test.ts) | Tes `expandTargets`, `ipInScope`, `hostInScope` |
 
 ## Cara pakai
 
-1. Buka **Network Scanner** (`/scanner`).
-2. Isi Target Range & pilih Profile (quick/standard/deep) — tersimpan tapi kosmetik.
-3. Klik **Run Scan**, amati progress & konsol. **Stop** menghentikan timer.
-4. Setelah selesai, lihat tabel "Service Detail" berisi port per host.
+1. Buka **Network Scanner** (`/scanner`), pilih Mode **Live** (tersimpan sebagai `scanner.mode`).
+2. Di ScopeBar, tambahkan IP/CIDR yang kamu punya izinnya (mis. `127.0.0.1` atau `10.20.0.0/24`).
+3. Isi Target (IP / CIDR / range) dan pilih Profile; label menampilkan jumlah port.
+4. Klik **Run Scan**. Pantau konsol dan progress bar.
+5. **Stop** membatalkan scan di main; hasil parsial yang sudah ditemukan **tetap ditampilkan** dan tetap dikirim ke Rule Engine.
+6. Lihat tabel **Service Detail** dan temuan baru di **Rule Engine** / **Vulnerabilities**.
 
 ## Batasan / temuan
 
-- Hasil selalu identik (6 host, port tetap) tak peduli target/profile.
-- Tidak ada socket, tidak ada `net`/`dgram`, tidak ada scope gate (karena tidak ada trafik).
-- `idx = step/6 - 1` hanya menampung 6 host; menambah host di `MOCK_HOSTS` butuh menaikkan `totalSteps`.
+- Hanya IPv4 dan TCP; tidak ada UDP, SYN scan, deteksi OS, atau resolusi hostname (kolom Hostname/OS = `—` di Live).
+- Nama service hanya dari tabel nomor port (`SERVICE_NAMES`), bukan deteksi protokol — `quick`/`standard` tidak memverifikasi service.
+- Banner grab best-effort: hanya baris pertama / header `Server`, dipotong 80 karakter.
+- Run besar yang penuh port filtered bisa lama (±20 menit untuk /24 × 705 port di 256 socket) — belum ada timeout adaptif.
+- Hasil lama diabaikan bila scan baru dimulai (`runRef`); meninggalkan halaman membatalkan scan yang berjalan.
+- Hasil scan **tidak disimpan** (hanya temuan Rule Engine yang dipersist); belum ada audit log.
 
 ## Checklist pengerjaan
 
-- [ ] Tambah handler IPC main-process (mis. `ruy:scan:tcp`) yang melakukan TCP connect scan via modul Node `net`.
-- [ ] Terapkan **scope gate** di main (tolak target di luar `settings.scope`), mengikuti pola `ruy:http` + `hostInScope`.
-- [ ] Parse `target` CIDR/range jadi daftar IP, dan `profile` jadi daftar port (top-100 / 1000 / full).
-- [ ] Jalankan koneksi paralel dengan timeout per port; laporkan open/closed/filtered nyata.
-- [ ] (Opsional) Banner grab untuk deteksi service/versi → umpan ke Rule Engine.
-- [ ] Alirkan progres/host nyata ke UI via event IPC, ganti `MOCK_HOSTS`.
+- [x] Handler IPC `ruy:scan:tcp` + `ruy:scan:cancel`, TCP connect scan via `net`.
+- [x] Scope gate di main (`targetsInScope`), mengikuti pola `ruy:http`.
+- [x] Parse target IP/CIDR/range/daftar; profil quick (103) / standard & deep (705).
+- [x] Koneksi paralel (256) dengan timeout per port; status open/closed/filtered nyata.
+- [x] Banner grab (profil `deep`) → umpan ke Rule Engine.
+- [x] Progres nyata via event `ruy:scan:progress`; fallback Simulation tetap ada.
+- [x] Stop menyimpan hasil parsial; scan dibatalkan saat meninggalkan halaman.
 - [ ] Tambah audit log tiap scan (target, waktu, operator).
+- [ ] Simpan riwayat hasil scan agar Dashboard/Reports bisa memakainya.
+- [ ] (Opsional) Timeout adaptif untuk target besar yang banyak filtered.
+- [ ] (Opsional) Resolusi hostname → IP (dengan scope gate pada IP hasil resolusi).

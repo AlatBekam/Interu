@@ -50,7 +50,8 @@ flowchart LR
 - Di mode Live, `Content-Length` dari editor diabaikan — `sendHttp` membiarkan Node menghitungnya ulang.
 - Sim hanya mengenali method `GET|POST|PUT|PATCH|DELETE` di baris pertama; selain itu default `GET`.
 - Mode Live memakai `rejectUnauthorized: false` (menerima sertifikat self-signed) sesuai kebutuhan target uji.
-- Scope gate dicek dua kali: di renderer (`sendRealLive`) dan di main (handler `ruy:http`).
+- Scope gate dicek dua kali: di renderer (`sendRealLive`) dan di main (handler `ruy:http`). Semantik gate (IP via IP persis/CIDR, subdomain untuk hostname) di [011](011_scope-gate.md).
+- Body respons dipotong di **5 MB** (`MAX_BODY` di `sendHttp`); respons lebih besar terpotong tanpa penanda error. Header multi-nilai (`Set-Cookie`) tampil satu baris per nilai.
 
 ## 7. Checklist pengerjaan
 

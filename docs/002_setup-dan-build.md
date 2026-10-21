@@ -28,9 +28,24 @@ npm install
 | `smoke` | `cross-env RUY_SMOKE_TEST=1 electron .` | Jalankan bundle produksi sekali, cetak `RUY_SMOKE_RESULT: RENDER_OK`, lalu keluar. Verifikasi bundle benar-benar termuat. |
 | `dist` | `npm run build && electron-builder --win --x64` | Build + buat installer NSIS dan portable `.exe`. |
 | `dist:dir` | `npm run build && electron-builder --win --dir` | Build + keluaran folder unpacked (tanpa installer), untuk uji cepat. |
+| `test` | `vitest run` | Unit test kode `src/shared/` (lihat di bawah). |
 
 > `smoke` butuh `out/` sudah ada (jalankan `build` dulu), karena `electron .`
 > memuat `main: out/main/index.js`.
+
+> **VS Code terminal.** Terminal VS Code bisa mewariskan `ELECTRON_RUN_AS_NODE=1`;
+> dengan itu `electron .` jalan sebagai Node biasa (tanpa window). Unset dulu
+> sebelum `smoke` / hook `RUY_*`: PowerShell `Remove-Item Env:ELECTRON_RUN_AS_NODE`,
+> bash `unset ELECTRON_RUN_AS_NODE`.
+
+## Test (`npm test`)
+
+`vitest run` menjalankan 14 test murni (tanpa Electron, tanpa jaringan):
+
+| File | Isi |
+|---|---|
+| `src/shared/scope.test.ts` (10) | `expandTargets` (normalisasi `010.0.0.1`→`10.0.0.1`, tolak `10.0.0.0/`, /24 standard ≤ `MAX_ATTEMPTS`), `ipInScope` (CIDR, mask kosong ≠ /0), `hostInScope` (IP via CIDR, tanpa suffix-match IP, host oktal `010.0.0.1`, subdomain + port di entri scope, scope kosong). |
+| `src/shared/rules.test.ts` (4) | Rule cookie per-`Set-Cookie` (HttpOnly/Secure), nama cookie `secure_x` tidak menipu, temuan header-only sekali per origin. |
 
 ## Environment variable `RUY_*`
 
@@ -43,7 +58,8 @@ efek pada penggunaan normal.
 | `RUY_START_ROUTE` | mis. `/web/proxy` | Buka route tertentu langsung lewat hash saat start. |
 | `ELECTRON_RENDERER_URL` | URL dev server | Disetel electron-vite saat `dev`; menentukan apakah renderer dimuat dari URL dev atau file bundle. |
 | `RUY_HTTP_TEST` | URL | Kirim satu GET nyata lewat `sendHttp`, cetak `RUY_HTTP_RESULT: ...`, lalu keluar. |
-| `RUY_PROXY_TEST` | apa saja (truthy) | Start proxy di port `18080`, kirim satu request http + satu https (CONNECT+MITM) lewat proxy, cetak `RUY_PROXY_*` log, lalu keluar. |
+| `RUY_PROXY_TEST` | apa saja (truthy) | Start proxy di port `18080`, kirim satu request http + satu https (CONNECT) ke `example.com` lewat proxy, cetak `RUY_PROXY_*` / `RUY_MITM_*`, lalu keluar. |
+| `RUY_PROXY_SCOPE` | daftar dipisah koma, mis. `example.com` | Scope proxy untuk `RUY_PROXY_TEST` (via `setScope`). Kosong = uji jalur out-of-scope: request diteruskan apa adanya, CONNECT jadi tunnel buta, **tidak ada** baris `RUY_PROXY_LOG`. Isi `example.com` untuk menguji jalur MITM + log. |
 
 ## Output build (`electron-builder.yml`)
 

@@ -15,19 +15,22 @@ Satu aplikasi menyatukan:
   Decoder, Comparer, Sequencer).
 - **Operations** (Dashboard, Network Scanner, Vulnerabilities, Threat Monitor,
   Firewall Rules).
+- **Detection** (Rule Engine gaya Nuclei, route `/detection`).
 - **Analysis / Reporting**.
 
-Identitas kerja produk: *legal-by-design* — fitur yang mengirim trafik nyata
-dibatasi oleh **Scope / Authorization** (hanya host yang didaftarkan operator yang
-boleh dikenai aksi "live").
+Identitas kerja produk: *legal-by-design* — fitur yang mengirim atau menangkap
+trafik nyata dibatasi oleh **Scope / Authorization** (hanya host/IP/CIDR yang
+didaftarkan operator yang boleh dikenai aksi "live"). Gate berlaku di proses main
+untuk `ruy:http`, `ruy:scan:tcp`, dan proxy (lihat [011](011_scope-gate.md)).
 
 ## Masalah yang diselesaikan
 
 - Menyediakan alat uji keamanan web (proxy intercept, repeater, fuzzing) **mandiri
   / buatan Indonesia** dalam satu aplikasi desktop, tanpa backend dan tanpa
   ketergantungan layanan luar.
-- Menegakkan **batas otorisasi** secara teknis: trafik "live" ditolak jika host
-  target tidak ada di Scope (lihat [011 — Scope Gate](011_scope-gate.md)).
+- Menegakkan **batas otorisasi** secara teknis: request/scan "live" ditolak jika
+  host target tidak ada di Scope, dan proxy hanya mendekripsi/mencatat host in-scope
+  (lihat [011 — Scope Gate](011_scope-gate.md)).
 - Menyediakan **mode Simulation** untuk latihan aman memakai data contoh.
 
 ## Kategori Hackathon
@@ -41,15 +44,14 @@ Produk versi `1.0.0`.
 |---|---|---|---|
 | Fondasi keamanan | 01x | Campur | Scope gate, Root CA & sertifikat, hardening Electron |
 | Web Security Suite | 02x | ✅ Nyata | Proxy MITM, Repeater, Intruder, Target, Decoder, Comparer, Sequencer |
-| Operations | 03x | ⚪ Simulasi | Dashboard, Scanner, Vulnerabilities, Threat Monitor, Firewall, Reports |
+| Operations | 03x | Campur | **Nyata:** Network Scanner (TCP connect, [032](032_network-scanner.md)), Vulnerabilities mode Live. **Simulasi:** Dashboard, Threat Monitor, Firewall, Reports, Settings |
+| Detection | 04x | ✅ Nyata | Rule Engine (template gaya Nuclei, [041](041_rule-engine.md)); temuan dari scanner + respons proxy |
 
-**Catatan penting (koreksi README).** README baris ~67–68 menyebut Proxy, Repeater,
-Intruder, dan Target sebagai *canned demo data*. Pembacaan kode menunjukkan
-sebaliknya: keempatnya memakai jembatan nyata `window.ruy` ke proses main
-(`src/preload/index.ts`, dipakai di `src/renderer/src/pages/web/Proxy.tsx`,
-`Repeater.tsx`, `Intruder.tsx`, `Target.tsx`) dan mengirim trafik HTTP(S) sungguhan
-lewat `src/main/http.ts` / `src/main/proxy.ts`. Jadi Web Security Suite **nyata**,
-bukan demo.
+**Catatan.** Versi README lama menyebut Proxy, Repeater, Intruder, dan Target
+sebagai *canned demo data*. Kode menunjukkan keempatnya memakai jembatan nyata
+`window.ruy` (`src/preload/index.ts`) dan mengirim trafik HTTP(S) sungguhan lewat
+`src/main/http.ts` / `src/main/proxy.ts`. README sekarang sudah sesuai (tabel modul
+menandai *Live/REAL*).
 
 ## Tech stack
 
@@ -61,6 +63,7 @@ bukan demo.
 | Bundler / dev | Vite `^5.4.8` via electron-vite `^2.3.0` |
 | TLS MITM / sertifikat | node-forge `^1.3.1` |
 | Packaging | electron-builder `^25.1.8` (NSIS installer + portable, Windows x64) |
+| Test | vitest `^2.1.9` (`npm test`, lihat [002](002_setup-dan-build.md)) |
 | Ikon build | @resvg/resvg-js, png-to-ico (lihat `scripts/generate-icons.mjs`) |
 
 Tidak ada database atau server: semua state renderer disimpan di `localStorage`

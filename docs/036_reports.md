@@ -45,10 +45,11 @@ flowchart TD
 - Seluruh isi berasal dari data palsu; header menegaskan itu bukan asesmen nyata.
 - `operator` dibaca manual dari localStorage, bukan lewat `useSettings` (tidak reaktif terhadap perubahan dalam sesi yang sama).
 - Belum ada export PDF maupun laporan Bahasa Indonesia.
+- Temuan nyata sudah tersedia di store Rule Engine (`ruy.v1.findings`, lihat [041](041_rule-engine.md)) tetapi belum dibaca Reports.
 
 ## Checklist pengerjaan
 
-- [ ] Rakit laporan dari **temuan Confirmed** (Rule Engine) + hasil Network Scanner nyata, bukan `mock.ts`.
+- [ ] Rakit laporan dari store temuan nyata (`getFindings()` / `useFindings()` di `store/findings.ts`, pisahkan Confirmed vs Suspected) + hasil Network Scanner, bukan `mock.ts`.
 - [ ] Sertakan bukti per temuan (request/response/timing) di laporan.
 - [ ] Tambah export **PDF** dan versi **Bahasa Indonesia** yang rapi.
 - [ ] Baca `operatorName` via `useSettings` agar reaktif.

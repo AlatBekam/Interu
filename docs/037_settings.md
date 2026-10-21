@@ -1,6 +1,6 @@
 # 037 — Settings
 
-← [036 — Reports](036_reports.md) · [Index](000_index.md) · [090 — Roadmap](090_roadmap.md) →
+← [036 — Reports](036_reports.md) · [Index](000_index.md) · [040 — Detection (Pengantar Kelompok)](040_detection.md) →
 
 ## Status
 
@@ -46,8 +46,9 @@ flowchart TD
 ## Batasan / temuan
 
 - "Mode: Offline simulation" di About adalah label statis, bukan deteksi mode.
-- `settings.scope` (host berizin untuk Live) diatur lewat komponen `ScopeBar` di Web Suite, bukan dari halaman Settings ini.
-- Reset menghapus **semua** key `ruy.v1.*` termasuk scope & status temuan — sesuai desain, tidak bisa undo.
+- `settings.scope` (host/IP/CIDR berizin untuk Live) diatur lewat komponen `ScopeBar` (Web Suite, Network Scanner, Rule Engine), bukan dari halaman Settings ini.
+- Reset menghapus **semua** key `ruy.v1.*` termasuk scope, status temuan demo, dan store temuan Rule Engine (`ruy.v1.findings`) — sesuai desain, tidak bisa undo.
+- Toggle persistence juga dihormati store temuan Rule Engine (load & save).
 
 ## Checklist pengerjaan
 

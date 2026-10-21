@@ -2,29 +2,29 @@
 
 ← [027 — Sequencer](027_sequencer.md) · [Index](000_index.md) · [031 — Dashboard (Security Overview)](031_dashboard.md) →
 
-Kelompok **Operations & Analysis** adalah bagian Interu yang saat ini **berjalan di atas data simulasi**. Berbeda dengan Web Security Suite (Proxy/Repeater/Intruder/Target) yang sudah mengirim trafik HTTP asli lewat main process, semua halaman di kelompok ini membaca data statis/deterministik dari satu file: `src/renderer/src/data/mock.ts`.
+Kelompok **Operations & Analysis** berisi panel operasi Interu. Kondisinya kini **campuran**: **Network Scanner** sudah melakukan TCP connect scan nyata lewat main process, dan **Vulnerabilities** (tampilan Live) membaca temuan nyata dari [Rule Engine](041_rule-engine.md). Dashboard, Threat Monitor, Firewall, dan isi Reports masih membaca data simulasi dari `src/renderer/src/data/mock.ts`.
 
 Dokumen ini jujur menandai mana yang nyata dan mana yang simulasi — juri akan memeriksa klaim ini.
 
 ## Tujuan
 
-- Menyediakan "panel operasi" lengkap (dashboard, scanner, kerentanan, monitor ancaman, firewall, laporan, pengaturan) sebagai kerangka UI yang sudah jadi.
-- Menjadi tempat berlabuh hasil nyata nanti (hasil scan asli, temuan dari Rule Engine, log asli) tanpa harus mengubah tata letak.
-- Tetap aman dipakai untuk demo: tidak ada paket yang dikirim, tidak ada file sistem yang disentuh, semua di-label SIMULATED.
+- Menyediakan "panel operasi" lengkap (dashboard, scanner, kerentanan, monitor ancaman, firewall, laporan, pengaturan).
+- Menjadi tempat berlabuh hasil nyata (hasil scan, temuan Rule Engine, log) tanpa mengubah tata letak.
+- Tetap aman untuk demo: setiap modul nyata dijaga scope gate dan punya mode/tampilan simulasi yang diberi label.
 
 ## Daftar fitur (031–037)
 
 | Doc | Halaman | Sumber data | Status |
-|-----|---------|-------------|--------|
+| --- | --- | --- | --- |
 | [031_dashboard.md](031_dashboard.md) | Dashboard / Security Overview | `mock.ts` (hosts, vulns, traffic, events) | ⚪ SIMULASI |
-| [032_network-scanner.md](032_network-scanner.md) | Network Scanner | `MOCK_HOSTS` + animasi timer | ⚪ SIMULASI |
-| [033_vulnerabilities.md](033_vulnerabilities.md) | Vulnerability Assessment | `MOCK_VULNS` + override lokal | ⚪ SIMULASI |
+| [032_network-scanner.md](032_network-scanner.md) | Network Scanner | Live: IPC `ruy:scan:tcp` (Node `net`) · Sim: `MOCK_HOSTS` | ✅ NYATA (+ fallback sim) |
+| [033_vulnerabilities.md](033_vulnerabilities.md) | Vulnerability Assessment | Live: store temuan Rule Engine · Demo: `MOCK_VULNS` | 🟡 SEBAGIAN (Live nyata) |
 | [034_threat-monitor.md](034_threat-monitor.md) | Threat Monitor | generator event PRNG | ⚪ SIMULASI |
 | [035_firewall.md](035_firewall.md) | Firewall Rules | `DEFAULT_FIREWALL_RULES` + localStorage | ⚪ SIMULASI |
 | [036_reports.md](036_reports.md) | Reports | rakitan dari `mock.ts` | 🟡 SEBAGIAN (export file nyata) |
 | [037_settings.md](037_settings.md) | Settings | store settings + versi runtime | 🟡 SEBAGIAN (preferensi nyata) |
 
-## Bagaimana `mock.ts` memberi makan tiap halaman
+## Sumber data tiap halaman
 
 ```mermaid
 flowchart LR
@@ -32,8 +32,14 @@ flowchart LR
     H["MOCK_HOSTS (6 host)"]
     V["MOCK_VULNS (9 temuan)"]
     FW["DEFAULT_FIREWALL_RULES (6 rule)"]
-    GEN["generateEvent / seedEvents (PRNG makeRng)"]
+    GEN["generateEvent / seedEvents (PRNG)"]
     TR["trafficSeries (PRNG 24 titik)"]
+  end
+
+  subgraph real["Jalur nyata"]
+    IPC["ruy:scan:tcp (main, scope-gated)"]
+    RE["Rule Engine (rules.ts)"]
+    FS["findings store ruy.v1.findings"]
   end
 
   H --> DASH["031 Dashboard"]
@@ -41,14 +47,18 @@ flowchart LR
   GEN --> DASH
   TR --> DASH
 
-  H --> SCAN["032 Network Scanner"]
-  V --> VULN["033 Vulnerabilities"]
+  IPC --> SCAN["032 Network Scanner (Live)"]
+  H -.sim.-> SCAN
+  SCAN -- "analyzeScan" --> RE
+  RE --> FS
+  FS --> VULN["033 Vulnerabilities (Live)"]
+  V -.demo.-> VULN
   GEN --> THR["034 Threat Monitor"]
   FW --> FWP["035 Firewall"]
   H --> REP["036 Reports"]
   V --> REP
 
-  subgraph store["src/renderer/src/store/store.ts (localStorage ns 'ruy.v1.')"]
+  subgraph store["src/renderer/src/store/store.ts (ns 'ruy.v1.')"]
     ST["useSettings / usePersistentState"]
   end
 
@@ -59,42 +69,44 @@ flowchart LR
   ST -.liveFeed.-> THR
 ```
 
-Catatan penting: **tidak ada satupun halaman di kelompok ini yang memanggil `window.ruy.http` atau `window.ruy.proxy`** (IPC main process). Jembatan IPC itu hanya dipakai Web Security Suite. Jadi Operations 100% lokal-renderer.
+Catatan IPC: **Network Scanner** memanggil `window.ruy.scan` (`ruy:scan:tcp`, `ruy:scan:cancel`, event `ruy:scan:progress`). Probe aktif Rule Engine memakai `window.ruy.http` (lihat [041](041_rule-engine.md)). Halaman Operations lain (Dashboard, Vulnerabilities, Threat Monitor, Firewall, Reports) tidak memanggil IPC; Settings hanya membaca `window.ruy.versions`/`platform`.
 
 ## Tabel status ringkas
 
 | Aspek | Nyata? | Keterangan |
-|-------|--------|------------|
-| Data host/kerentanan | ⚪ | Statis, di-hardcode di `mock.ts` |
-| Animasi scan | ⚪ | `setInterval`, tak ada socket TCP |
+| --- | --- | --- |
+| Scan host/port | ✅ | TCP connect via `net`, scope-gated, banner grab di profil `deep` |
+| Temuan kerentanan (Live) | ✅ | Dari Rule Engine: scanner, proxy, probe aktif |
+| Katalog Demo / data Dashboard | ⚪ | Statis di `mock.ts` |
 | Feed ancaman | ⚪ | PRNG `makeRng`, template fiksi |
 | Rule firewall | ⚪ | Hanya localStorage, tak sentuh Windows Firewall |
-| Perubahan status / rule disimpan | ✅ | localStorage `ruy.v1.*` nyata |
-| Export laporan ke file | ✅ | Blob + download dialog nyata |
-| Preferensi & tema | ✅ | Disimpan & diterapkan nyata |
-| Info runtime (Electron/Chrome/Node) | ✅ | Dibaca dari `window.ruy.versions` nyata |
+| Perubahan status / rule disimpan | ✅ | localStorage `ruy.v1.*` |
+| Export laporan ke file | ✅ | Blob + download dialog (isi masih mock) |
+| Preferensi & tema | ✅ | Disimpan & diterapkan |
+| Info runtime (Electron/Chrome/Node) | ✅ | Dibaca dari `window.ruy.versions` |
 
-## Strategi me-nyata-kan (kapabilitas main-process/IPC yang dibutuhkan)
+## Strategi me-nyata-kan
 
-Pola yang sudah terbukti di proyek ini: renderer memanggil `ipcRenderer.invoke('ruy:...')` lewat preload, main process yang mengerjakan operasi OS/jaringan dan menegakkan **scope gate**. Operations harus mengikuti pola yang sama.
+Pola yang terbukti: renderer memanggil `ipcRenderer.invoke('ruy:...')` lewat preload; main process mengerjakan operasi OS/jaringan dan menegakkan **scope gate**.
 
-| Fitur | Kapabilitas main-process baru | Catatan implementasi |
-|-------|-------------------------------|----------------------|
-| Network Scanner | TCP connect scan via modul Node `net` | Non-blocking, timeout per port, **wajib scope-gated** seperti `sendLive`. Banner grab opsional. |
-| Vulnerabilities | Hasil dari scanner + Rule Engine | Jangan hardcode CVE; cocokkan banner versi → CVE, tandai Suspected vs Confirmed. |
-| Threat Monitor | Baca log lokal / feed dari proxy | Alirkan `proxy.onLog` yang sudah ada ke sini; atau baca Windows Event Log. Boleh tetap demo bila waktu mepet. |
-| Firewall | `netsh advfirewall` / Windows Firewall API | Operasi sangat sensitif — jalankan di main, konfirmasi ganda, audit log. Lebih aman: mulai dari *export* rule saja. |
-| Reports | Temuan asli + PDF | Rakit dari store temuan nyata, tambah export PDF + Bahasa Indonesia. |
-| Dashboard | Agregasi dari store nyata di atas | Dashboard otomatis jadi nyata begitu sumbernya nyata — ini halaman terakhir yang disentuh. |
+| Fitur | Status | Langkah berikut |
+| --- | --- | --- |
+| Network Scanner | ✅ Selesai | Audit log, simpan riwayat hasil scan |
+| Vulnerabilities | ✅ Live selesai | Status kerja per temuan, bukti lengkap |
+| Rule Engine | ✅ Selesai ([041](041_rule-engine.md)) | Upgrade Suspected → Confirmed, soft-404 |
+| Reports | ⏭ | Rakit dari `useFindings()` + PDF |
+| Dashboard | ⏭ | Agregasi dari findings store (`useFindingCounts` sudah tersedia) |
+| Threat Monitor | Opsional | Alirkan `proxy.onLog` atau tetap demo berlabel |
+| Firewall | Opsional, hati-hati | Mulai dari *export* rule, baru `netsh` |
 
 ### Urutan yang disarankan
 
-1. **Network Scanner** (TCP connect scan asli, scope-gated) — fondasi data host nyata.
-2. **Rule Engine** (lihat [090_roadmap.md](090_roadmap.md)) — menghasilkan temuan Confirmed.
-3. **Vulnerabilities** — tampilkan temuan Confirmed + hasil scan.
+1. ~~**Network Scanner**~~ — ✅ selesai.
+2. ~~**Rule Engine**~~ — ✅ selesai ([041](041_rule-engine.md)).
+3. ~~**Vulnerabilities**~~ — ✅ tampilan Live selesai.
 4. **Reports** — laporkan temuan nyata + PDF.
 5. **Dashboard** — ganti sumber mock jadi agregasi store nyata.
 6. **Threat Monitor** (opsional) — alirkan log proxy/OS.
 7. **Firewall** (opsional, hati-hati) — mulai dari export, baru integrasi `netsh`.
 
-> Saran lomba: kunci **satu alur demo mulus** (target → scan → Rule Engine membuktikan → laporan) daripada menyalakan ketujuh halaman setengah jadi.
+> Saran lomba: alur demo **target → scan → Rule Engine → Vulnerabilities** kini berjalan nyata; mata rantai terakhir yang kurang adalah **Reports** dari temuan nyata.

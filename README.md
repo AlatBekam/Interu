@@ -52,7 +52,7 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 
 | Module | Status |
 |---|---|
-| **Proxy** | **REAL intercepting proxy with HTTPS MITM.** Start on `127.0.0.1:<port>`; **http and decrypted https** are captured in full with intercept **Forward/Drop/edit**. **Open Browser** launches a real browser routed through the proxy that trusts the Interu CA automatically (Burp-style). **Export CA** writes the root CA for external browsers. TLS is terminated with per-host certs minted from a local CA (`src/main/ca.ts`). |
+| **Proxy** | **REAL intercepting proxy with HTTPS MITM.** Start on `127.0.0.1:<port>`; **http and decrypted https of in-scope hosts** are captured in full (out-of-scope traffic is passed through untouched; CONNECT is blind-tunnelled) with intercept **Forward/Drop/edit**. **Open Browser** launches a real browser routed through the proxy that trusts the Interu CA automatically (Burp-style). **Export CA** writes the root CA for external browsers. TLS is terminated with per-host certs minted from a local CA (`src/main/ca.ts`). |
 | **Repeater** | **Live** mode sends real HTTP requests to a scoped target and shows the real response (status/time/length); Simulation mode for offline demo. |
 | **Intruder** | **Live** mode fires real requests per payload (payload at `§…§`), real status/length/time + outlier flagging; plus Simulation mode. |
 | **Target / Site Map** | **Live content discovery** (real path fuzzing against a scoped target) building a real map; plus the simulated map. |
@@ -256,8 +256,11 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 
 ## 8. Security posture of the app itself
 
-- `contextIsolation: true`, `nodeIntegration: false`; the preload exposes only a tiny
-  read-only `window.ruy` (platform + runtime versions).
+- `contextIsolation: true`, `nodeIntegration: false` (note: `sandbox: false`). The
+  preload exposes `window.ruy` with platform/versions plus three IPC bridges:
+  `http.send`, `proxy.*` (start/stop/status/setIntercept/**setScope**/resolve/
+  openBrowser/exportCA/onLog/onIntercept) and `scan.run/cancel/onProgress`. The main
+  process re-checks the operator scope on every real-traffic call.
 - A strict, **offline** Content-Security-Policy (`default-src 'self'`) blocks all remote
   scripts, styles, fonts and network connections. Fonts are the OS system stack, so no
   web fonts are fetched.

@@ -41,7 +41,8 @@ TLS bypass (sengaja, demi MITM & target self-signed):
 | Lokasi | Kode | Alasan |
 |---|---|---|
 | `../src/main/http.ts` | `rejectUnauthorized: false` | Target uji sering pakai sertifikat self-signed. |
-| `../src/main/proxy.ts` | `rejectUnauthorized: false` | Proxy upstream boleh cert invalid. |
+| `../src/main/proxy.ts` | `rejectUnauthorized: false` | Proxy upstream boleh cert invalid (HTTPS hanya sampai sini untuk host in-scope; out-of-scope di-tunnel buta). |
+| `../src/main/scan.ts` | `tls.connect({ rejectUnauthorized: false })` | Banner grab di port TLS (profil Deep). |
 | `../src/main/index.ts` | `ses.setCertificateVerifyProc((_req, cb) => cb(0))` | Browser terproksi auto-trust leaf MITM. |
 
 ```mermaid
@@ -60,7 +61,7 @@ flowchart TD
 |---|---|
 | [`../src/main/index.ts`](../src/main/index.ts) | `webPreferences`, `setWindowOpenHandler`, single-instance lock, `setCertificateVerifyProc`. |
 | [`../src/renderer/index.html`](../src/renderer/index.html) | Meta CSP. |
-| [`../src/preload/index.ts`](../src/preload/index.ts) | Expose `window.ruy` via `contextBridge` (guard `process.contextIsolated`). |
+| [`../src/preload/index.ts`](../src/preload/index.ts) | Expose `window.ruy` (`http`, `proxy`, `scan`) via `contextBridge` (guard `process.contextIsolated`). |
 | [`../src/main/http.ts`](../src/main/http.ts) | `rejectUnauthorized:false` (sender). |
 | [`../src/main/proxy.ts`](../src/main/proxy.ts) | `rejectUnauthorized:false` (upstream proxy). |
 
@@ -77,8 +78,10 @@ diterima — ini fitur alat pentest, bukan bug.
 - **Pelonggaran disengaja (risiko sadar):**
   - `sandbox:false` — perlu agar preload memakai Node; kompromikan isolasi proses
     renderer bila ada bug.
-  - TLS bypass di tiga lokasi — perlu untuk MITM/self-signed, tetapi berlaku
-    **global** di jalur masing-masing (bukan hanya host scope).
+  - TLS bypass di empat lokasi — perlu untuk MITM/self-signed. Jalur `http.ts`,
+    `proxy.ts` (HTTPS), dan `scan.ts` kini hanya tercapai untuk target in-scope
+    (lihat [011](011_scope-gate.md)); `setCertificateVerifyProc` tetap global
+    untuk session browser terproksi.
 - `setCertificateVerifyProc` dipasang untuk session `interu-proxied` saja, jadi
   terbatas ke browser terproksi (baik). Namun `cb(0)` memercayai **semua** cert di
   session itu, bukan hanya yang ditandatangani Interu CA.
@@ -88,7 +91,7 @@ diterima — ini fitur alat pentest, bukan bug.
 ## 7. Checklist pengerjaan
 
 - [ ] Evaluasi `sandbox:true`; pindahkan kebutuhan Node preload ke IPC bila bisa.
-- [ ] Batasi `rejectUnauthorized:false` hanya untuk host yang discope, bukan global.
+- [x] Batasi `rejectUnauthorized:false` hanya untuk host yang discope (tercapai lewat scope gate di `ruy:http`, `ruy:scan:tcp`, dan proxy).
 - [ ] Di `setCertificateVerifyProc`, verifikasi cert benar-benar ditandatangani Interu CA sebelum `cb(0)`.
 - [ ] Tambah test/smoke yang memastikan CSP tidak longgar antar rilis.
 - [ ] Hapus cabang fallback non-isolated di preload (dead code) atau beri komentar jelas.

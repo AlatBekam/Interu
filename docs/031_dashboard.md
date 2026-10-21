@@ -49,10 +49,11 @@ flowchart TD
 - "Sensors Online 12/12" murni dekoratif — tidak ada 12 sensor.
 - Badge "live model" bisa menyesatkan; data bukan live.
 - Tidak terhubung ke halaman lain: mengubah status di Vulnerabilities tidak memengaruhi angka Dashboard (Dashboard baca `MOCK_VULNS` mentah, bukan override store).
+- Sumber nyata **sudah tersedia** tapi belum dipakai: store temuan Rule Engine (`useFindings` / `useFindingCounts` di `store/findings.ts`) dan hasil Network Scanner Live.
 
 ## Checklist pengerjaan
 
-- [ ] Buat store/selector agregasi yang membaca sumber nyata (hasil scan + temuan Confirmed) alih-alih `MOCK_HOSTS`/`MOCK_VULNS`.
+- [ ] Baca store temuan nyata (`useFindings` / `useFindingCounts` dari `store/findings.ts`) alih-alih `MOCK_VULNS`; hasil scan perlu disimpan dulu agar bisa menggantikan `MOCK_HOSTS`.
 - [ ] Ganti `trafficSeries()` dengan data trafik nyata (mis. agregasi `proxy.onLog` atau metrik OS), atau beri label "demo" jujur.
 - [ ] Hitung "Monitored Hosts" dari hasil Network Scanner nyata.
 - [ ] Ganti "Sensors Online 12/12" dengan status komponen nyata (proxy running, scanner idle, dll) atau hapus.

@@ -8,7 +8,7 @@
 
 Menyediakan alat pentest web interaktif di dalam satu aplikasi desktop Electron, dengan dua prinsip utama:
 
-1. **Legal-by-design** — semua request *live* melewati **gerbang scope** (`hostInScope`, [`../src/shared/http.ts`](../src/shared/http.ts)). Scope kosong = tidak ada target yang diizinkan.
+1. **Legal-by-design** — semua request *live* dan semua tangkapan proxy melewati **gerbang scope** (`hostInScope`, [`../src/shared/http.ts`](../src/shared/http.ts); detail [011](011_scope-gate.md)). Scope kosong = tidak ada target yang diizinkan dan riwayat Proxy kosong.
 2. **Sim vs Live** — tiap modul yang berpotensi mengirim trafik punya mode **Simulation** (data buatan, tidak ada paket keluar) dan **Live** (request nyata lewat proses main).
 
 ## Daftar fitur
@@ -42,8 +42,9 @@ flowchart TD
   end
   subgraph Main
     HTTP["ruy:http -> sendHttp"]
-    PROXY["startProxy MITM"]
+    PROXY["startProxy MITM (scope-gated)"]
   end
+  RE["Rule Engine (analyzeHttpResponse → addFindings)"]
   PX -->|"Send to Repeater/Intruder"| BUS
   TG -->|"Send to Repeater/Intruder"| BUS
   BUS -->|"useTransfer (sekali)"| RP
@@ -56,16 +57,18 @@ flowchart TD
   GATE -->|"lolos"| HTTP
   GATE -->|"tolak"| BLK["blocked: true"]
   PX -->|"start/stop"| PROXY
-  PROXY -->|"ruy:proxy:log / intercept"| PX
+  PX -->|"setScope (via App.tsx)"| PROXY
+  PROXY -->|"ruy:proxy:log / intercept (hanya in-scope)"| PX
+  PX -->|"tiap respons"| RE
 ```
 
-> **Catatan penting:** gerbang scope berlaku untuk jalur `ruy:http` (Repeater/Intruder/Target Live). Jalur **Proxy MITM** (`handleRequest`) **tidak** di-scope-gate — lihat [021 §6](021_proxy-mitm.md#6-batasan--temuan).
+> **Catatan:** gerbang scope berlaku untuk `ruy:http` (Repeater/Intruder/Target Live) **dan** proxy MITM: host out-of-scope diteruskan tanpa dekripsi/log (CONNECT = tunnel buta) — lihat [021](021_proxy-mitm.md). Respons proxy in-scope juga dianalisis pasif oleh Rule Engine ([041](041_rule-engine.md)).
 
 ## Status: Live vs Sim
 
 | Modul | Mode tersedia | Yang benar-benar terjadi |
 |-------|---------------|--------------------------|
-| Proxy | Live + sample offline | MITM proxy nyata; "Load sample"/"Demo" = data offline |
+| Proxy | Live + sample offline | MITM proxy nyata untuk host in-scope; "Load sample"/"Demo" = data offline |
 | Target | Sim + Live | Sim: `SITE_MAP` buatan. Live: discovery wordlist nyata |
 | Repeater | Sim + Live | Sim: respon canned. Live: `sendHttp` nyata |
 | Intruder | Sim + Live | Sim: baris difabrikasi. Live: request per payload nyata |
@@ -88,10 +91,11 @@ flowchart TD
 |------|-------|
 | [`../src/main/proxy.ts`](../src/main/proxy.ts) | Mesin proxy intercept + MITM TLS |
 | [`../src/main/http.ts`](../src/main/http.ts) | Klien HTTP(S) nyata (`sendHttp`) |
-| [`../src/main/index.ts`](../src/main/index.ts) | Handler IPC `ruy:*` + scope gate |
+| [`../src/main/index.ts`](../src/main/index.ts) | Handler IPC `ruy:*` + scope gate (`ruy:http`), `ruy:proxy:scope` |
 | [`../src/preload/index.ts`](../src/preload/index.ts) | Bridge `window.ruy` |
 | [`../src/shared/http.ts`](../src/shared/http.ts) | `hostInScope`, tipe `HttpReq`/`HttpRes` |
 | [`../src/shared/proxy.ts`](../src/shared/proxy.ts) | Tipe `ProxyLogEntry`, `HeldRequest` |
+| [`../src/shared/rules.ts`](../src/shared/rules.ts) | `analyzeHttpResponse` (analisis pasif respons proxy) |
 | [`../src/renderer/src/lib/http.ts`](../src/renderer/src/lib/http.ts) | `parseRawRequest`, `toCurl`, `sendLive` |
 | [`../src/renderer/src/store/transfer.ts`](../src/renderer/src/store/transfer.ts) | Transfer bus Send-to-Repeater/Intruder |
 | [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | Data simulasi (history, payloads, token) |

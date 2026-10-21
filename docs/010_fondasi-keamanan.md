@@ -7,7 +7,8 @@
 Kelompok **Fondasi keamanan (01x)** adalah lapisan yang membuat Interu bisa
 dipakai menyerang trafik nyata **secara aman dan legal-by-design**:
 
-- membatasi aksi "live" hanya ke host yang diotorisasi (**Scope Gate**),
+- membatasi aksi "live" (HTTP, TCP scan, tangkapan proxy) hanya ke host/IP yang
+  diotorisasi (**Scope Gate**),
 - menyediakan **Root CA & sertifikat** untuk mendekripsi HTTPS (MITM),
 - mengeraskan proses Electron (**hardening**) agar jembatan Node tidak jadi lubang.
 
@@ -18,7 +19,7 @@ apakah Web Security Suite (02x) aman dipakai.
 
 | Kode | Fitur | Status | Dokumen |
 |---|---|---|---|
-| 011 | Scope Gate (otorisasi target) | 🟡 Sebagian | [011_scope-gate.md](011_scope-gate.md) |
+| 011 | Scope Gate (otorisasi target) | ✅ Nyata | [011_scope-gate.md](011_scope-gate.md) |
 | 012 | Root CA & Sertifikat (TLS MITM) | ✅ Nyata | [012_root-ca-dan-sertifikat.md](012_root-ca-dan-sertifikat.md) |
 | 013 | Hardening Electron | 🟡 Sebagian | [013_hardening-electron.md](013_hardening-electron.md) |
 
@@ -26,34 +27,35 @@ apakah Web Security Suite (02x) aman dipakai.
 
 ```mermaid
 flowchart TD
-  Scope["011 Scope Gate\nhostInScope()"]
+  Scope["011 Scope Gate\nhostInScope() / ipInScope()"]
   CA["012 Root CA\ngetCA / getHostCert"]
   Harden["013 Hardening\ncontextIsolation, CSP, TLS"]
 
   Harden -->|"amankan jembatan"| Bridge["window.ruy"]
   Bridge --> HTTP["ruy:http (sendHttp)"]
   Bridge --> Proxy["proxy MITM"]
+  Bridge --> Scan["ruy:scan:tcp (runScan)"]
   Scope -->|"gate"| HTTP
-  CA -->|"terminasi TLS"| Proxy
-  Scope -. "TIDAK meng-gate" .-> Proxy
+  Scope -->|"gate per IP"| Scan
+  Scope -->|"hanya in-scope didekripsi/dicatat"| Proxy
+  CA -->|"terminasi TLS (in-scope)"| Proxy
 ```
 
-> Garis putus-putus menandai temuan utama: **proxy MITM tidak di-gate oleh Scope**.
-> Hanya `ruy:http` (Repeater) dan pre-check di halaman renderer yang memakai
-> `hostInScope`. Detail di [011](011_scope-gate.md).
+> Ketiga jalur trafik nyata di-gate di proses main. Proxy meneruskan host
+> out-of-scope tanpa dekripsi/log (CONNECT = tunnel buta). Detail di [011](011_scope-gate.md).
 
 ## Tabel status
 
 | Fitur | Nyata? | Catatan singkat |
 |---|---|---|
-| Scope Gate | Sebagian | Nyata untuk `ruy:http` + pre-check UI; proxy lolos tanpa gate. |
+| Scope Gate | Nyata | `ruy:http`, `ruy:scan:tcp`, dan proxy; IP via IP persis/CIDR; 10 unit test. |
 | Root CA & Sertifikat | Nyata | Berfungsi penuh; key tanpa enkripsi, tanpa revoke/cleanup. |
 | Hardening Electron | Sebagian | contextIsolation + CSP kuat; `sandbox:false` & TLS bypass disengaja untuk MITM. |
 
 ## Urutan pengerjaan yang disarankan
 
-1. **011 Scope Gate** — tutup celah: terapkan `hostInScope` di `handleRequest`
-   (proxy) agar selaras dengan `ruy:http`.
+1. ~~**011 Scope Gate** — terapkan gate di proxy.~~ Selesai (proxy scope-gated,
+   ada test). Sisa kecil: entri IP+port, log audit.
 2. **012 Root CA** — tambah proteksi key + mekanisme hapus/revoke CA.
 3. **013 Hardening** — dokumentasikan & batasi TLS bypass hanya ke alur MITM;
    pertimbangkan `sandbox:true` bila preload memungkinkan.
