@@ -22,6 +22,8 @@ export default function App() {
   const [settings] = useSettings()
   useApplyTheme(settings.theme)
   useBodyMotionFlag(settings.reduceMotion)
+  // The proxy only captures in-scope hosts; keep it in sync from any page.
+  React.useEffect(() => { void window.ruy?.proxy.setScope(settings.scope || []) }, [settings.scope])
 
   return (
     <div className="app-shell">

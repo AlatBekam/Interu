@@ -3,7 +3,7 @@ import { join } from 'path'
 import http from 'node:http'
 import tls from 'node:tls'
 import { sendHttp } from './http'
-import { startProxy, stopProxy, setIntercept, resolveIntercept, isRunning, getPort } from './proxy'
+import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunning, getPort } from './proxy'
 import { exportCA } from './ca'
 import { runScan, cancelScan } from './scan'
 import { hostInScope } from '../shared/http'
@@ -165,7 +165,7 @@ if (!gotLock) {
       }
     }
 
-    const scanId = payload?.scanId && payload.scanId > 0 ? payload.scanId : scanSeq++
+    const scanId = typeof payload?.scanId === 'number' && payload.scanId > 0 ? payload.scanId : scanSeq++
     const emit = (ev: ScanEvent): void => emitToRenderer('ruy:scan:progress', ev)
     try {
       const { summary, hosts } = await runScan(
@@ -176,7 +176,7 @@ if (!gotLock) {
           ips: exp.ips,
           ports,
           grabBanner: profileGrabsBanner(profile),
-          timeoutMs: req.timeoutMs && req.timeoutMs > 0 ? req.timeoutMs : 1200,
+          timeoutMs: typeof req.timeoutMs === 'number' && req.timeoutMs > 0 ? Math.min(Math.max(req.timeoutMs, 100), 10000) : 1200,
           concurrency: 256
         },
         emit
@@ -195,6 +195,7 @@ if (!gotLock) {
   ipcMain.handle('ruy:proxy:stop', () => { proxiedSessionPort = -1; return stopProxy() })
   ipcMain.handle('ruy:proxy:status', () => ({ running: isRunning() }))
   ipcMain.handle('ruy:proxy:intercept', (_e, on: boolean) => { setIntercept(!!on); return { ok: true } })
+  ipcMain.handle('ruy:proxy:scope', (_e, scope: string[]) => { setScope(scope); return { ok: true } })
   ipcMain.handle('ruy:proxy:resolve', (_e, p: { id: number; action: 'forward' | 'drop'; raw?: string }) => {
     resolveIntercept(p.id, p.action, p.raw)
     return { ok: true }
@@ -281,6 +282,8 @@ if (!gotLock) {
           console.log(`RUY_PROXY_LOG: method=${e.method} host=${e.host} status=${e.status ?? '-'} len=${e.length ?? '-'}`)
         }
       })
+      // Comma-separated scope; empty = verify the out-of-scope pass-through path.
+      setScope((process.env.RUY_PROXY_SCOPE || '').split(',').filter(Boolean))
       console.log(`RUY_PROXY_START: ok=${r.ok} port=${r.port ?? '-'} err=${r.error ?? '-'}`)
       // 1) plain http through the proxy
       const req = http.request({ host: '127.0.0.1', port: 18080, method: 'GET', path: 'http://example.com/', headers: { Host: 'example.com' } }, (res) => {

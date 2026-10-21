@@ -67,6 +67,8 @@ export default function RuleEngine() {
         if (finding) {
           collected.push(finding)
           setLog((l) => [...l, `  ✔ CONFIRMED — ${finding.name} [${finding.severity}]  (${finding.evidence})`])
+        } else if (!res.ok) {
+          setLog((l) => [...l, `  ! request failed: ${res.error || 'unknown error'}`])
         } else {
           setLog((l) => [...l, `  · not present (status ${res.status ?? '-'})`])
         }

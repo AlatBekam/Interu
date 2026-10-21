@@ -31,17 +31,19 @@ const active = new Map<number, Set<net.Socket | tls.TLSSocket>>()
 const cancelled = new Set<number>()
 
 export function cancelScan(scanId: number): void {
-  cancelled.add(scanId)
+  // Only running scans can be cancelled; unknown ids would otherwise leak and
+  // pre-cancel a later scan that reuses the id.
   const set = active.get(scanId)
-  if (set) for (const s of set) { try { s.destroy() } catch { /* ignore */ } }
+  if (!set) return
+  cancelled.add(scanId)
+  for (const s of set) { try { s.destroy() } catch { /* ignore */ } }
 }
 
 function track(scanId: number, s: net.Socket | tls.TLSSocket): void {
-  let set = active.get(scanId)
-  if (!set) { set = new Set(); active.set(scanId, set) }
+  const set = active.get(scanId)
+  if (!set) return
   set.add(s)
-  const drop = (): void => { set!.delete(s) }
-  s.once('close', drop)
+  s.once('close', () => set.delete(s))
 }
 
 /** Probe a single TCP port. open = handshake completed, closed = RST (refused),
@@ -150,6 +152,7 @@ export async function runScan(p: RunParams, emit: Emit): Promise<{ summary: Scan
   const total = ips.length * ports.length
   const startedAt = new Date()
   const startMs = Date.now()
+  active.set(scanId, new Set())
 
   emit({
     type: 'start',

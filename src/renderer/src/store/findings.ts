@@ -12,6 +12,7 @@ import { sortFindings } from '../../../shared/rules'
 
 const NS = 'ruy.v1.'
 const KEY = NS + 'findings'
+const MAX_FINDINGS = 1000
 
 function persistenceOn(): boolean {
   try {
@@ -25,6 +26,7 @@ function persistenceOn(): boolean {
 
 function load(): Finding[] {
   try {
+    if (!persistenceOn()) return []
     const raw = window.localStorage.getItem(KEY)
     if (!raw) return []
     const arr = JSON.parse(raw) as Finding[]
@@ -36,7 +38,8 @@ function load(): Finding[] {
 
 function save(list: Finding[]): void {
   try {
-    if (!persistenceOn()) return
+    // Persistence off: also drop anything stored earlier, so Clear really clears.
+    if (!persistenceOn()) return window.localStorage.removeItem(KEY)
     window.localStorage.setItem(KEY, JSON.stringify(list))
   } catch {
     /* storage unavailable — keep working in memory */
@@ -59,7 +62,8 @@ export function addFindings(incoming: Finding[]): number {
     if (!byKey.has(f.key)) added++
     byKey.set(f.key, f)
   }
-  state = sortFindings(Array.from(byKey.values()))
+  // Keep the most severe MAX_FINDINGS so heavy proxy traffic can't grow the list unbounded.
+  state = sortFindings(Array.from(byKey.values())).slice(0, MAX_FINDINGS)
   save(state)
   emit()
   return added

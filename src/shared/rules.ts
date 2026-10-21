@@ -152,7 +152,8 @@ function evalMatcher(m: Matcher, kind: TemplateKind, p?: PortCtx, h?: HttpCtx): 
       const matches: string[] = []
       for (const src of pats) {
         try {
-          const r = new RegExp(src, 'i')
+          // `m` so ^/$ anchor per header line (e.g. one Set-Cookie per line).
+          const r = new RegExp(src, 'im')
           const mm = r.exec(hay)
           if (mm) matches.push(mm[0].slice(0, 60))
         } catch { /* bad pattern — skip */ }
@@ -250,12 +251,16 @@ export function analyzeHttpResponse(entry: ProxyLogEntry, at = new Date().toISOS
     responseRaw: parsed.raw,
     timeMs: entry.ms
   }
+  let origin = entry.url
+  try { origin = new URL(entry.url).origin } catch { /* keep full url */ }
   const out: Finding[] = []
   for (const t of TEMPLATES.filter((x) => x.kind === 'http-passive')) {
     if (t.scheme === 'https' && !isHttps) continue
     if (t.scheme === 'http' && isHttps) continue
     const r = evalTemplate(t, undefined, ctx)
-    if (r.ok) out.push(toFinding(t, entry.url, r.evidence, 'proxy', at))
+    // Header-only rules describe the whole site: one finding per origin, not per URL.
+    const siteWide = t.matchers.every((m) => m.part === 'header')
+    if (r.ok) out.push(toFinding(t, siteWide ? origin : entry.url, r.evidence, 'proxy', at))
   }
   return out
 }
@@ -307,36 +312,37 @@ export function sortFindings(list: Finding[]): Finding[] {
 
 export const TEMPLATES: Template[] = [
   // ---- exposed network services (port) ----
+  // Port number only — the service itself is not verified, so these stay suspected.
   {
-    id: 'svc-telnet-exposed', kind: 'port', confidence: 'confirmed',
+    id: 'svc-telnet-exposed', kind: 'port', confidence: 'suspected',
     info: { name: 'Telnet service exposed (cleartext)', severity: 'high', tags: ['network', 'cleartext'],
       remediation: 'Disable Telnet; use SSH. Credentials over Telnet are sent in plaintext.',
       classification: { cwe: ['CWE-319'], cvss: 7.5 }, mitre: ['T1021'] },
     matchers: [{ type: 'port', ports: [23] }]
   },
   {
-    id: 'svc-ftp-exposed', kind: 'port', confidence: 'confirmed',
+    id: 'svc-ftp-exposed', kind: 'port', confidence: 'suspected',
     info: { name: 'FTP service exposed', severity: 'medium', tags: ['network', 'cleartext'],
       remediation: 'Prefer SFTP/FTPS. Plain FTP transmits credentials in cleartext.',
       classification: { cwe: ['CWE-319'] } },
     matchers: [{ type: 'port', ports: [21] }]
   },
   {
-    id: 'svc-smb-exposed', kind: 'port', confidence: 'confirmed',
+    id: 'svc-smb-exposed', kind: 'port', confidence: 'suspected',
     info: { name: 'SMB service exposed', severity: 'high', tags: ['network', 'windows'],
       remediation: 'Do not expose SMB (445) to untrusted networks; restrict with firewall/VPN.',
       classification: { cwe: ['CWE-200'] }, mitre: ['T1021.002'] },
     matchers: [{ type: 'port', ports: [445] }]
   },
   {
-    id: 'svc-rdp-exposed', kind: 'port', confidence: 'confirmed',
+    id: 'svc-rdp-exposed', kind: 'port', confidence: 'suspected',
     info: { name: 'RDP service exposed', severity: 'high', tags: ['network', 'windows'],
       remediation: 'Restrict RDP (3389) behind VPN/NLA; never expose to the internet.',
       classification: { cwe: ['CWE-200'] }, mitre: ['T1021.001'] },
     matchers: [{ type: 'port', ports: [3389] }]
   },
   {
-    id: 'svc-db-exposed', kind: 'port', confidence: 'confirmed',
+    id: 'svc-db-exposed', kind: 'port', confidence: 'suspected',
     info: { name: 'Database service exposed', severity: 'high', tags: ['network', 'database'],
       remediation: 'Databases (MySQL/PostgreSQL/MSSQL/Oracle) should never be reachable from untrusted networks.',
       classification: { cwe: ['CWE-200'] } },
@@ -350,7 +356,7 @@ export const TEMPLATES: Template[] = [
     matchers: [{ type: 'port', ports: [6379, 27017, 9200, 11211] }]
   },
   {
-    id: 'svc-vnc-exposed', kind: 'port', confidence: 'confirmed',
+    id: 'svc-vnc-exposed', kind: 'port', confidence: 'suspected',
     info: { name: 'VNC remote desktop exposed', severity: 'high', tags: ['network'],
       remediation: 'Do not expose VNC; tunnel over SSH/VPN and require strong auth.' },
     matchers: [{ type: 'port', ports: [5900, 5901] }]
@@ -419,7 +425,7 @@ export const TEMPLATES: Template[] = [
     info: { name: 'Server version disclosure', severity: 'low', tags: ['http', 'disclosure'],
       remediation: 'Suppress version numbers in the Server header.',
       classification: { cwe: ['CWE-200'] } },
-    matchers: [{ type: 'regex', part: 'header', regex: ['server:\\s*[^\\n]*\\d+\\.\\d+'] }]
+    matchers: [{ type: 'regex', part: 'header', regex: ['^server:\\s*[^\\n]*\\d+\\.\\d+'] }]
   },
   {
     id: 'http-powered-by', kind: 'http-passive', confidence: 'confirmed',
@@ -432,20 +438,15 @@ export const TEMPLATES: Template[] = [
     info: { name: 'Cookie without HttpOnly flag', severity: 'low', tags: ['http', 'cookie'],
       remediation: 'Set HttpOnly on session cookies to block script access.',
       classification: { cwe: ['CWE-1004'] } },
-    matchers: [
-      { type: 'word', part: 'header', words: ['set-cookie'] },
-      { type: 'word', part: 'header', words: ['httponly'], negative: true }
-    ], matchersCondition: 'and'
+    // Per cookie line: any Set-Cookie lacking the flag, regardless of the others.
+    matchers: [{ type: 'regex', part: 'header', regex: ['^set-cookie:(?![^\\n]*;\\s*httponly\\b)[^\\n]*$'] }]
   },
   {
     id: 'http-cookie-secure', kind: 'http-passive', confidence: 'confirmed', scheme: 'https',
     info: { name: 'Cookie without Secure flag (HTTPS)', severity: 'medium', tags: ['http', 'cookie'],
       remediation: 'Set the Secure flag so cookies are only sent over HTTPS.',
       classification: { cwe: ['CWE-614'] } },
-    matchers: [
-      { type: 'word', part: 'header', words: ['set-cookie'] },
-      { type: 'word', part: 'header', words: ['secure'], negative: true }
-    ], matchersCondition: 'and'
+    matchers: [{ type: 'regex', part: 'header', regex: ['^set-cookie:(?![^\\n]*;\\s*secure\\b)[^\\n]*$'] }]
   },
   {
     id: 'http-dir-listing', kind: 'http-passive', confidence: 'confirmed',

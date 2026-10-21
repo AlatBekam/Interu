@@ -4,6 +4,7 @@ import net from 'node:net'
 import tls from 'node:tls'
 import { URL } from 'node:url'
 import { getHostCert } from './ca'
+import { hostInScope } from '../shared/http'
 
 // A real intercepting forward proxy with HTTPS MITM.
 //   * http://  and (via MITM) https:// requests are captured in full and can be
@@ -11,6 +12,8 @@ import { getHostCert } from './ca'
 //   * TLS is terminated locally with a per-host certificate signed by the Interu
 //     root CA, so https traffic is decrypted and visible.
 // Captured transactions are streamed to the renderer as events.
+// Only hosts in the operator's authorized scope are decrypted, logged or
+// intercepted; everything else is passed through untouched.
 
 export type Emit = (channel: string, data: unknown) => void
 
@@ -20,6 +23,7 @@ let listenPort = 8080
 let seq = 1
 let intercepting = false
 let emit: Emit = () => {}
+let scope: string[] = []
 const pending = new Map<number, (d: { action: 'forward' | 'drop'; raw?: string }) => void>()
 
 const now = (): string => new Date().toLocaleTimeString('en-GB', { hour12: false })
@@ -27,6 +31,10 @@ const CAP = 50000
 
 export function getPort(): number { return listenPort }
 export function isRunning(): boolean { return !!server }
+
+export function setScope(s: unknown): void {
+  scope = Array.isArray(s) ? s.filter((x): x is string => typeof x === 'string') : []
+}
 
 export function setIntercept(v: boolean): void {
   intercepting = v
@@ -77,6 +85,7 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
     clientRes.writeHead(400); clientRes.end('Bad proxy request'); return
   }
 
+  const inScope = hostInScope(u.href, scope)
   const id = seq++
   const started = Date.now()
   const reqChunks: Buffer[] = []
@@ -87,7 +96,7 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
     const reqBody = Buffer.concat(reqChunks)
     let rawReq = buildRawReq(clientReq.method || 'GET', u, clientReq.headers, reqBody)
 
-    if (intercepting) {
+    if (intercepting && inScope) {
       emit('ruy:proxy:intercept', { id, raw: rawReq.slice(0, CAP), host: u.host, method: clientReq.method, path: u.pathname + u.search })
       const decision = await new Promise<{ action: 'forward' | 'drop'; raw?: string }>((res) => pending.set(id, res))
       if (decision.action === 'drop') {
@@ -122,8 +131,12 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
       pRes.on('end', () => {
         const resBuf = Buffer.concat(resChunks)
         try { clientRes.writeHead(pRes.statusCode || 200, pRes.headers as http.OutgoingHttpHeaders); clientRes.end(resBuf) } catch { /* client gone */ }
+        if (!inScope) return
         const statusLine = `HTTP/${pRes.httpVersion} ${pRes.statusCode} ${pRes.statusMessage || ''}`.trim()
-        const resHeaders = Object.entries(pRes.headers).map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`).join('\r\n')
+        // One line per Set-Cookie so cookie rules can check each cookie's flags.
+        const resHeaders = Object.entries(pRes.headers)
+          .map(([k, v]) => (Array.isArray(v) ? v.map((x) => `${k}: ${x}`).join('\r\n') : `${k}: ${v}`))
+          .join('\r\n')
         const ctype = String(pRes.headers['content-type'] || '')
         const printable = /text|json|xml|javascript|html|form|urlencoded/i.test(ctype) || !ctype
         const bodyText = printable ? resBuf.toString('utf8') : `[${resBuf.length} bytes of ${ctype || 'binary'} omitted]`
@@ -170,6 +183,22 @@ export function startProxy(port: number, emitFn: Emit): Promise<{ ok: boolean; p
     srv.on('connect', (req, clientSocket, head) => {
       // Hand the raw TLS stream to the MITM terminator instead of blind tunnelling.
       clientSocket.on('error', () => { /* client gone; ignore */ })
+      const target = req.url || ''
+      if (!hostInScope(`https://${target}/`, scope)) {
+        // Out of scope: blind tunnel — never decrypted, logged or intercepted.
+        const i = target.lastIndexOf(':')
+        const host = (i > 0 ? target.slice(0, i) : target).replace(/^\[|\]$/g, '')
+        const port = Number(i > 0 ? target.slice(i + 1) : '') || 443
+        const up = net.connect(port, host, () => {
+          clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
+          if (head && head.length) up.write(head)
+          up.pipe(clientSocket)
+          clientSocket.pipe(up)
+        })
+        up.on('error', () => { try { clientSocket.destroy() } catch { /* noop */ } })
+        clientSocket.on('close', () => up.destroy())
+        return
+      }
       try {
         clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n')
         if (head && head.length) clientSocket.unshift(head)

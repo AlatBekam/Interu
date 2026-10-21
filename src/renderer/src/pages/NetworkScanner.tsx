@@ -55,6 +55,7 @@ export default function NetworkScanner() {
 
   const timer = useRef<number | null>(null)
   const scanIdRef = useRef<number>(0)
+  const runRef = useRef(0)
   const offProgress = useRef<(() => void) | null>(null)
 
   const effMode: Mode = hasBridge ? mode : 'sim'
@@ -93,11 +94,17 @@ export default function NetworkScanner() {
     return () => { offProgress.current?.(); offProgress.current = null }
   }, [])
 
-  useEffect(() => () => clearTimer(), [])
+  // On leave: stop the sim timer and cancel any live scan still running in main.
+  useEffect(() => () => {
+    clearTimer()
+    if (scanIdRef.current) void window.ruy?.scan?.cancel(scanIdRef.current)
+    scanIdRef.current = 0
+  }, [])
 
   const stopSim = () => { clearTimer(); setPhase('done') }
 
   const startSim = () => {
+    runRef.current++
     clearTimer()
     setNote(null)
     setSummary(null)
@@ -134,10 +141,13 @@ export default function NetworkScanner() {
     setProgress(0)
     setLog([`> starting TCP connect scan of ${target} — ${profile} profile`])
     setPhase('scanning')
+    const run = ++runRef.current
     const id = Date.now()
     scanIdRef.current = id
     try {
       const res = await window.ruy.scan.run({ target, profile }, settings.scope, id)
+      // A newer scan (live or sim) started meanwhile: don't let this result overwrite it.
+      if (runRef.current !== run) return
       if (!res.ok) {
         setNote(res.blocked ? `⛔ ${res.error}` : `⚠️ ${res.error}`)
         setLog((l) => [...l, `> ${res.error}`])
@@ -155,6 +165,7 @@ export default function NetworkScanner() {
       }
       setPhase('done')
     } catch (e) {
+      if (runRef.current !== run) return
       setNote(`⚠️ ${(e as Error).message}`)
       setPhase('idle')
     }
@@ -165,6 +176,7 @@ export default function NetworkScanner() {
   const stop = () => {
     if (effMode === 'live') {
       if (window.ruy?.scan && scanIdRef.current) window.ruy.scan.cancel(scanIdRef.current)
+      scanIdRef.current = 0
       setPhase('done')
     } else {
       stopSim()

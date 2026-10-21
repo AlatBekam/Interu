@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
+import ScopeBar from '../../components/ScopeBar'
 import { Panel, Disclaimer } from '../../components/ui'
 import { IconForward, IconX, IconHistory, IconGlobe, IconPlay, IconStop } from '../../components/icons'
 import { HTTP_HISTORY, rawRequest, rawResponse } from '../../data/burp'
@@ -129,9 +130,11 @@ export default function Proxy() {
         <Disclaimer>
           <strong>Real intercepting proxy with HTTPS MITM.</strong> Start it, then hit <strong>Open Browser</strong>
           (routes through the proxy & trusts the Interu CA automatically) — both http and https traffic are
-          decrypted and captured. For an external browser, use <strong>Export CA</strong> and trust it. Only
-          proxy systems you are authorized to test.
+          decrypted and captured. For an external browser, use <strong>Export CA</strong> and trust it. Only hosts
+          in the <strong>Authorized scope</strong> are decrypted and captured; everything else passes through untouched.
         </Disclaimer>
+
+        <div className="mt-16"><ScopeBar /></div>
 
         <div className="intercept-bar mt-16">
           <span className={`status-dot ${running ? 'on' : 'off'}`} />

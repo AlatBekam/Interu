@@ -33,6 +33,7 @@ const api = {
     stop: (): Promise<void> => ipcRenderer.invoke('ruy:proxy:stop'),
     status: (): Promise<{ running: boolean }> => ipcRenderer.invoke('ruy:proxy:status'),
     setIntercept: (on: boolean): Promise<{ ok: boolean }> => ipcRenderer.invoke('ruy:proxy:intercept', on),
+    setScope: (scope: string[]): Promise<{ ok: boolean }> => ipcRenderer.invoke('ruy:proxy:scope', scope),
     resolve: (id: number, action: 'forward' | 'drop', raw?: string): Promise<{ ok: boolean }> =>
       ipcRenderer.invoke('ruy:proxy:resolve', { id, action, raw }),
     openBrowser: (url?: string): Promise<{ ok: boolean; error?: string }> =>

@@ -3,6 +3,8 @@ import https from 'node:https'
 import { URL } from 'node:url'
 import type { HttpReq, HttpRes } from '../shared/http'
 
+const MAX_BODY = 5 * 1024 * 1024
+
 // Real HTTP(S) client running in the Electron main process. Gives full control
 // over method, path, headers and body (unlike fetch), and returns the raw
 // response the way a proxy tool should. Self-signed certs are accepted because
@@ -41,13 +43,17 @@ export function sendHttp(req: HttpReq): Promise<HttpRes> {
 
     const r = lib.request(options, (res) => {
       const chunks: Buffer[] = []
-      res.on('data', (c) => chunks.push(c as Buffer))
-      res.on('end', () => {
+      let size = 0
+      let finished = false
+      const finish = (): void => {
+        if (finished) return
+        finished = true
         const buf = Buffer.concat(chunks)
         const bodyStr = buf.toString('utf8')
         const statusLine = `HTTP/${res.httpVersion} ${res.statusCode} ${res.statusMessage || ''}`.trim()
+        // One line per Set-Cookie so cookie rules can check each cookie's flags.
         const headerLines = Object.entries(res.headers)
-          .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+          .map(([k, v]) => (Array.isArray(v) ? v.map((x) => `${k}: ${x}`).join('\r\n') : `${k}: ${v}`))
           .join('\r\n')
         resolve({
           ok: true,
@@ -59,7 +65,15 @@ export function sendHttp(req: HttpReq): Promise<HttpRes> {
           timingMs: Date.now() - started,
           size: buf.length
         })
+      }
+      res.on('data', (c: Buffer) => {
+        if (finished) return
+        chunks.push(c)
+        size += c.length
+        // Cap the body so a huge or endless response can't exhaust memory.
+        if (size >= MAX_BODY) { finish(); r.destroy() }
       })
+      res.on('end', finish)
     })
 
     r.on('error', (e) => resolve({ ok: false, timingMs: Date.now() - started, size: 0, error: e.message }))

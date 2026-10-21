@@ -32,10 +32,10 @@ const NAV = [
 
   { to: '/scanner', label: 'Network Scanner', icon: IconScan, group: 'Operations' },
   { to: '/vulnerabilities', label: 'Vulnerabilities', icon: IconBug, group: 'Operations' },
-
-  { to: '/detection', label: 'Rule Engine', icon: IconShieldAlert, group: 'Detection' },
   { to: '/threats', label: 'Threat Monitor', icon: IconRadar, group: 'Operations' },
   { to: '/firewall', label: 'Firewall Rules', icon: IconFirewall, group: 'Operations' },
+
+  { to: '/detection', label: 'Rule Engine', icon: IconShieldAlert, group: 'Detection' },
 
   { to: '/reports', label: 'Reports', icon: IconReport, group: 'Analysis' },
   { to: '/settings', label: 'Settings', icon: IconSettings, group: 'System' }

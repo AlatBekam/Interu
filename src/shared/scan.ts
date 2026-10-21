@@ -191,8 +191,16 @@ export function intToIp(n: number): string {
 
 /** Largest expansion we allow for a single target, to keep the UI responsive. */
 export const MAX_IPS = 4096
-/** Hard ceiling on total connection attempts (ips × ports) per scan. */
-export const MAX_ATTEMPTS = 65536
+/** Hard ceiling on total connection attempts (ips × ports) per scan. Sized so a
+ *  /24 fits the standard/deep profile (254 × 705).
+ *  ponytail: a fully filtered run can take ~20 min at 256 sockets; add adaptive
+ *  timeouts if larger targets are ever needed. */
+export const MAX_ATTEMPTS = 262144
+
+/** CIDR mask must be 1–2 digits; `Number('')` would otherwise read as /0. */
+function parseMask(maskStr: string | undefined): number {
+  return maskStr !== undefined && /^\d{1,2}$/.test(maskStr) ? Number(maskStr) : -1
+}
 
 export interface ExpandResult {
   ips: string[]
@@ -228,8 +236,8 @@ function expandToken(tok: string): ExpandResult {
   // CIDR
   if (tok.includes('/')) {
     const [base, maskStr] = tok.split('/')
-    const mask = Number(maskStr)
-    if (!isIpv4(base) || !Number.isInteger(mask) || mask < 0 || mask > 32) {
+    const mask = parseMask(maskStr)
+    if (!isIpv4(base) || mask < 0 || mask > 32) {
       return { ips: [], error: `CIDR tidak valid: ${tok}` }
     }
     const baseInt = ipToInt(base)
@@ -265,7 +273,9 @@ function expandToken(tok: string): ExpandResult {
     return { ips }
   }
   // single IP
-  if (isIpv4(tok)) return { ips: [tok] }
+  // Normalize so the socket gets the same address the scope gate checked
+  // (`010.0.0.1` would otherwise reach the resolver and may be read as octal).
+  if (isIpv4(tok)) return { ips: [intToIp(ipToInt(tok))] }
   return { ips: [], error: `Bukan IP/CIDR/range yang valid: ${tok} (hostname belum didukung, pakai IP).` }
 }
 
@@ -282,8 +292,8 @@ export function ipInScope(ip: string, scope: string[]): boolean {
     if (!s) return false
     if (s.includes('/')) {
       const [base, maskStr] = s.split('/')
-      const mask = Number(maskStr)
-      if (!isIpv4(base) || !Number.isInteger(mask) || mask < 0 || mask > 32) return false
+      const mask = parseMask(maskStr)
+      if (!isIpv4(base) || mask < 0 || mask > 32) return false
       const baseInt = ipToInt(base)
       const maskBits = mask === 0 ? 0 : (0xffffffff << (32 - mask)) >>> 0
       return (target & maskBits) >>> 0 === (baseInt & maskBits) >>> 0
