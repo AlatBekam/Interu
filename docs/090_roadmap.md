@@ -59,8 +59,9 @@ Urutan ini mengikuti dependensi data: scanner menghasilkan aset, Rule Engine men
 
 ## Fase 4 — Lintas fitur
 
-- **Audit log** untuk setiap request live, scan, perubahan rule, dan penolakan scope.
+- ✔ **Audit log** untuk setiap request live, scan, proxy, dan penolakan scope/RoE ([051](051_roe-audit-log.md)). Berikutnya: tanda tangan digital head hash dan rotasi log proxy.
+- ✔ **Paket bukti, retest, Attack Path** ([052](052_paket-bukti.md), [053](053_retest.md), [054](054_attack-path.md)). Berikutnya: Reports memakai bukti + hasil retest, ekspor zip, ID ATT&CK di semua template.
 - **Test unit:** ✔ vitest sudah terpasang (`npm test`) untuk scope dan rule cookie. Berikutnya: `lineDiff`, `shannonBitsPerChar`, pasangan Decoder, dan template rules lainnya.
 - **CI** (GitHub Actions) yang menjalankan `typecheck` dan `npm test`.
-- **Pemetaan MITRE ATT&CK** dan Attack Path Graph, sesuai info.txt §5. Field `mitre` sudah ada di sebagian template.
+- 🟡 **Pemetaan MITRE ATT&CK:** Attack Path Graph sudah ada; taktik masih heuristik karena baru 3 template yang punya ID teknik.
 - **Konsistensi branding:** sisa nama "RUY" (`window.ruy`, `ruy:*`, `ruy.v1.*`) masih dipertahankan. Jika diganti, perlu migrasi localStorage.

@@ -63,6 +63,16 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 | [040 Pengantar Detection](040_detection.md) | — | Alur scanner/proxy/probe → Rule Engine → findings |
 | [041 Rule Engine](041_rule-engine.md) | ✅ | 27 template bergaya Nuclei; Suspected vs Confirmed; probe aktif scope-gated |
 
+### 05 — Operasi Terkendali (pembeda)
+
+| Dokumen | Status | Catatan utama |
+|---|---|---|
+| [050 Pengantar Operasi Terkendali](050_operasi-terkendali.md) | — | Siklus diizinkan → dilakukan → dibuktikan → diverifikasi |
+| [051 RoE & Audit Log](051_roe-audit-log.md) | ✅ | Tanpa RoE semua trafik diblokir; log JSONL berantai SHA-256 |
+| [052 Paket Bukti](052_paket-bukti.md) | ✅ | Request/response mentah di disk; ekspor + manifest + verifikasi |
+| [053 Retest](053_retest.md) | ✅ | Uji ulang temuan; riwayat ditambah, bukti lama tetap |
+| [054 Attack Path](054_attack-path.md) | ✅ | Graf host → service → temuan per taktik ATT&CK |
+
 ### 09 — Penutup
 
 | Dokumen | Isi |
@@ -82,6 +92,8 @@ flowchart TD
     D --> F["031 Dashboard dari findings nyata"]
     E --> F
     D --> G["036 Reports dari findings + PDF"]
-    F --> H["090 Lintas fitur<br/>audit log, CI"]
+    D --> O["✔ 05 Operasi Terkendali<br/>RoE · audit log · bukti · retest · attack path"]
+    O --> G
+    F --> H["090 Lintas fitur<br/>CI, tanda tangan bukti"]
     G --> H
 ```

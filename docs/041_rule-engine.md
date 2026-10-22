@@ -1,6 +1,6 @@
 # 041 — Rule Engine
 
-← [040 — Detection (Pengantar Kelompok)](040_detection.md) · [Index](000_index.md) · [090 — Roadmap](090_roadmap.md) →
+← [040 — Detection (Pengantar Kelompok)](040_detection.md) · [Index](000_index.md) · [050 — Operasi Terkendali](050_operasi-terkendali.md) →
 
 ## Status
 
@@ -142,5 +142,5 @@ Semua `svc-*` **suspected** karena yang diketahui hanya nomor port, bukan layana
 - [ ] Extractor (versi, token) ke field terstruktur.
 - [ ] Pakai matcher `time`/`service` (mis. time-based check, verifikasi service dari banner).
 - [ ] Muat template dari file eksternal (YAML/JSON) agar bisa ditambah tanpa rebuild.
-- [ ] Simpan bukti request/response lengkap per temuan untuk Reports.
+- [x] Simpan bukti request/response lengkap per temuan (lihat [052](052_paket-bukti.md)); Reports belum memakainya.
 - [x] Perbarui komentar kepala `rules.ts` agar sesuai (port = suspected).
