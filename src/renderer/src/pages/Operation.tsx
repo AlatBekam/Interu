@@ -55,6 +55,7 @@ export default function Operation() {
   }
 
   const exportPkg = async () => {
+    setCheck(null) // the log grows, so an earlier "intact" result is stale
     const r = await window.ruy.evidence.export()
     setPkgNote(r.ok
       ? { ok: true, lines: [`Exported ${r.count} evidence file(s) to:`, r.dir || '', `Fingerprint (sha256 manifest.json): ${r.fingerprint}`] }
@@ -65,6 +66,7 @@ export default function Operation() {
   const verifyPkg = async () => {
     const r = await window.ruy.evidence.verify()
     if ('cancelled' in r) return
+    setCheck(null)
     const extra = r.unlisted.length ? [`File tidak tercantum di manifest: ${r.unlisted.join(', ')}`] : []
     setPkgNote(r.ok && r.unlisted.length === 0
       ? { ok: true, lines: [
@@ -99,7 +101,8 @@ export default function Operation() {
           <Stat label="Chain" value={check ? (check.ok ? 'Intact' : 'Broken') : '—'} meta={check ? (check.ok ? `${check.count} entries` : `line ${check.brokenAt}`) : 'not verified'} />
         </div>
 
-        <div className="grid grid-2 mt-24" style={{ alignItems: 'start' }}>
+        {/* minmax(0, 1fr): let the audit table scroll inside its panel instead of widening the page. */}
+        <div className="grid grid-2 mt-24" style={{ alignItems: 'start', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))' }}>
           <Panel title="Rules of Engagement" sub="Saved in the main process; changes are audited">
             <div style={{ display: 'grid', gap: 14 }}>
               <label className="field">
@@ -160,15 +163,19 @@ export default function Operation() {
             {check && <div className="mono small muted" style={{ marginBottom: 12, wordBreak: 'break-all' }}>{check.file}</div>}
             <div className="table-wrap" style={{ maxHeight: 520, overflow: 'auto' }}>
               <table className="data">
-                <thead><tr><th>#</th><th>Time</th><th>Action</th><th>Target</th><th>Result</th></tr></thead>
+                <thead><tr><th>#</th><th>Time</th><th>Action</th><th>Result</th><th>Target</th></tr></thead>
                 <tbody>
                   {[...entries].reverse().map((e) => (
                     <tr key={e.seq}>
                       <td className="mono small">{e.seq}</td>
                       <td className="mono small">{new Date(e.at).toLocaleTimeString('en-GB', { hour12: false })}</td>
                       <td className="mono small">{e.action}</td>
-                      <td className="mono small" style={{ maxWidth: 260, wordBreak: 'break-all' }} title={e.detail}>{e.target}{e.detail && <div className="muted">{e.detail}</div>}</td>
                       <td><span className={`pill ${resultPill(e.result)}`}><span className="pd" />{e.result}</span></td>
+                      {/* A width on the cell itself does not bound an auto-layout table; bound the content instead. */}
+                      <td className="mono small" title={e.detail ? `${e.target}\n${e.detail}` : e.target}>
+                        <div style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.target}</div>
+                        {e.detail && <div className="muted" style={{ maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.detail}</div>}
+                      </td>
                     </tr>
                   ))}
                   {entries.length === 0 && <tr><td colSpan={5}><div className="empty">No audit entries yet.</div></td></tr>}
