@@ -95,6 +95,28 @@ export interface Finding {
   mitre?: string[]
   source: 'scanner' | 'proxy' | 'active'
   at: string
+  /** active only: the exact request that proved it, so a retest can replay it. */
+  req?: HttpReq
+  /** raw HTTP exchange kept as evidence (capped at RAW_CAP chars each). */
+  raw?: { request: string; response: string }
+  /** retest history, oldest first; never replaces the original evidence. */
+  retests?: RetestRecord[]
+}
+
+export type RetestStatus = 'closed' | 'open' | 'changed' | 'untestable' | 'error'
+
+export interface RetestRecord {
+  at: string
+  status: RetestStatus
+  /** evidence seen on this retest (open/changed) or why it could not run. */
+  note?: string
+}
+
+export const RAW_CAP = 50000
+
+function rawRequest(req: HttpReq): string {
+  const head = Object.entries(req.headers || {}).map(([k, v]) => `${k}: ${v}`).join('\r\n')
+  return `${req.method} ${req.url} HTTP/1.1\r\n${head}\r\n\r\n${req.body || ''}`.slice(0, RAW_CAP)
 }
 
 // ----------------------------------------------------------------- matchers
@@ -260,7 +282,11 @@ export function analyzeHttpResponse(entry: ProxyLogEntry, at = new Date().toISOS
     const r = evalTemplate(t, undefined, ctx)
     // Header-only rules describe the whole site: one finding per origin, not per URL.
     const siteWide = t.matchers.every((m) => m.part === 'header')
-    if (r.ok) out.push(toFinding(t, siteWide ? origin : entry.url, r.evidence, 'proxy', at))
+    if (r.ok) {
+      const f = toFinding(t, siteWide ? origin : entry.url, r.evidence, 'proxy', at)
+      f.raw = { request: (entry.request || '').slice(0, RAW_CAP), response: entry.response.slice(0, RAW_CAP) }
+      out.push(f)
+    }
   }
   return out
 }
@@ -285,7 +311,7 @@ export function buildActiveRequest(t: Template, baseUrl: string): HttpReq | null
 }
 
 /** Evaluate an active template against the real response it produced. */
-export function matchActive(t: Template, url: string, res: HttpRes, at = new Date().toISOString()): Finding | null {
+export function matchActive(t: Template, req: HttpReq, res: HttpRes, at = new Date().toISOString()): Finding | null {
   if (!res || res.ok === false) return null
   const ctx: HttpCtx = {
     status: res.status,
@@ -295,7 +321,11 @@ export function matchActive(t: Template, url: string, res: HttpRes, at = new Dat
     timeMs: res.timingMs
   }
   const r = evalTemplate(t, undefined, ctx)
-  return r.ok ? toFinding(t, url, r.evidence, 'active', at) : null
+  if (!r.ok) return null
+  const f = toFinding(t, req.url, r.evidence, 'active', at)
+  f.req = req
+  f.raw = { request: rawRequest(req), response: ctx.responseRaw.slice(0, RAW_CAP) }
+  return f
 }
 
 export const SEVERITY_RANK: Record<RuleSeverity, number> = { critical: 0, high: 1, medium: 2, low: 3, info: 4 }

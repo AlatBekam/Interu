@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { HttpReq, HttpRes } from '../shared/http'
 import type { ScanRequest, ScanResult, ScanEvent } from '../shared/scan'
+import type { Roe, Technique } from '../shared/roe'
+import type { AuditEntry, ChainCheck } from '../shared/audit'
+import type { Finding } from '../shared/rules'
 
 // The renderer cannot make raw cross-origin requests under the app's CSP, so
 // real HTTP traffic (Repeater / live modules) goes through the main process via
@@ -13,8 +16,26 @@ const api = {
     node: process.versions.node
   },
   http: {
-    send: (req: HttpReq, scope: string[]): Promise<HttpRes> =>
-      ipcRenderer.invoke('ruy:http', { req, scope })
+    send: (req: HttpReq, scope: string[], technique: Technique): Promise<HttpRes> =>
+      ipcRenderer.invoke('ruy:http', { req, scope, technique })
+  },
+  roe: {
+    get: (): Promise<Roe | null> => ipcRenderer.invoke('ruy:roe:get'),
+    set: (roe: Roe): Promise<{ ok: boolean; roe?: Roe; error?: string }> => ipcRenderer.invoke('ruy:roe:set', roe)
+  },
+  audit: {
+    list: (limit?: number): Promise<AuditEntry[]> => ipcRenderer.invoke('ruy:audit:list', limit),
+    verify: (): Promise<ChainCheck & { file: string }> => ipcRenderer.invoke('ruy:audit:verify')
+  },
+  evidence: {
+    save: (finding: Finding): Promise<{ ok: boolean; file?: string; error?: string }> => ipcRenderer.invoke('ruy:evidence:save', finding),
+    export: (): Promise<{ ok: boolean; dir?: string; count?: number; fingerprint?: string; error?: string }> =>
+      ipcRenderer.invoke('ruy:evidence:export'),
+    verify: (): Promise<
+      | { ok: true; count: number; dir: string; fingerprint: string; unlisted: string[]; exportedHere: boolean }
+      | { ok: false; problems: string[]; dir: string; fingerprint: string; unlisted: string[]; exportedHere: boolean }
+      | { ok: false; cancelled: true }
+    > => ipcRenderer.invoke('ruy:evidence:verify')
   },
   scan: {
     run: (req: ScanRequest, scope: string[], scanId: number): Promise<ScanResult> =>

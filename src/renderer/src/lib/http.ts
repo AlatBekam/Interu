@@ -1,4 +1,5 @@
 import type { HttpReq, HttpRes } from '../../../shared/http'
+import type { Technique } from '../../../shared/roe'
 
 export type { HttpReq, HttpRes }
 
@@ -53,10 +54,10 @@ export function rawFromParts(method: string, host: string, path: string): string
   return `${method} ${path} HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: Interu/1.0\r\nAccept: */*\r\nConnection: close\r\n\r\n`
 }
 
-/** Send a real request through the main process, gated by scope. */
-export async function sendLive(req: HttpReq, scope: string[]): Promise<HttpRes> {
+/** Send a real request through the main process, gated by scope and the RoE. */
+export async function sendLive(req: HttpReq, scope: string[], technique: Technique): Promise<HttpRes> {
   if (!window.ruy?.http) {
     return { ok: false, timingMs: 0, size: 0, error: 'HTTP bridge unavailable' }
   }
-  return window.ruy.http.send(req, scope)
+  return window.ruy.http.send(req, scope, technique)
 }

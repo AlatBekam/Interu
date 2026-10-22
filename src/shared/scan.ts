@@ -27,6 +27,16 @@ export interface ScanRequest {
   profile: ScanProfile
   /** Per-connection timeout in ms (optional; engine has a sane default). */
   timeoutMs?: number
+  /** Explicit ports instead of the profile's set (used by retest; see explicitPorts). */
+  ports?: number[]
+  /** Checked against the RoE as technique "retest" instead of "scan". */
+  retest?: boolean
+}
+
+/** Validate an untrusted explicit port list: 1–64 integer ports in 1..65535, else null. */
+export function explicitPorts(x: unknown): number[] | null {
+  if (!Array.isArray(x) || x.length === 0 || x.length > 64) return null
+  return x.every((p) => Number.isInteger(p) && p >= 1 && p <= 65535) ? Array.from(new Set(x as number[])).sort((a, b) => a - b) : null
 }
 
 export interface ScanSummary {

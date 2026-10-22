@@ -57,7 +57,7 @@ export default function Repeater() {
       setSending(false)
       return
     }
-    const res = await sendLive(req, settings.scope)
+    const res = await sendLive(req, settings.scope, 'repeater')
     setSending(false)
     if (!res.ok) {
       setNote(`⚠ ${res.error ?? 'request failed'}`)

@@ -4,6 +4,7 @@ import net from 'node:net'
 import tls from 'node:tls'
 import { URL } from 'node:url'
 import { getHostCert } from './ca'
+import { authorize } from './audit'
 import { hostInScope } from '../shared/http'
 
 // A real intercepting forward proxy with HTTPS MITM.
@@ -95,6 +96,16 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
   clientReq.on('end', async () => {
     const reqBody = Buffer.concat(reqChunks)
     let rawReq = buildRawReq(clientReq.method || 'GET', u, clientReq.headers, reqBody)
+
+    // In-scope traffic is the operation itself: it must also fit the RoE (window
+    // may close mid-session). Out-of-scope traffic is never captured or logged.
+    if (inScope) {
+      const check = authorize('proxy', `${clientReq.method} ${u.href}`)
+      if (!check.ok) {
+        try { clientRes.writeHead(403, { 'content-type': 'text/plain; charset=utf-8' }); clientRes.end('Blocked by Interu RoE: ' + check.reason) } catch { /* gone */ }
+        return
+      }
+    }
 
     if (intercepting && inScope) {
       emit('ruy:proxy:intercept', { id, raw: rawReq.slice(0, CAP), host: u.host, method: clientReq.method, path: u.pathname + u.search })

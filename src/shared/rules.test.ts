@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { analyzeHttpResponse } from './rules'
+import { analyzeHttpResponse, matchActive, TEMPLATES } from './rules'
 import type { ProxyLogEntry } from './proxy'
 
 const entry = (headers: string, url = 'https://shop.test/a?x=1'): ProxyLogEntry => ({
@@ -21,6 +21,21 @@ describe('cookie rules', () => {
     const found = ids('set-cookie: a=1; HttpOnly; Secure')
     expect(found).not.toContain('http-cookie-httponly')
     expect(found).not.toContain('http-cookie-secure')
+  })
+})
+
+describe('raw evidence', () => {
+  it('keeps the replayable request and raw exchange on active findings', () => {
+    const t = TEMPLATES.find((x) => x.id === 'expose-git-config')!
+    const req = { method: 'GET', url: 'http://10.0.0.5/.git/config', headers: { 'User-Agent': 'Interu/1.0' } }
+    const f = matchActive(t, req, { ok: true, status: 200, rawHeaders: 'content-type: text/plain', body: '[core]\nrepositoryformatversion = 0', timingMs: 5, size: 40 })
+    expect(f?.req).toEqual(req)
+    expect(f?.raw?.request).toContain('GET http://10.0.0.5/.git/config')
+    expect(f?.raw?.response).toContain('repositoryformatversion')
+  })
+  it('keeps the captured exchange on proxy findings', () => {
+    const csp = analyzeHttpResponse(entry('')).find((f) => f.templateId === 'http-missing-csp')
+    expect(csp?.raw?.response).toContain('HTTP/1.1 200 OK')
   })
 })
 

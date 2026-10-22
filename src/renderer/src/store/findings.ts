@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from 'react'
-import type { Finding } from '../../../shared/rules'
+import type { Finding, RetestRecord } from '../../../shared/rules'
 import { sortFindings } from '../../../shared/rules'
+import { appendRetest } from '../../../shared/retest'
 
 // =========================================================================
 // Shared Rule-Engine findings store. The Network Scanner and Proxy WRITE
@@ -59,14 +60,30 @@ export function addFindings(incoming: Finding[]): number {
   const byKey = new Map(state.map((f) => [f.key, f]))
   let added = 0
   for (const f of incoming) {
-    if (!byKey.has(f.key)) added++
-    byKey.set(f.key, f)
+    const prev = byKey.get(f.key)
+    if (!prev) added++
+    // Write evidence to disk in main when a finding is first confirmed or its proof changes;
+    // repeated identical sightings (same header on every proxied page) are skipped.
+    if (f.confidence === 'confirmed' && (!prev || prev.confidence !== 'confirmed' || prev.evidence !== f.evidence)) {
+      void window.ruy?.evidence?.save(f).catch(() => {})
+    }
+    // Fresh evidence wins in the list (the earlier proof stays on disk); retest history is kept.
+    byKey.set(f.key, prev?.retests ? { ...f, retests: prev.retests } : f)
   }
   // Keep the most severe MAX_FINDINGS so heavy proxy traffic can't grow the list unbounded.
   state = sortFindings(Array.from(byKey.values())).slice(0, MAX_FINDINGS)
   save(state)
   emit()
   return added
+}
+
+/** Append a retest result to a finding's history and snapshot it as evidence. */
+export function recordRetest(key: string, rec: RetestRecord): void {
+  state = appendRetest(state, key, rec)
+  save(state)
+  emit()
+  const f = state.find((x) => x.key === key)
+  if (f) void window.ruy?.evidence?.save(f).catch(() => {})
 }
 
 export function clearFindings(): void {

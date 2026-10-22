@@ -62,7 +62,7 @@ export default function Target() {
     for (let i = 0; i < WORDLIST.length; i++) {
       if (stopFlag.current) break
       const path = WORDLIST[i]
-      const res = await sendLive({ method: 'GET', url: base + path, headers: { 'User-Agent': 'Interu/1.0' } }, settings.scope)
+      const res = await sendLive({ method: 'GET', url: base + path, headers: { 'User-Agent': 'Interu/1.0' } }, settings.scope, 'discovery')
       if (res.ok && res.status !== 404) {
         setHits((h) => [...h, { path, status: res.status ?? 0, length: res.size, ms: res.timingMs, raw: res.raw }])
       }

@@ -6,9 +6,12 @@ import { sendHttp } from './http'
 import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunning, getPort } from './proxy'
 import { exportCA } from './ca'
 import { runScan, cancelScan } from './scan'
+import { audit, authorize, getRoe, setRoe, listAudit, verifyAudit } from './audit'
+import { saveEvidence, exportEvidence, verifyEvidence } from './evidence'
+import { isTechnique } from '../shared/roe'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
-import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, MAX_ATTEMPTS } from '../shared/scan'
+import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, explicitPorts, MAX_ATTEMPTS } from '../shared/scan'
 import type { ScanRequest, ScanResult, ScanEvent } from '../shared/scan'
 
 function mainAppWindow(): BrowserWindow | null {
@@ -120,20 +123,30 @@ if (!gotLock) {
   })
 
   // --- Real HTTP sender, gated by the operator-declared authorization scope ---
-  ipcMain.handle('ruy:http', async (_e, payload: { req: HttpReq; scope: string[] }) => {
-    const { req, scope } = payload || ({} as { req: HttpReq; scope: string[] })
+  ipcMain.handle('ruy:http', async (_e, payload: { req: HttpReq; scope: string[]; technique?: unknown }) => {
+    const { req, scope, technique } = payload || ({} as { req: HttpReq; scope: string[]; technique?: unknown })
     if (!req || !req.url) return { ok: false, timingMs: 0, size: 0, error: 'No request' }
-    if (!hostInScope(req.url, scope || [])) {
-      return {
-        ok: false,
-        blocked: true,
-        timingMs: 0,
-        size: 0,
-        error: 'Target host is not in the authorized scope. Add it in Scope first.'
-      }
+    if (!isTechnique(technique) || technique === 'scan' || technique === 'proxy') {
+      return { ok: false, blocked: true, timingMs: 0, size: 0, error: 'Teknik permintaan tidak dikenal; ditolak oleh RoE.' }
     }
+    const scopeError = hostInScope(req.url, scope || [])
+      ? undefined
+      : 'Target host is not in the authorized scope. Add it in Scope first.'
+    const check = authorize(technique, `${req.method} ${req.url}`, scopeError)
+    if (!check.ok) return { ok: false, blocked: true, timingMs: 0, size: 0, error: check.reason }
     return sendHttp(req)
   })
+
+  // --- Rules of Engagement + hash-chained audit log ---
+  ipcMain.handle('ruy:roe:get', () => getRoe())
+  ipcMain.handle('ruy:roe:set', (_e, roe: unknown) => setRoe(roe))
+  ipcMain.handle('ruy:audit:list', (_e, limit?: number) => listAudit(typeof limit === 'number' && limit > 0 ? Math.min(limit, 2000) : 200))
+  ipcMain.handle('ruy:audit:verify', () => verifyAudit())
+  ipcMain.handle('ruy:evidence:save', (_e, finding: unknown) => saveEvidence(finding))
+  ipcMain.handle('ruy:evidence:export', () => {
+    try { return exportEvidence() } catch (e) { return { ok: false, error: (e as Error).message } }
+  })
+  ipcMain.handle('ruy:evidence:verify', () => verifyEvidence())
 
   // --- Real TCP connect scanner, gated by the operator-declared scope ---
   let scanSeq = 1
@@ -147,16 +160,17 @@ if (!gotLock) {
 
     // Scope gate: every target IP must be authorized (exact IP or a CIDR in scope).
     const gate = targetsInScope(exp.ips, scope || [])
-    if (!gate.ok) {
-      return {
-        ok: false,
-        blocked: true,
-        error: `IP ${gate.offending} di luar Authorized scope. Tambahkan host/CIDR yang kamu punya izinnya (mis. 10.20.0.0/24) di Scope dulu.`
-      }
-    }
+    const custom = req.ports === undefined ? null : explicitPorts(req.ports)
+    if (req.ports !== undefined && !custom) return { ok: false, error: 'Daftar port tidak valid (1–64 port, 1–65535).' }
+    const check = authorize(
+      req.retest === true ? 'retest' : 'scan',
+      `${req.target.trim()} (${custom ? 'ports ' + custom.join(',') : req.profile})`,
+      gate.ok ? undefined : `IP ${gate.offending} di luar Authorized scope. Tambahkan host/CIDR yang kamu punya izinnya (mis. 10.20.0.0/24) di Scope dulu.`
+    )
+    if (!check.ok) return { ok: false, blocked: true, error: check.reason }
 
     const profile = req.profile === 'quick' || req.profile === 'deep' ? req.profile : 'standard'
-    const ports = profilePorts(profile)
+    const ports = custom || profilePorts(profile)
     const attempts = exp.ips.length * ports.length
     if (attempts > MAX_ATTEMPTS) {
       return {
@@ -191,8 +205,18 @@ if (!gotLock) {
   ipcMain.handle('ruy:scan:cancel', (_e, scanId: number) => { cancelScan(scanId); return { ok: true } })
 
   // --- Real intercepting forward proxy ---
-  ipcMain.handle('ruy:proxy:start', (_e, port: number) => startProxy(port || 8080, emitToRenderer))
-  ipcMain.handle('ruy:proxy:stop', () => { proxiedSessionPort = -1; return stopProxy() })
+  ipcMain.handle('ruy:proxy:start', (_e, port: unknown) => {
+    const p = port === undefined || port === null || port === 0 ? 8080 : port
+    if (!Number.isInteger(p) || (p as number) < 1 || (p as number) > 65535) return { ok: false, error: 'Port proxy tidak valid (1–65535).' }
+    const check = authorize('proxy', `127.0.0.1:${p}`)
+    if (!check.ok) return { ok: false, error: check.reason }
+    return startProxy(p as number, emitToRenderer)
+  })
+  ipcMain.handle('ruy:proxy:stop', () => {
+    proxiedSessionPort = -1
+    if (isRunning()) audit({ action: 'proxy:stop', target: `127.0.0.1:${getPort()}`, result: 'info' })
+    return stopProxy()
+  })
   ipcMain.handle('ruy:proxy:status', () => ({ running: isRunning() }))
   ipcMain.handle('ruy:proxy:intercept', (_e, on: boolean) => { setIntercept(!!on); return { ok: true } })
   ipcMain.handle('ruy:proxy:scope', (_e, scope: string[]) => { setScope(scope); return { ok: true } })
@@ -216,6 +240,8 @@ if (!gotLock) {
       if (!isRunning()) return { ok: false, error: 'Start the proxy first' }
       const port = getPort()
       const url = startUrl && /^https?:\/\//.test(startUrl) ? startUrl : 'http://example.com/'
+      const check = authorize('proxy', `browser ${url}`)
+      if (!check.ok) return { ok: false, error: check.reason }
       // Non-persistent session: a clean browser profile each time the app runs,
       // so stale cache / service workers from a previous run can't blank the page.
       const ses = session.fromPartition('interu-proxied')

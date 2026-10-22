@@ -81,7 +81,7 @@ export default function Intruder() {
       const p = payloads[i]
       const filled = template.replace(/§[^§]*§/, p.replace(/"/g, '\\"'))
       const req = parseRawRequest(filled, target)
-      const res = await sendLive(req, settings.scope)
+      const res = await sendLive(req, settings.scope, 'intruder')
       if (baseLen < 0 && res.ok) baseLen = res.size
       const outlier = res.ok && ((typeof res.status === 'number' && res.status >= 500) || (baseLen >= 0 && Math.abs(res.size - baseLen) > Math.max(40, baseLen * 0.25)))
       setRows((r) => [...r, {

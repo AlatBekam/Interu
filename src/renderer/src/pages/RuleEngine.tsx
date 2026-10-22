@@ -61,9 +61,9 @@ export default function RuleEngine() {
       if (!req) continue
       setLog((l) => [...l, `> probe ${t.info.name}  (${req.method} ${req.url})`])
       try {
-        const res = await window.ruy.http.send(req, settings.scope)
-        if (res.blocked) { setLog((l) => [...l, `  ⛔ blocked by scope`]); break }
-        const finding = matchActive(t, req.url, res)
+        const res = await window.ruy.http.send(req, settings.scope, 'active')
+        if (res.blocked) { setLog((l) => [...l, `  ⛔ blocked: ${res.error || 'scope / RoE'}`]); break }
+        const finding = matchActive(t, req, res)
         if (finding) {
           collected.push(finding)
           setLog((l) => [...l, `  ✔ CONFIRMED — ${finding.name} [${finding.severity}]  (${finding.evidence})`])

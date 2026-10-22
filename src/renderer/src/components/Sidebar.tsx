@@ -16,11 +16,13 @@ import {
   IconColumns,
   IconSequence,
   IconGlobe,
-  IconShieldAlert
+  IconShieldAlert,
+  IconLock
 } from './icons'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, group: 'Overview' },
+  { to: '/operation', label: 'Operation (RoE)', icon: IconLock, group: 'Overview' },
 
   { to: '/web/target', label: 'Target / Site Map', icon: IconTarget, group: 'Web Security Suite' },
   { to: '/web/proxy', label: 'Proxy', icon: IconGlobe, group: 'Web Security Suite' },
@@ -36,6 +38,7 @@ const NAV = [
   { to: '/firewall', label: 'Firewall Rules', icon: IconFirewall, group: 'Operations' },
 
   { to: '/detection', label: 'Rule Engine', icon: IconShieldAlert, group: 'Detection' },
+  { to: '/attack-path', label: 'Attack Path', icon: IconTarget, group: 'Detection' },
 
   { to: '/reports', label: 'Reports', icon: IconReport, group: 'Analysis' },
   { to: '/settings', label: 'Settings', icon: IconSettings, group: 'System' }
