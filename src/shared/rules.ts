@@ -26,7 +26,8 @@ import type { ScanHost } from './scan'
 import type { ProxyLogEntry } from './proxy'
 import type { HttpReq, HttpRes } from './http'
 import { evalBool, type DslContext } from './dsl'
-import { kevFor, type KevInfo } from './kev'
+import { kevFor, kevByProduct, type KevInfo } from './kev'
+import { detectProducts, type ProductHit } from './fingerprint'
 
 export type RuleSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 export type Confidence = 'suspected' | 'confirmed'
@@ -366,12 +367,39 @@ export function parseHttpResponse(raw: string): ParsedResponse {
 // ----------------------------------------------------------------- analyzers
 
 /** Passive detection over Network Scanner results. */
+/** Product-level KEV hit: suspected and version-blind. Null when no uncovered KEV CVE remains. */
+function productFinding(
+  hit: ProductHit, target: string, port: number | undefined, source: Finding['source'],
+  covered: Set<string>, at: string
+): Finding | null {
+  const cves = kevByProduct(hit.fingerprint.kevProducts).filter((k) => !covered.has(k.cve))
+  if (cves.length === 0) return null
+  const label = hit.fingerprint.label
+  return {
+    key: `kev-product-${hit.fingerprint.id}|${target}${port != null ? ':' + port : ''}`,
+    templateId: `kev-product-${hit.fingerprint.id}`,
+    name: `${label} detected: ${cves.length} CVE in CISA KEV (version not verified)`,
+    severity: 'medium',
+    confidence: 'suspected',
+    target,
+    port,
+    evidence: hit.evidence,
+    remediation: `Patch ${label} to a supported version and check each CVE's affected range.`,
+    cve: cves.map((k) => k.cve),
+    kev: cves,
+    tags: ['kev-product'],
+    source,
+    at
+  }
+}
+
 export function analyzeScan(hosts: ScanHost[], at = new Date().toISOString()): Finding[] {
   const out: Finding[] = []
   const tpls = TEMPLATES.filter((t) => t.kind === 'port')
   for (const host of hosts) {
     for (const op of host.openPorts) {
       const ctx: PortCtx = { port: op.port, service: op.service, banner: op.version || '' }
+      const portStart = out.length
       for (const t of tpls) {
         if (t.appliesToPorts && !t.appliesToPorts.includes(op.port)) continue
         const r = evalTemplate(t, ctx)
@@ -379,6 +407,12 @@ export function analyzeScan(hosts: ScanHost[], at = new Date().toISOString()): F
           const extracted = runExtractors(t.extractors, t.kind, ctx)
           out.push(toFinding(t, host.ip, r.evidence, 'scanner', at, { port: op.port, extracted, response: ctx.banner || undefined }))
         }
+      }
+      // Product-level KEV hits, minus CVEs a precise template already reported on this port.
+      const covered = new Set(out.slice(portStart).flatMap((f) => f.cve ?? []))
+      for (const hit of detectProducts({ banner: op.version || '' })) {
+        const p = productFinding(hit, host.ip, op.port, 'scanner', covered, at)
+        if (p) out.push(p)
       }
     }
   }
@@ -412,6 +446,11 @@ export function analyzeHttpResponse(entry: ProxyLogEntry, at = new Date().toISOS
         extracted, matchedAt: entry.url, response: clip(parsed.raw)
       }))
     }
+  }
+  // Product fingerprints describe the whole site: one finding per product per origin.
+  for (const hit of detectProducts({ headerText: parsed.headerText, body: parsed.body })) {
+    const p = productFinding(hit, origin, undefined, 'proxy', new Set(), at)
+    if (p) out.push(p)
   }
   return out
 }
