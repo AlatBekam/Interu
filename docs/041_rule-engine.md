@@ -184,6 +184,16 @@ Selain template, mesin mengenali **produk** dari banner scan dan header/meta res
 4. Untuk menambah produk, tambahkan entri di `FINGERPRINTS` (`src/shared/fingerprint.ts`): id, label, `kevProducts` dengan kunci persis dari laporan coverage, serta regex banner/header/body. Lalu tambahkan satu tes deteksi di `fingerprint.test.ts`.
 5. Commit `kev-index.ts` dan perubahan fingerprint bersama-sama.
 
+## Perlu dicek
+
+- **Template `banner-apache-traversal` salah kaitkan CVE.** Template mengaitkan CVE-2021-41773 dan CVE-2021-42013 ke Apache 2.4.49 dan 2.4.50. Menurut NVD, CVE-2021-41773 hanya 2.4.49, sedangkan CVE-2021-42013 untuk 2.4.49 dan 2.4.50. Belum diperbaiki karena berasal dari kode asal (PR #1); perbaikannya kecil: pisahkan pemicu per CVE.
+- **Belum divalidasi pada server asli.** Ignition (`act-ignition`) baru diuji dengan body mock. Apache 2.4.49 belum diuji sebagai server nyata untuk probe apa pun.
+- **Rentang versi belum disimpan.** Daftar CVE per produk tetap buta-versi. Opsi pencocokan versi lewat NVD ditunda sampai ada kebutuhan nyata (lihat catatan keputusan di PR).
+- **Cakupan fingerprint sempit.** Sembilan fingerprint mencakup 10 kunci KEV dari 742 produk. Windows, Exchange, Chromium, dan Apple belum tercakup. Jalankan `npm run kev:coverage` untuk daftar terbaru.
+- **Snapshot KEV perlu disegarkan berkala.** Snapshot saat ini `2026.10.30`. Jalankan `npm run kev:update`, lalu commit hasilnya.
+- **Screenshot e2e ter-track di git** dan berubah setiap kali e2e dijalankan. Pertimbangkan untuk tidak meng-commit folder `testcase/results/`.
+- **408 template hanya diuji dengan marker** di GUI (tiga temuan). Sisanya belum diverifikasi satu per satu terhadap server yang sesuai.
+
 ## File terkait
 
 | File | Fungsi / data utama |
