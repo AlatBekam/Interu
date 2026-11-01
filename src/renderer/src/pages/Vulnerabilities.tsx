@@ -5,6 +5,7 @@ import { IconBug, IconCheck } from '../components/icons'
 import { MOCK_VULNS, Severity, severityPill, SEVERITY_ORDER } from '../data/mock'
 import { usePersistentState } from '../store/store'
 import { useFindings } from '../store/findings'
+import { kevTooltip } from '../../../shared/kev'
 
 type StatusMap = Record<string, 'open' | 'investigating' | 'mitigated'>
 type View = 'live' | 'demo'
@@ -128,7 +129,14 @@ export default function Vulnerabilities() {
                       <td>{f.name}{f.remediation && <div className="small muted">{f.remediation}</div>}</td>
                       <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                       <td className="small muted" style={{ maxWidth: 240 }} title={f.evidence}>{f.evidence}</td>
-                      <td className="mono small">{f.cve?.join(', ') || '—'}</td>
+                      <td className="mono small">
+                        {f.cve?.join(', ') || '—'}
+                        {f.kev?.length ? (
+                          <span className="pill pill-crit" style={{ marginLeft: 6 }} title={kevTooltip(f.kev)}>
+                            <span className="pd" />KEV
+                          </span>
+                        ) : null}
+                      </td>
                       <td className="small muted">{f.source}</td>
                     </tr>
                   ))}

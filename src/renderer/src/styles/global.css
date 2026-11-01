@@ -202,9 +202,10 @@ a { color: var(--steel); text-decoration: none; }
 .grid-4 { grid-template-columns: repeat(4, 1fr); }
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
+.grid-5 { grid-template-columns: repeat(5, 1fr); }
 .span-2 { grid-column: span 2; }
-@media (max-width: 1180px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-3 { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 860px) { .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } .span-2 { grid-column: auto; } }
+@media (max-width: 1180px) { .grid-4 { grid-template-columns: repeat(2, 1fr); } .grid-5 { grid-template-columns: repeat(3, 1fr); } .grid-3 { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 860px) { .grid-5, .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; } .span-2 { grid-column: auto; } }
 
 /* ------------------------------------------------------------------ stat tiles */
 .stat {

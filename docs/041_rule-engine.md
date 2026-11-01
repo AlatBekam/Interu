@@ -145,6 +145,13 @@ Tiap temuan **confirmed** otomatis dapat dua rekomendasi lewat `getAdvice(findin
 
 Anti-FP: advisor **tidak** melakukan deteksi baru — murni menurunkan aksi dari temuan yang sudah confirmed. Diuji di `advice.test.ts` (9 tes).
 
+## CVE pada template aktif
+
+- Helper `expose`, `detect`, dan `af` menerima opsi `cve`. Nilainya disalin ke `classification.cve`, sehingga temuan membawa CVE dan (bila ada di katalog KEV) badge **KEV**.
+- Saat ini hanya **`act-ignition`** (CVE-2021-3129) yang memakai CVE terstruktur, dengan matcher yang mensyaratkan nilai `true`. Template ekspos, panel, dan teknologi **sengaja tidak diberi CVE**, karena "panel terbuka" bukan berarti rentan.
+- Penjaga: `src/shared/cve-tags.test.ts` gagal bila nama template menyebut CVE tanpa mencantumkannya di `classification.cve`.
+- Batasan: validasi `act-ignition` hanya terhadap body mock, belum terhadap instance Laravel asli.
+
 ## File terkait
 
 | File | Fungsi / data utama |

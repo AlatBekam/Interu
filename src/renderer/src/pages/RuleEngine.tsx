@@ -12,6 +12,7 @@ import { setTransfer } from '../store/transfer'
 import { rawFromParts } from '../lib/http'
 import { hostInScope } from '../../../shared/http'
 import { getAdvice } from '../../../shared/advice'
+import { KEV_COUNT, KEV_CATALOG_VERSION, kevTooltip } from '../../../shared/kev'
 import type { AttackKind } from '../../../shared/advice'
 import {
   TEMPLATES, activeTemplates, buildActiveRequest, matchActive, requestVars, computeBaseline,
@@ -169,11 +170,12 @@ export default function RuleEngine() {
           baseline first to suppress false positives. Only authorized targets are probed.
         </Disclaimer>
 
-        <div className="grid grid-4 mt-16">
+        <div className="grid grid-5 mt-16">
           <Stat label="Templates loaded" value={TEMPLATES.length} icon={<IconShieldAlert />} meta={`${actives.length} active`} />
           <Stat label="Findings" value={counts.total} icon={<IconBug />} />
           <Stat label="Confirmed" value={counts.confirmed} meta="proven" />
           <Stat label="Critical / High" value={counts.bad} meta="need action" />
+          <Stat label="CISA KEV" value={KEV_COUNT} icon={<IconBug />} meta={`snapshot ${KEV_CATALOG_VERSION}`} />
         </div>
 
         <ScopeBar />
@@ -256,7 +258,14 @@ export default function RuleEngine() {
                         </td>
                         <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                         <td className="small muted" style={{ maxWidth: 260 }} title={f.evidence}>{f.evidence}</td>
-                        <td className="mono small">{f.cve?.join(', ') || '—'}</td>
+                        <td className="mono small">
+                          {f.cve?.join(', ') || '—'}
+                          {f.kev?.length ? (
+                            <span className="pill pill-crit" style={{ marginLeft: 6 }} title={kevTooltip(f.kev)}>
+                              <span className="pd" />KEV
+                            </span>
+                          ) : null}
+                        </td>
                         <td className="small muted">{f.source}</td>
                       </tr>
                       {open === f.key && (
