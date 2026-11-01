@@ -168,7 +168,8 @@ Selain template, mesin mengenali **produk** dari banner scan dan header/meta res
 | Drupal | meta generator / `X-Generator` | `Drupal\|Core` |
 | Joomla! | meta generator | `Joomla!\|Joomla!` |
 
-- **Version-blind.** Hasil hanya berarti produk itu punya entri KEV, bukan bahwa host rentan. Versi tidak dicocokkan, dan daftar CVE bisa memuat yang tidak berlaku untuk versi yang terpasang (contoh: CVE-2021-41773 muncul untuk Apache 2.4.58, padahal hanya berlaku untuk 2.4.49 dan 2.4.50). Karena itu temuannya `suspected`, berlabel "version not verified", dengan severity `medium`.
+- **Version-blind.** Hasil hanya berarti produk itu punya entri KEV, bukan bahwa host rentan. Versi tidak dicocokkan, dan daftar CVE bisa memuat yang tidak berlaku untuk versi yang terpasang (contoh menurut NVD: untuk Apache 2.4.58 hanya CVE-2024-38475 yang berlaku di antara empat CVE Apache HTTP Server di KEV; CVE-2021-41773 hanya untuk 2.4.49, CVE-2021-42013 untuk 2.4.49 dan 2.4.50, dan CVE-2019-0211 untuk 2.4.17 sampai 2.4.38). Karena itu temuannya `suspected`, berlabel "version not verified", dengan severity `medium`.
+- **Tampilan.** Kolom CVE menampilkan `N KEV CVEs (product)` untuk temuan level produk. Daftar ID ada di tooltip dan di detail temuan Rule Engine, dengan label "not matched to your version". Pencarian di Vulnerabilities tidak mencocokkan ID level produk.
 - **Badge `KEV product`** (kuning), bukan `KEV` (merah). Temuan produk tidak dihitung sebagai "actively exploited", tidak mendapat dorongan prioritas KEV, dan dicatat sebagai `warn` di aktivitas.
 - CVE yang sudah dilaporkan template presisi di port yang sama tidak diulang.
 - Respons Proxy menghasilkan satu temuan per produk per origin.
