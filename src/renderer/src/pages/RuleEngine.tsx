@@ -3,13 +3,14 @@ import TopBar from '../components/TopBar'
 import { Panel, Disclaimer, Stat, Meter } from '../components/ui'
 import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
+import CopyButton from '../components/CopyButton'
 import { severityPill, Severity } from '../data/mock'
 import { useSettings } from '../store/store'
 import { useFindings, addFindings, clearFindings } from '../store/findings'
 import { hostInScope } from '../../../shared/http'
 import {
-  TEMPLATES, activeTemplates, buildActiveRequest, matchActive,
-  Confidence, RuleSeverity, Finding
+  TEMPLATES, activeTemplates, buildActiveRequest, matchActive, requestVars, computeBaseline,
+  Confidence, RuleSeverity, Finding, Baseline
 } from '../../../shared/rules'
 
 const confPill = (c: Confidence): string => (c === 'confirmed' ? 'pill-ok' : 'pill-warn')
@@ -27,26 +28,35 @@ export default function RuleEngine() {
   const [note, setNote] = useState<string | null>(null)
   const [confFilter, setConfFilter] = useState<Confidence | 'all'>('all')
   const [sevFilter, setSevFilter] = useState<RuleSeverity | 'all'>('all')
+  const [showSuperseded, setShowSuperseded] = useState(false)
+  const [open, setOpen] = useState<string | null>(null)
 
   const actives = activeTemplates()
 
-  const counts = useMemo(() => ({
-    total: findings.length,
-    confirmed: findings.filter((f) => f.confidence === 'confirmed').length,
-    suspected: findings.filter((f) => f.confidence === 'suspected').length,
-    bad: findings.filter((f) => f.severity === 'critical' || f.severity === 'high').length
-  }), [findings])
+  const counts = useMemo(() => {
+    const live = findings.filter((f) => !f.superseded)
+    return {
+      total: live.length,
+      confirmed: live.filter((f) => f.confidence === 'confirmed').length,
+      suspected: live.filter((f) => f.confidence === 'suspected').length,
+      bad: live.filter((f) => f.severity === 'critical' || f.severity === 'high').length
+    }
+  }, [findings])
 
   const rows = useMemo(
-    () => findings.filter((f) => (confFilter === 'all' || f.confidence === confFilter) && (sevFilter === 'all' || f.severity === sevFilter)),
-    [findings, confFilter, sevFilter]
+    () => findings.filter((f) =>
+      (showSuperseded || !f.superseded) &&
+      (confFilter === 'all' || f.confidence === confFilter) &&
+      (sevFilter === 'all' || f.severity === sevFilter)),
+    [findings, confFilter, sevFilter, showSuperseded]
   )
 
   const runActive = async () => {
     if (!hasHttp || !window.ruy?.http) { setNote('Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).'); return }
+    const full = /^https?:\/\//i.test(target) ? target : 'http://' + target
     let host = ''
-    try { host = new URL(/^https?:\/\//i.test(target) ? target : 'http://' + target).hostname } catch { setNote('URL target tidak valid.'); return }
-    if (!hostInScope(/^https?:\/\//i.test(target) ? target : 'http://' + target, settings.scope)) {
+    try { host = new URL(full).hostname } catch { setNote('URL target tidak valid.'); return }
+    if (!hostInScope(full, settings.scope)) {
       setNote(`⛔ ${host} belum ada di Authorized scope. Tambahkan dulu di bar di atas.`)
       return
     }
@@ -54,31 +64,59 @@ export default function RuleEngine() {
     setRunning(true)
     setProgress(0)
     setLog([`> running ${actives.length} active check(s) against ${target}`])
-    const collected: Finding[] = []
-    for (let i = 0; i < actives.length; i++) {
-      const t = actives[i]
-      const req = buildActiveRequest(t, target)
-      if (!req) continue
-      setLog((l) => [...l, `> probe ${t.info.name}  (${req.method} ${req.url})`])
-      try {
-        const res = await window.ruy.http.send(req, settings.scope)
-        if (res.blocked) { setLog((l) => [...l, `  ⛔ blocked by scope`]); break }
-        const finding = matchActive(t, req.url, res)
-        if (finding) {
-          collected.push(finding)
-          setLog((l) => [...l, `  ✔ CONFIRMED — ${finding.name} [${finding.severity}]  (${finding.evidence})`])
-        } else if (!res.ok) {
-          setLog((l) => [...l, `  ! request failed: ${res.error || 'unknown error'}`])
-        } else {
-          setLog((l) => [...l, `  · not present (status ${res.status ?? '-'})`])
-        }
-      } catch (e) {
-        setLog((l) => [...l, `  ! error: ${(e as Error).message}`])
+
+    // --- soft-404 / catch-all baseline: probe a path that cannot exist ---
+    const vars = requestVars(target)
+    const baseProbe = `/interu-not-here-${vars.RandomString}.html`
+    let baseline: Baseline | undefined
+    try {
+      const baseRes = await window.ruy.http.send({ method: 'GET', url: vars.BaseURL + baseProbe, headers: {}, timeoutMs: 8000 }, settings.scope)
+      if (baseRes.blocked) { setLog((l) => [...l, `  ⛔ blocked by scope`]); setRunning(false); return }
+      if (!baseRes.ok) {
+        setLog((l) => [...l, `  ! host tidak bisa dihubungi (${baseRes.error || 'unknown'}) — dibatalkan`])
+        setNote(`Host ${host} tidak merespons. Pastikan target hidup & URL benar.`)
+        setRunning(false); return
       }
-      setProgress(Math.round(((i + 1) / actives.length) * 100))
+      baseline = computeBaseline(baseRes)
+      setLog((l) => [...l, `> baseline: unknown path → status ${baseRes.status ?? '-'} (${baseline?.catchAll ? 'CATCH-ALL 2xx — status-only checks akan di-demote' : 'server membedakan 404, bagus'})`])
+    } catch (e) {
+      setLog((l) => [...l, `  ! baseline error: ${(e as Error).message} — lanjut tanpa baseline`])
     }
+
+    // Probe with bounded concurrency (hundreds of templates). Only matches are
+    // logged, so the console stays readable. A scope block stops all workers.
+    const http = window.ruy.http
+    const collected: Finding[] = []
+    let idx = 0
+    let done = 0
+    let blocked = false
+    const CONCURRENCY = 10
+    const worker = async (): Promise<void> => {
+      while (!blocked) {
+        const i = idx++
+        if (i >= actives.length) return
+        const t = actives[i]
+        const req = buildActiveRequest(t, target)
+        if (req) {
+          try {
+            const res = await http.send(req, settings.scope)
+            if (res.blocked) { blocked = true; setLog((l) => [...l, `  ⛔ blocked by scope — stopped`]); return }
+            const finding = matchActive(t, req.url, res, { req, baseline })
+            if (finding) {
+              collected.push(finding)
+              const tag = finding.confidence === 'confirmed' ? '✔ CONFIRMED' : '~ suspected'
+              setLog((l) => [...l, `  ${tag} — ${finding.name} [${finding.severity}]  ${req.url}`])
+            }
+          } catch { /* per-probe error ignored */ }
+        }
+        done++
+        if (done % 5 === 0 || done === actives.length) setProgress(Math.round((done / actives.length) * 100))
+      }
+    }
+    await Promise.all(Array.from({ length: CONCURRENCY }, () => worker()))
+    setProgress(100)
     const added = addFindings(collected)
-    setLog((l) => [...l, `> done — ${collected.length} confirmed, ${added} new`])
+    setLog((l) => [...l, `> done — ${actives.length} probes, ${collected.length} matched, ${added} new`])
     setRunning(false)
   }
 
@@ -90,7 +128,8 @@ export default function RuleEngine() {
           The Rule Engine is a detection layer: it matches <strong>data-driven templates</strong> against signals
           already collected by the <strong>Network Scanner</strong> and <strong>Proxy</strong> (passive →
           <em> Suspected/Confirmed</em>), and can send <strong>scope-gated active probes</strong> to prove findings
-          (<em>oracle → Confirmed</em>). No exploitation is performed; only authorized targets are probed.
+          (<em>oracle → Confirmed</em>). Probes only <strong>read</strong> — no exploitation — and run a soft-404
+          baseline first to suppress false positives. Only authorized targets are probed.
         </Disclaimer>
 
         <div className="grid grid-4 mt-16">
@@ -135,6 +174,10 @@ export default function RuleEngine() {
           className="mt-24"
           right={
             <div className="flex gap-12 items-center">
+              <label className="small muted flex gap-12 items-center" style={{ whiteSpace: 'nowrap' }}>
+                <input type="checkbox" checked={showSuperseded} onChange={(e) => setShowSuperseded(e.target.checked)} />
+                superseded
+              </label>
               <select value={confFilter} onChange={(e) => setConfFilter(e.target.value as Confidence | 'all')} style={{ width: 140 }}>
                 <option value="all">All confidence</option>
                 <option value="confirmed">Confirmed</option>
@@ -161,22 +204,53 @@ export default function RuleEngine() {
                 </thead>
                 <tbody>
                   {rows.map((f) => (
-                    <tr key={f.key}>
-                      <td><span className={`pill ${sevPill(f.severity)}`}><span className="pd" />{f.severity}</span></td>
-                      <td>
-                        <span className={`pill ${confPill(f.confidence)}`}>
-                          {f.confidence === 'confirmed' && <IconCheck size={12} />}<span className="pd" />{f.confidence}
-                        </span>
-                      </td>
-                      <td>
-                        {f.name}
-                        {f.remediation && <div className="small muted">{f.remediation}</div>}
-                      </td>
-                      <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
-                      <td className="small muted" style={{ maxWidth: 260 }} title={f.evidence}>{f.evidence}</td>
-                      <td className="mono small">{f.cve?.join(', ') || '—'}</td>
-                      <td className="small muted">{f.source}</td>
-                    </tr>
+                    <React.Fragment key={f.key}>
+                      <tr onClick={() => setOpen(open === f.key ? null : f.key)} style={{ cursor: 'pointer', opacity: f.superseded ? 0.5 : 1 }}>
+                        <td><span className={`pill ${sevPill(f.severity)}`}><span className="pd" />{f.severity}</span></td>
+                        <td>
+                          <span className={`pill ${confPill(f.confidence)}`}>
+                            {f.confidence === 'confirmed' && <IconCheck size={12} />}<span className="pd" />{f.confidence}
+                          </span>
+                          {f.superseded && <span className="small muted"> ·superseded</span>}
+                        </td>
+                        <td>
+                          {f.name}
+                          {f.remediation && <div className="small muted">{f.remediation}</div>}
+                        </td>
+                        <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
+                        <td className="small muted" style={{ maxWidth: 260 }} title={f.evidence}>{f.evidence}</td>
+                        <td className="mono small">{f.cve?.join(', ') || '—'}</td>
+                        <td className="small muted">{f.source}</td>
+                      </tr>
+                      {open === f.key && (
+                        <tr className="detail-row">
+                          <td colSpan={7} style={{ background: 'var(--surface-2, rgba(255,255,255,0.03))' }}>
+                            <div className="small" style={{ padding: '8px 4px', display: 'grid', gap: 8 }}>
+                              {f.description && <div>{f.description}</div>}
+                              <div className="flex gap-12 small muted" style={{ flexWrap: 'wrap' }}>
+                                <span>template: <span className="mono">{f.templateId}</span></span>
+                                {f.cwe?.length ? <span>CWE: <span className="mono">{f.cwe.join(', ')}</span></span> : null}
+                                {f.cvss != null ? <span>CVSS: <span className="mono">{f.cvss}</span></span> : null}
+                                {f.mitre?.length ? <span>ATT&CK: <span className="mono">{f.mitre.join(', ')}</span></span> : null}
+                                {f.tags?.length ? <span>tags: {f.tags.join(', ')}</span> : null}
+                              </div>
+                              {f.extracted && Object.keys(f.extracted).length > 0 && (
+                                <div className="mono small">extracted: {Object.entries(f.extracted).map(([k, v]) => `${k}=[${v.join(', ')}]`).join('  ')}</div>
+                              )}
+                              {f.matchedAt && <div className="mono small muted">matched at: {f.matchedAt}</div>}
+                              {f.request && (
+                                <details><summary className="small muted">request <CopyButton text={f.request} label="copy" /></summary>
+                                  <pre className="text-mono small allow-select" style={{ whiteSpace: 'pre-wrap', maxHeight: 180, overflow: 'auto' }}>{f.request}</pre></details>
+                              )}
+                              {f.response && (
+                                <details><summary className="small muted">response <CopyButton text={f.response} label="copy" /></summary>
+                                  <pre className="text-mono small allow-select" style={{ whiteSpace: 'pre-wrap', maxHeight: 240, overflow: 'auto' }}>{f.response}</pre></details>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>

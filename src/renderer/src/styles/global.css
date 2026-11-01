@@ -469,6 +469,24 @@ body { transition: background-color 0.2s ease, color 0.2s ease; }
   min-height: 200px; width: 100%; resize: vertical;
 }
 textarea.code-pane { resize: vertical; }
+
+/* The app chrome is user-select:none, but readable content must be selectable
+   so the operator can drag-select and Ctrl+C / right-click → Copy it out
+   (e.g. a captured response into their own notes). */
+.code-pane, pre, code, .feed, .feed .msg, .data td, .data th, .kv .k, .kv .v, .allow-select {
+  user-select: text; -webkit-user-select: text; cursor: auto;
+}
+.code-pane { cursor: text; }
+
+/* Small inline copy button used on request/response panes. */
+.copy-btn {
+  display: inline-flex; align-items: center; gap: 5px; cursor: pointer;
+  font-size: 10.5px; letter-spacing: 0.04em; text-transform: none;
+  padding: 3px 9px; border-radius: 6px; color: var(--silver-100);
+  background: var(--panel-700, rgba(255,255,255,0.05)); border: 1px solid var(--line-soft);
+}
+.copy-btn:hover { background: var(--panel-600, rgba(255,255,255,0.09)); color: var(--white); }
+.copy-btn.ok { color: var(--ok); border-color: var(--ok); }
 .code-head {
   display: flex; align-items: center; justify-content: space-between;
   font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--silver-400);

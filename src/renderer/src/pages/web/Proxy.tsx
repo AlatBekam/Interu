@@ -8,6 +8,7 @@ import { HTTP_HISTORY, rawRequest, rawResponse } from '../../data/burp'
 import type { ProxyLogEntry, HeldRequest } from '../../../../shared/proxy'
 import BrowserSim from './BrowserSim'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
+import CopyButton from '../../components/CopyButton'
 import { setTransfer } from '../../store/transfer'
 import { originOf, toCurl, rawFromParts } from '../../lib/http'
 import { analyzeHttpResponse } from '../../../../shared/rules'
@@ -50,6 +51,8 @@ export default function Proxy() {
         { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw, mode: 'live' }); navigate('/web/intruder') } },
         { sep: true },
         { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(t.url) },
+        { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) },
+        { label: 'Copy response', onClick: () => t.response && navigator.clipboard?.writeText(t.response) },
         { label: 'Copy as curl', onClick: () => navigator.clipboard?.writeText(toCurl(raw, target)) },
         { sep: true },
         { label: 'Inspect', onClick: () => { setSel(t); setTab('request') } }
@@ -222,6 +225,10 @@ export default function Proxy() {
               <button className={`tab ${tab === 'response' ? 'active' : ''}`} onClick={() => setTab('response')}>Response</button>
             </div>
             <div style={{ paddingTop: 14 }}>
+              <div className="code-head">
+                <span>{tab}</span>
+                <CopyButton text={tab === 'request' ? (sel.request || '') : (sel.response || '')} label={`Copy ${tab}`} />
+              </div>
               <div className="code-pane">{tab === 'request' ? (sel.request || '(not captured)') : (sel.response || '(not captured)')}</div>
             </div>
           </Panel>

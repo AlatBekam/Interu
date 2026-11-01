@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 import type { Finding } from '../../../shared/rules'
-import { sortFindings } from '../../../shared/rules'
+import { sortFindings, correlate } from '../../../shared/rules'
 
 // =========================================================================
 // Shared Rule-Engine findings store. The Network Scanner and Proxy WRITE
@@ -62,8 +62,9 @@ export function addFindings(incoming: Finding[]): number {
     if (!byKey.has(f.key)) added++
     byKey.set(f.key, f)
   }
-  // Keep the most severe MAX_FINDINGS so heavy proxy traffic can't grow the list unbounded.
-  state = sortFindings(Array.from(byKey.values())).slice(0, MAX_FINDINGS)
+  // Correlate (oracle-confirmed supersedes suspected for the same issue), then
+  // keep the most severe MAX_FINDINGS so heavy proxy traffic can't grow unbounded.
+  state = sortFindings(correlate(Array.from(byKey.values()))).slice(0, MAX_FINDINGS)
   save(state)
   emit()
   return added
