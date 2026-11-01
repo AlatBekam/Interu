@@ -10,13 +10,18 @@ editor, reporting and settings. It ships with **two themes** and a **Light/Dark 
 the top-right**: the default **"Dark Kingdom"** (obsidian black, cold white & silver type,
 midnight / royal-navy accents) and **"Silver Daylight"** (light).
 
-> **Development status (~65%).** The **Web Security Suite is real and functional**
+> **Development status (~70%).** The **Web Security Suite is real and functional**
 > (intercepting HTTPS-MITM proxy, live Repeater / Intruder / Target, offline
-> Decoder / Comparer / Sequencer). The **Network Scanner** now runs a **real TCP connect
-> scan** (scope-gated), and a **basic Rule Engine (Detection)** matches data-driven,
-> Nuclei-style templates over scanner/proxy signals (*Suspected*) plus scope-gated active
-> probes (*Confirmed*), surfaced in **Vulnerabilities**. Still mock / simulated UI:
-> Dashboard, Threat Monitor, Firewall, and Reports.
+> Decoder / Comparer / Sequencer). The **Network Scanner** runs a **real TCP connect
+> scan** (scope-gated). The **Rule Engine (Detection)** is now Nuclei-grade: **408
+> data-driven templates** (28 port/banner, 47 HTTP passive, 333 scope-gated active
+> *oracle-confirmed* checks) with a safe **DSL matcher**, **extractors**, `{{BaseURL}}`
+> **variable interpolation**, a **soft-404 baseline**, **Suspected→Confirmed correlation**,
+> and full request/response **evidence** per finding — surfaced in **Vulnerabilities**.
+> Each confirmed finding also carries an **Attack/Defense advisor** (patching steps +
+> copy-ready config, and a verify/operator/info attack recipe with Send-to-Repeater/Intruder
+> + Re-test). Request/response panes across the suite are now selectable with Copy buttons.
+> Still mock / simulated UI: Dashboard, Threat Monitor, Firewall, and Reports.
 
 > ⚠️ **Authorized use only — legal by design.** Every "Live" action is
 > **authorization-gated by Scope**: real requests only reach hosts you add to the Scope
@@ -69,7 +74,7 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 | Module | Status |
 |---|---|
 | **Network Scanner** | **Real TCP connect scan** (Node `net`, scope-gated): target as IP / CIDR / range / list, Quick / Standard / Deep profiles (deep grabs banners/versions), real open/closed/filtered with streamed progress and cancel; plus a Simulation mode. Results feed the Rule Engine. |
-| **Rule Engine** (Detection) | **Nuclei-style detection engine.** Data-driven templates (status/word/regex/time matchers, severity, CVE, remediation, MITRE). Passive over scanner results + captured proxy responses → *Suspected / Confirmed*; scope-gated active HTTP probes (e.g. `/.git/config`, `/.env`) prove findings → *Confirmed* with evidence. |
+| **Rule Engine** (Detection) | **Nuclei-grade detection engine — 408 data-driven templates.** Matchers: status / word / regex / time / port / service / **dsl** (a safe, no-`eval` expression evaluator), combined and/or with negative; **extractors** pull structured data (versions, tokens, usernames); request paths support `{{BaseURL}}`-style **interpolation**. Passive over scanner results + captured proxy responses → *Suspected / Confirmed*; **333 scope-gated, read-only active HTTP probes** (e.g. `/.git/config`, `/.env`, exposures, actuators, panels) prove findings → *Confirmed*. A **soft-404 baseline** suppresses false positives, variant families **correlate** (confirmed supersedes suspected), and each finding stores full request/response **evidence**. Every confirmed finding gets an **Attack/Defense advisor**: patching steps + copy-ready config, and a `verify`/`operator`/`info` attack recipe (Send-to-Repeater/Intruder, Re-test-fix). |
 | **Vulnerabilities** | Live findings from the Rule Engine (Confirmed/Suspected + evidence + CVE), with a Demo-catalog toggle. |
 
 **Still simulated (UI / mock):** Dashboard, Threat Monitor, Firewall Rules, Reports, Settings.
@@ -129,7 +134,10 @@ Interu/
    │  ├─ http.ts               #   HTTP types + host scope gate (hostInScope)
    │  ├─ proxy.ts              #   proxy event types
    │  ├─ scan.ts               #   target parsing (IP/CIDR/range) + ipInScope
-   │  └─ rules.ts              #   Rule Engine: data-driven templates + matchers
+   │  ├─ rules.ts              #   Rule Engine: 408 templates, matchers, extractors,
+   │  │                        #     interpolation, baseline, correlation (+ *.test.ts)
+   │  ├─ dsl.ts                #   safe DSL expression evaluator (no eval) (+ *.test.ts)
+   │  └─ advice.ts             #   Attack/Defense advisor per finding (+ *.test.ts)
    └─ renderer/                # the React UI
       ├─ index.html            # locked-down offline CSP
       └─ src/
@@ -137,7 +145,7 @@ Interu/
          ├─ main.tsx           # React entry
          ├─ styles/global.css  # global styling
          ├─ components/        # Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
-         │                     #   Crest, icons, ui
+         │                     #   CopyButton, Crest, icons, ui
          ├─ pages/             # Dashboard, NetworkScanner, RuleEngine,
          │  │                  #   Vulnerabilities, ThreatMonitor, Firewall,
          │  │                  #   Reports, Settings
@@ -160,6 +168,7 @@ Interu/
 | `npm run icons` | Regenerate `build/icon.ico` / `.png` from the crest SVG. |
 | `npm run dev` | Launch the app with Vite HMR (**development** — uses a dev server). |
 | `npm run typecheck` | Type-check both the Node side and the web side. |
+| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL and advisor (56 tests). |
 | `npm run build` | Production build → `out/` (main, preload, renderer). No dev server. |
 | `npm run smoke` | Launch the production bundle in Electron and confirm the UI loads (prints `RUY_SMOKE_RESULT: RENDER_OK`), then exit. |
 | `npm run dist` | `build` **+** package Windows installer **and** portable exe → `release/`. |
@@ -271,8 +280,9 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 ## 9. Verification performed for this build
 
 - `npm run typecheck` — passes clean (Node side + web side).
-- `npm run build` — 47 modules transformed; `out/main`, `out/preload`, `out/renderer`
-  produced.
+- `npm test` — **56 tests pass** (vitest): scope gate, rule matchers/extractors/baseline/
+  correlation, the DSL evaluator, and the Attack/Defense advisor.
+- `npm run build` — `out/main`, `out/preload`, `out/renderer` produced.
 - Smoke test on the production bundle **and** on the packaged `win-unpacked` exe — both
   print `RUY_SMOKE_RESULT: RENDER_OK`, proving the UI loads over `file://` with **no dev
   server** and no localhost dependency.
