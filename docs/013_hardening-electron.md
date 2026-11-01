@@ -4,9 +4,11 @@
 
 ## 1. Status
 
-🟡 **SEBAGIAN** — proteksi inti Electron (contextIsolation, CSP, single-instance,
-openExternal) sudah benar; beberapa pelonggaran (`sandbox:false`, TLS bypass)
-**disengaja** untuk mendukung MITM, tetapi memperluas permukaan risiko.
+🟢 **DIPERKUAT** — proteksi inti Electron (contextIsolation, CSP, single-instance,
+openExternal) benar; `sandbox:true` kini aktif; `setCertificateVerifyProc`
+dibatasi hanya mempercayai cert yang ditandatangani Interu CA (bukan lagi `cb(0)`
+untuk semua). TLS bypass pada jalur alat (`http.ts`/`proxy.ts`/`scan.ts`) tetap
+**disengaja** dan sudah scope-gated — itu memang perilaku alat pentest.
 
 ## 2. Tujuan fitur
 
@@ -22,7 +24,7 @@ Konfigurasi `webPreferences` window utama (`../src/main/index.ts`):
 |---|---|---|
 | `contextIsolation` | `true` | Renderer terpisah dari konteks preload; `window.ruy` lewat `contextBridge` saja. **Disengaja (baik).** |
 | `nodeIntegration` | `false` | Renderer tidak punya `require`/Node API. **Disengaja (baik).** |
-| `sandbox` | `false` | Preload boleh pakai Node (`ipcRenderer`, modul). **Disengaja**, tapi melemahkan sandbox. |
+| `sandbox` | `true` | Renderer di-sandbox penuh; preload hanya pakai `contextBridge`/`ipcRenderer`/`process.platform|versions` (kompatibel sandbox). **Disengaja (baik).** |
 
 Perlindungan lain:
 
@@ -43,7 +45,7 @@ TLS bypass (sengaja, demi MITM & target self-signed):
 | `../src/main/http.ts` | `rejectUnauthorized: false` | Target uji sering pakai sertifikat self-signed. |
 | `../src/main/proxy.ts` | `rejectUnauthorized: false` | Proxy upstream boleh cert invalid (HTTPS hanya sampai sini untuk host in-scope; out-of-scope di-tunnel buta). |
 | `../src/main/scan.ts` | `tls.connect({ rejectUnauthorized: false })` | Banner grab di port TLS (profil Deep). |
-| `../src/main/index.ts` | `ses.setCertificateVerifyProc((_req, cb) => cb(0))` | Browser terproksi auto-trust leaf MITM. |
+| `../src/main/index.ts` | `setCertificateVerifyProc` → `cb(0)` **hanya** bila issuer = `Interu Root CA`, selain itu `cb(-3)` (verifikasi normal Chromium) | Browser terproksi hanya auto-trust leaf MITM dari CA kita; cert asli host out-of-scope tetap divalidasi normal. |
 
 ```mermaid
 flowchart TD
@@ -76,23 +78,23 @@ diterima — ini fitur alat pentest, bukan bug.
 - **Mana yang disengaja (aman):** `contextIsolation:true`, `nodeIntegration:false`,
   CSP ketat, `openExternal` + `deny` window baru, single-instance lock.
 - **Pelonggaran disengaja (risiko sadar):**
-  - `sandbox:false` — perlu agar preload memakai Node; kompromikan isolasi proses
-    renderer bila ada bug.
-  - TLS bypass di empat lokasi — perlu untuk MITM/self-signed. Jalur `http.ts`,
-    `proxy.ts` (HTTPS), dan `scan.ts` kini hanya tercapai untuk target in-scope
-    (lihat [011](011_scope-gate.md)); `setCertificateVerifyProc` tetap global
-    untuk session browser terproksi.
-- `setCertificateVerifyProc` dipasang untuk session `interu-proxied` saja, jadi
-  terbatas ke browser terproksi (baik). Namun `cb(0)` memercayai **semua** cert di
-  session itu, bukan hanya yang ditandatangani Interu CA.
+  - TLS bypass di `http.ts`/`proxy.ts`/`scan.ts` — perlu untuk MITM/self-signed,
+    dan kini hanya tercapai untuk target in-scope (lihat [011](011_scope-gate.md)).
+- `setCertificateVerifyProc` dipasang untuk session `interu-proxied` saja **dan**
+  kini hanya `cb(0)` bila cert di-issue `Interu Root CA`; selain itu `cb(-3)`
+  (verifikasi default Chromium). Jadi cert asli host yang di-tunnel tetap
+  divalidasi normal, bukan dipercaya buta.
+- `sandbox:true` aktif — catatan: stdout Electron (GUI subsystem di Windows) tak
+  ter-capture oleh smoke harness, jadi verifikasi `window.ruy` paling pasti lewat
+  uji klik satu fitur Live di UI.
 - Preload punya cabang fallback non-isolated (`window.ruy = api`) yang tak terpakai
   karena `contextIsolation:true`.
 
 ## 7. Checklist pengerjaan
 
-- [ ] Evaluasi `sandbox:true`; pindahkan kebutuhan Node preload ke IPC bila bisa.
+- [x] `sandbox:true` diaktifkan; preload hanya memakai API yang kompatibel sandbox.
 - [x] Batasi `rejectUnauthorized:false` hanya untuk host yang discope (tercapai lewat scope gate di `ruy:http`, `ruy:scan:tcp`, dan proxy).
-- [ ] Di `setCertificateVerifyProc`, verifikasi cert benar-benar ditandatangani Interu CA sebelum `cb(0)`.
+- [x] Di `setCertificateVerifyProc`, verifikasi cert di-issue Interu CA sebelum `cb(0)` (selain itu `cb(-3)`).
 - [ ] Tambah test/smoke yang memastikan CSP tidak longgar antar rilis.
 - [ ] Hapus cabang fallback non-isolated di preload (dead code) atau beri komentar jelas.
 - [ ] Dokumentasikan secara eksplisit di README bahwa TLS verification dimatikan di jalur alat.

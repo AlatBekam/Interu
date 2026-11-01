@@ -4,7 +4,7 @@ import http from 'node:http'
 import tls from 'node:tls'
 import { sendHttp } from './http'
 import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunning, getPort } from './proxy'
-import { exportCA } from './ca'
+import { exportCA, deleteCA, caFingerprint, CA_COMMON_NAME } from './ca'
 import { runScan, cancelScan } from './scan'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
@@ -55,7 +55,7 @@ function createWindow(): BrowserWindow {
     autoHideMenuBar: true,
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false,
+      sandbox: true,
       contextIsolation: true,
       nodeIntegration: false
     }
@@ -208,6 +208,14 @@ if (!gotLock) {
       return { ok: false, error: (e as Error).message }
     }
   })
+  // Remove the stored root CA (encrypted key + cert). A fresh CA is minted on
+  // next use; re-export & re-trust is then required.
+  ipcMain.handle('ruy:proxy:removeCA', () => {
+    try { deleteCA(); proxiedSessionPort = -1; return { ok: true } } catch (e) { return { ok: false, error: (e as Error).message } }
+  })
+  ipcMain.handle('ruy:proxy:caInfo', () => {
+    try { return { ok: true, name: CA_COMMON_NAME, fingerprint: caFingerprint() } } catch (e) { return { ok: false, error: (e as Error).message } }
+  })
   // Open a real browser window routed through the proxy (Burp-style). This
   // embedded session trusts the MITM certs automatically, so https is captured.
   // A single reusable window avoids stacking broken windows.
@@ -223,7 +231,17 @@ if (!gotLock) {
       // an already-open window on repeated opens.
       if (proxiedSessionPort !== port) {
         await ses.setProxy({ proxyRules: `127.0.0.1:${port}` })
-        ses.setCertificateVerifyProc((_req, cb) => cb(0))
+        // Trust ONLY certificates minted by the Interu root CA (i.e. the per-host
+        // certs our MITM proxy presents for in-scope hosts). Anything else —
+        // including the real certs of out-of-scope hosts that are blind-tunnelled
+        // — falls back to Chromium's normal verification (cb(-3)), so a genuinely
+        // invalid/forged certificate is still rejected. (Previously cb(0) trusted
+        // every certificate unconditionally.)
+        ses.setCertificateVerifyProc((request, cb) => {
+          const cert = request.certificate as { issuerName?: string; issuer?: { commonName?: string } } | undefined
+          const issuer = cert?.issuerName || cert?.issuer?.commonName || ''
+          cb(issuer === CA_COMMON_NAME || issuer.includes(CA_COMMON_NAME) ? 0 : -3)
+        })
         proxiedSessionPort = port
       }
 
