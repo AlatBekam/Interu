@@ -71,3 +71,18 @@ export function kevByProduct(keys: string[]): KevInfo[] {
   }
   return out
 }
+
+/** Short CVE label for a table cell: up to three IDs, then a count. The full list goes in a tooltip. */
+export function cveSummary(cves?: string[]): string {
+  if (!cves || cves.length === 0) return '—'
+  return cves.length > 3 ? `${cves.slice(0, 3).join(', ')} +${cves.length - 3}` : cves.join(', ')
+}
+
+/** Badge for a finding's KEV entries. A product-level hit is labelled as such, never as an exploited CVE. */
+export function kevBadge(f: { tags?: string[]; kev?: KevInfo[] }): { text: 'KEV' | 'KEV product'; title: string } | null {
+  if (!f.kev?.length) return null
+  if (f.tags?.includes('kev-product')) {
+    return { text: 'KEV product', title: `Product-level match, version not verified • ${kevTooltip(f.kev)}` }
+  }
+  return { text: 'KEV', title: kevTooltip(f.kev) }
+}

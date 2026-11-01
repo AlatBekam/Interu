@@ -1,6 +1,8 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../components/TopBar'
+import KevBadge from '../components/KevBadge'
+import { cveSummary } from '../../../shared/kev'
 import { Panel, Disclaimer, Stat, Meter } from '../components/ui'
 import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
@@ -12,7 +14,7 @@ import { setTransfer } from '../store/transfer'
 import { rawFromParts, inScopeOrNote } from '../lib/http'
 import { noteScopeBlock } from '../store/activity'
 import { getAdvice } from '../../../shared/advice'
-import { KEV_COUNT, KEV_CATALOG_VERSION, kevTooltip } from '../../../shared/kev'
+import { KEV_COUNT, KEV_CATALOG_VERSION } from '../../../shared/kev'
 import type { AttackKind } from '../../../shared/advice'
 import {
   TEMPLATES, activeTemplates, buildActiveRequest, matchActive, requestVars, computeBaseline,
@@ -259,12 +261,8 @@ export default function RuleEngine() {
                         <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                         <td className="small muted" style={{ maxWidth: 260 }} title={f.evidence}>{f.evidence}</td>
                         <td className="mono small">
-                          {f.cve?.join(', ') || '—'}
-                          {f.kev?.length ? (
-                            <span className="pill pill-crit" style={{ marginLeft: 6 }} title={kevTooltip(f.kev)}>
-                              <span className="pd" />KEV
-                            </span>
-                          ) : null}
+                          <span title={f.cve?.join(', ')}>{cveSummary(f.cve)}</span>
+                          <KevBadge f={f} />
                         </td>
                         <td className="small muted">{f.source}</td>
                       </tr>

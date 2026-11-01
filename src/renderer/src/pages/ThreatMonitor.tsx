@@ -1,12 +1,14 @@
 import React from 'react'
 import TopBar from '../components/TopBar'
+import KevBadge from '../components/KevBadge'
+import { cveSummary } from '../../../shared/kev'
 import { Panel, Stat, Disclaimer } from '../components/ui'
 import { IconShieldAlert, IconBug } from '../components/icons'
 import { severityPill, Severity } from '../data/mock'
 import { useFindings } from '../store/findings'
 import { useActivity, clearActivity } from '../store/activity'
 import { priorityQueue, exposureByTarget, summarize, timeLabel } from '../../../shared/activity'
-import { KEV_COUNT, KEV_CATALOG_VERSION, kevTooltip } from '../../../shared/kev'
+import { KEV_COUNT, KEV_CATALOG_VERSION } from '../../../shared/kev'
 
 // Shows only what Interu itself observed: its findings, scans, scope decisions and
 // intercepted requests. It is not an intrusion-detection system.
@@ -50,12 +52,8 @@ export default function ThreatMonitor() {
                       <td>{f.name}</td>
                       <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                       <td className="mono small">
-                        {f.cve?.join(', ') || '—'}
-                        {f.kev?.length ? (
-                          <span className="pill pill-crit" style={{ marginLeft: 6 }} title={kevTooltip(f.kev)}>
-                            <span className="pd" />KEV
-                          </span>
-                        ) : null}
+                        <span title={f.cve?.join(', ')}>{cveSummary(f.cve)}</span>
+                        <KevBadge f={f} />
                       </td>
                     </tr>
                   ))}
