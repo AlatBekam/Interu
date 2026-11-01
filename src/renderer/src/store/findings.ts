@@ -76,6 +76,15 @@ export function clearFindings(): void {
   emit()
 }
 
+/** Remove a single finding by key (e.g. after a Re-test proves it resolved). */
+export function removeFinding(key: string): void {
+  const next = state.filter((f) => f.key !== key)
+  if (next.length === state.length) return
+  state = next
+  save(state)
+  emit()
+}
+
 export function getFindings(): Finding[] {
   return state
 }

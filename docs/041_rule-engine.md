@@ -132,12 +132,26 @@ Ringkasan kurasi (CURATED):
 - **DB over HTTP**: Elasticsearch (+extract cluster), CouchDB.
 - **Panel** (deteksi keberadaan, bukan bypass): phpMyAdmin, Adminer, Tomcat Manager, Solr, Jenkins, Grafana, Kibana, GitLab, Jira, Webmin.
 
+### Attack / Defense advisor (`advice.ts`)
+
+Tiap temuan **confirmed** otomatis dapat dua rekomendasi lewat `getAdvice(finding)` (modul murni `src/shared/advice.ts`, di-key per **kelas kerentanan**, bukan per-template):
+
+- **🛡 Defense (patching)**: ringkasan, langkah, dan **snippet config siap-salin** (nginx/Apache/framework), plus tombol **Re-test fix** (untuk temuan aktif: jalankan ulang oracle template yang sama; kalau sudah tidak cocok → temuan dihapus dari store = loop tertutup).
+- **⚔ Attack**: berlabel `kind` —
+  - `verify` = reproduksi **baca-saja** (mengulang bukti yang sama persis dengan oracle → deterministik, **tak mungkin false-positive**); app boleh jalan sendiri.
+  - `operator` = payload **disiapkan**, dieksekusi manual via **Send to Repeater/Intruder** (tanpa auto-exploit; SQLi pakai payload *deteksi* boolean/time, panel pakai daftar default-cred).
+  - `info` = tak ada eksploit server langsung (mis. header hardening hilang) → penjelasan risiko + **PoC lokal tak berbahaya** (clickjacking iframe, fetch CORS).
+- Label `destructive-capable` muncul bila `safe=false` (mis. pakai token bocor / exploit CVE). Semua handoff tetap **scope-gated**.
+
+Anti-FP: advisor **tidak** melakukan deteksi baru — murni menurunkan aksi dari temuan yang sudah confirmed. Diuji di `advice.test.ts` (9 tes).
+
 ## File terkait
 
 | File | Fungsi / data utama |
 | --- | --- |
 | [../src/shared/rules.ts](../src/shared/rules.ts) | `TEMPLATES` (408 = CURATED + `gen*` packs), `evalMatcher`, extractors, `analyzeScan`, `analyzeHttpResponse`, `buildActiveRequest`/`interpolate`/`requestVars`, `matchActive`, `computeBaseline`, `correlate`, `sortFindings` |
 | [../src/shared/dsl.ts](../src/shared/dsl.ts) | Evaluator ekspresi DSL aman (tokenizer + parser + eval, tanpa `eval`) |
+| [../src/shared/advice.ts](../src/shared/advice.ts) | `getAdvice(finding)` → rekomendasi Defense (patching) + Attack (verify/operator/info) per kelas |
 | [../src/renderer/src/store/findings.ts](../src/renderer/src/store/findings.ts) | Store `ruy.v1.findings`: `addFindings`, `clearFindings`, `useFindings`, batas 1000 |
 | [../src/renderer/src/pages/RuleEngine.tsx](../src/renderer/src/pages/RuleEngine.tsx) | Halaman `/detection`: probe aktif, tabel Findings, Template library |
 | [../src/renderer/src/pages/NetworkScanner.tsx](../src/renderer/src/pages/NetworkScanner.tsx) | Memanggil `analyzeScan` setelah scan Live |

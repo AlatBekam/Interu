@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import TopBar from '../components/TopBar'
 import { Panel, Disclaimer, Stat, Meter } from '../components/ui'
 import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash } from '../components/icons'
@@ -6,12 +7,18 @@ import ScopeBar from '../components/ScopeBar'
 import CopyButton from '../components/CopyButton'
 import { severityPill, Severity } from '../data/mock'
 import { useSettings } from '../store/store'
-import { useFindings, addFindings, clearFindings } from '../store/findings'
+import { useFindings, addFindings, clearFindings, removeFinding } from '../store/findings'
+import { setTransfer } from '../store/transfer'
+import { rawFromParts } from '../lib/http'
 import { hostInScope } from '../../../shared/http'
+import { getAdvice } from '../../../shared/advice'
+import type { AttackKind } from '../../../shared/advice'
 import {
   TEMPLATES, activeTemplates, buildActiveRequest, matchActive, requestVars, computeBaseline,
   Confidence, RuleSeverity, Finding, Baseline
 } from '../../../shared/rules'
+
+const attackKindPill = (k: AttackKind): string => (k === 'verify' ? 'pill-ok' : k === 'operator' ? 'pill-warn' : 'pill-info')
 
 const confPill = (c: Confidence): string => (c === 'confirmed' ? 'pill-ok' : 'pill-warn')
 const sevPill = (s: RuleSeverity): string => severityPill[s as Severity]
@@ -30,8 +37,38 @@ export default function RuleEngine() {
   const [sevFilter, setSevFilter] = useState<RuleSeverity | 'all'>('all')
   const [showSuperseded, setShowSuperseded] = useState(false)
   const [open, setOpen] = useState<string | null>(null)
+  const navigate = useNavigate()
 
   const actives = activeTemplates()
+
+  const httpUrlOf = (f: Finding): string | null => {
+    const u = f.matchedAt || f.target
+    return /^https?:\/\//i.test(u) ? u : null
+  }
+  const sendTo = (f: Finding, to: 'repeater' | 'intruder'): void => {
+    const u = httpUrlOf(f); if (!u) return
+    try {
+      const x = new URL(u)
+      setTransfer({ to, target: x.origin, raw: rawFromParts('GET', x.host, x.pathname + x.search), mode: 'live' })
+      navigate(to === 'repeater' ? '/web/repeater' : '/web/intruder')
+    } catch { /* ignore bad url */ }
+  }
+  const retest = async (f: Finding): Promise<void> => {
+    const t = TEMPLATES.find((x) => x.id === f.templateId)
+    if (!t || t.kind !== 'http-active' || !window.ruy?.http) return
+    let base = f.matchedAt || f.target
+    try { base = new URL(base).origin } catch { /* keep */ }
+    const req = buildActiveRequest(t, base)
+    if (!req) return
+    setLog((l) => [...l, `> re-test ${t.info.name} @ ${base}`])
+    try {
+      const res = await window.ruy.http.send(req, settings.scope)
+      if (res.blocked) { setLog((l) => [...l, '  ⛔ blocked by scope']); return }
+      const still = matchActive(t, req.url, res, { req })
+      if (still) setLog((l) => [...l, `  ✗ still present — ${still.evidence}`])
+      else { removeFinding(f.key); setOpen(null); setLog((l) => [...l, '  ✓ resolved — removed from findings']) }
+    } catch (e) { setLog((l) => [...l, `  ! ${(e as Error).message}`]) }
+  }
 
   const counts = useMemo(() => {
     const live = findings.filter((f) => !f.superseded)
@@ -238,6 +275,51 @@ export default function RuleEngine() {
                                 <div className="mono small">extracted: {Object.entries(f.extracted).map(([k, v]) => `${k}=[${v.join(', ')}]`).join('  ')}</div>
                               )}
                               {f.matchedAt && <div className="mono small muted">matched at: {f.matchedAt}</div>}
+
+                              {(() => {
+                                const adv = getAdvice(f)
+                                const url = httpUrlOf(f)
+                                const cardStyle: React.CSSProperties = { border: '1px solid var(--line-soft)', borderRadius: 8, padding: 12, background: 'var(--obsidian-800, rgba(0,0,0,0.15))' }
+                                const snippet = (label: string, code: string): React.JSX.Element => (
+                                  <div className="mt-8">
+                                    <div className="code-head"><span>{label}</span><CopyButton text={code} /></div>
+                                    <pre className="code-pane allow-select" style={{ minHeight: 0, padding: 10, margin: 0 }}>{code}</pre>
+                                  </div>
+                                )
+                                return (
+                                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12, marginTop: 10 }}>
+                                    <div style={cardStyle}>
+                                      <div style={{ fontWeight: 600, marginBottom: 6 }}>🛡 Defense — patching</div>
+                                      <div className="small">{adv.defense.summary}</div>
+                                      <ol className="small" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                                        {adv.defense.steps.map((s, i) => <li key={i} style={{ marginBottom: 3 }}>{s}</li>)}
+                                      </ol>
+                                      {adv.defense.configs?.map((c, i) => <React.Fragment key={i}>{snippet(c.label, c.code)}</React.Fragment>)}
+                                      {f.source === 'active' && hasHttp && (
+                                        <button className="btn btn-sm mt-8" onClick={() => retest(f)} disabled={running}><IconCheck size={14} />Re-test fix</button>
+                                      )}
+                                    </div>
+                                    <div style={cardStyle}>
+                                      <div style={{ fontWeight: 600, marginBottom: 6 }}>
+                                        ⚔ Attack <span className={`pill ${attackKindPill(adv.attack.kind)}`}><span className="pd" />{adv.attack.kind}</span>
+                                        {!adv.attack.safe && <span className="pill pill-crit" style={{ marginLeft: 6 }}><span className="pd" />destructive-capable</span>}
+                                      </div>
+                                      <div className="small">{adv.attack.summary}</div>
+                                      <ol className="small" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
+                                        {adv.attack.steps.map((s, i) => <li key={i} style={{ marginBottom: 3 }}>{s}</li>)}
+                                      </ol>
+                                      {adv.attack.poc && snippet('proof of concept', adv.attack.poc)}
+                                      {adv.attack.payloads && adv.attack.payloads.length > 0 && snippet('payloads', adv.attack.payloads.join('\n'))}
+                                      {url && (
+                                        <div className="flex gap-8 mt-8">
+                                          <button className="btn btn-sm" onClick={() => sendTo(f, 'repeater')}>➤ Send to Repeater</button>
+                                          <button className="btn btn-sm" onClick={() => sendTo(f, 'intruder')}>➤ Send to Intruder</button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                )
+                              })()}
                               {f.request && (
                                 <details><summary className="small muted">request <CopyButton text={f.request} label="copy" /></summary>
                                   <pre className="text-mono small allow-select" style={{ whiteSpace: 'pre-wrap', maxHeight: 180, overflow: 'auto' }}>{f.request}</pre></details>
