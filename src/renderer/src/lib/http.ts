@@ -1,4 +1,6 @@
 import type { HttpReq, HttpRes } from '../../../shared/http'
+import { hostInScope } from '../../../shared/http'
+import { noteScopeBlock } from '../store/activity'
 
 export type { HttpReq, HttpRes }
 
@@ -53,10 +55,19 @@ export function rawFromParts(method: string, host: string, path: string): string
   return `${method} ${path} HTTP/1.1\r\nHost: ${host}\r\nUser-Agent: Interu/1.0\r\nAccept: */*\r\nConnection: close\r\n\r\n`
 }
 
+/** Scope pre-check for a feature; a refusal is also recorded in the activity log. */
+export function inScopeOrNote(url: string, scope: string[], via: string): boolean {
+  const ok = hostInScope(url, scope)
+  if (!ok) noteScopeBlock(url, via)
+  return ok
+}
+
 /** Send a real request through the main process, gated by scope. */
 export async function sendLive(req: HttpReq, scope: string[]): Promise<HttpRes> {
   if (!window.ruy?.http) {
     return { ok: false, timingMs: 0, size: 0, error: 'HTTP bridge unavailable' }
   }
-  return window.ruy.http.send(req, scope)
+  const res = await window.ruy.http.send(req, scope)
+  if (res.blocked) noteScopeBlock(req.url, 'http')
+  return res
 }

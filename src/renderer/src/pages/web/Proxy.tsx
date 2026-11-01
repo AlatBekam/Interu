@@ -13,6 +13,7 @@ import { setTransfer } from '../../store/transfer'
 import { originOf, toCurl, rawFromParts } from '../../lib/http'
 import { analyzeHttpResponse } from '../../../../shared/rules'
 import { addFindings } from '../../store/findings'
+import { pushActivity } from '../../store/activity'
 
 type Tab = 'request' | 'response'
 
@@ -71,6 +72,7 @@ export default function Proxy() {
     const offInt = window.ruy.proxy.onIntercept((d) => {
       const h = d as HeldRequest
       setHeld(h)
+      pushActivity({ ts: new Date().toISOString(), level: 'info', category: 'proxy', message: `Request held: ${h.method} ${h.host}`, target: h.host })
       setHeldEdit(h.raw)
     })
     window.ruy.proxy.status().then((s) => setRunning(s.running)).catch(() => {})

@@ -5,8 +5,7 @@ import { Panel, Disclaimer, Stat, Meter } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconTarget, IconGlobe, IconPlay, IconStop } from '../../components/icons'
 import { SITE_MAP, HTTP_HISTORY, rawRequest, rawResponse, HttpTx } from '../../data/burp'
-import { sendLive, rawFromParts } from '../../lib/http'
-import { hostInScope } from '../../../../shared/http'
+import { sendLive, rawFromParts, inScopeOrNote } from '../../lib/http'
 import { useSettings } from '../../store/store'
 import { setTransfer } from '../../store/transfer'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
@@ -56,7 +55,7 @@ export default function Target() {
 
   const discover = async () => {
     const base = target.replace(/\/+$/, '')
-    if (!hostInScope(base + '/', settings.scope)) {
+    if (!inScopeOrNote(base + '/', settings.scope, 'target')) {
       setNote(`⛔ ${(() => { try { return new URL(base).hostname } catch { return 'target' } })()} belum ada di Authorized scope.`)
       return
     }

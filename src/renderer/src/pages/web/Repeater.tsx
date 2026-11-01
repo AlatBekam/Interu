@@ -5,8 +5,7 @@ import ScopeBar from '../../components/ScopeBar'
 import { IconSend } from '../../components/icons'
 import CopyButton from '../../components/CopyButton'
 import { HTTP_HISTORY, rawRequest, rawResponse, HttpTx } from '../../data/burp'
-import { parseRawRequest, sendLive } from '../../lib/http'
-import { hostInScope } from '../../../../shared/http'
+import { parseRawRequest, sendLive, inScopeOrNote } from '../../lib/http'
 import { useSettings } from '../../store/store'
 import { useTransfer } from '../../store/transfer'
 
@@ -53,7 +52,7 @@ export default function Repeater() {
   const sendRealLive = async () => {
     setSending(true); setResponse(''); setMeta(null); setNote('')
     const req = parseRawRequest(request, target)
-    if (!hostInScope(req.url, settings.scope)) {
+    if (!inScopeOrNote(req.url, settings.scope, 'repeater')) {
       setNote(`⛔ ${new URL(req.url).hostname} belum ada di Authorized scope. Tambahkan dulu di bar di atas.`)
       setSending(false)
       return

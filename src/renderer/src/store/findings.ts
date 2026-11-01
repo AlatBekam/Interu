@@ -1,6 +1,8 @@
 import { useSyncExternalStore } from 'react'
 import type { Finding } from '../../../shared/rules'
 import { sortFindings, correlate } from '../../../shared/rules'
+import { eventFromFinding } from '../../../shared/activity'
+import { pushActivity } from './activity'
 
 // =========================================================================
 // Shared Rule-Engine findings store. The Network Scanner and Proxy WRITE
@@ -59,7 +61,10 @@ export function addFindings(incoming: Finding[]): number {
   const byKey = new Map(state.map((f) => [f.key, f]))
   let added = 0
   for (const f of incoming) {
-    if (!byKey.has(f.key)) added++
+    if (!byKey.has(f.key)) {
+      added++
+      pushActivity(eventFromFinding(f))
+    }
     byKey.set(f.key, f)
   }
   // Correlate (oracle-confirmed supersedes suspected for the same issue), then
@@ -78,11 +83,15 @@ export function clearFindings(): void {
 
 /** Remove a single finding by key (e.g. after a Re-test proves it resolved). */
 export function removeFinding(key: string): void {
+  const gone = state.find((f) => f.key === key)
   const next = state.filter((f) => f.key !== key)
   if (next.length === state.length) return
   state = next
   save(state)
   emit()
+  if (gone) {
+    pushActivity({ ts: new Date().toISOString(), level: 'ok', category: 'finding', message: `Resolved: ${gone.name}`, target: gone.target })
+  }
 }
 
 export function getFindings(): Finding[] {
