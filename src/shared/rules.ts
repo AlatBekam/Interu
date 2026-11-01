@@ -26,6 +26,7 @@ import type { ScanHost } from './scan'
 import type { ProxyLogEntry } from './proxy'
 import type { HttpReq, HttpRes } from './http'
 import { evalBool, type DslContext } from './dsl'
+import { kevFor, type KevInfo } from './kev'
 
 export type RuleSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 export type Confidence = 'suspected' | 'confirmed'
@@ -126,6 +127,8 @@ export interface Finding {
   cve?: string[]
   cwe?: string[]
   cvss?: number
+  /** CISA KEV entries for this finding's CVEs (actively exploited); present only when listed. */
+  kev?: KevInfo[]
   tags?: string[]
   mitre?: string[]
   /** structured values pulled out by the template's extractors. */
@@ -311,6 +314,7 @@ function toFinding(t: Template, target: string, evidence: string, source: Findin
     ? Object.entries(extra.extracted).map(([k, v]) => `${k}=${v.join(', ')}`).join(' · ')
     : ''
   const fullEvidence = [evidence, extractedBits].filter(Boolean).join(' · ') || t.info.name
+  const kev = kevFor(c.cve)
   return {
     key: `${t.id}|${target}${extra.port != null ? ':' + extra.port : ''}`,
     templateId: t.id,
@@ -326,6 +330,7 @@ function toFinding(t: Template, target: string, evidence: string, source: Findin
     cve: c.cve,
     cwe: c.cwe,
     cvss: c.cvss,
+    kev: kev.length ? kev : undefined,
     tags: t.info.tags,
     mitre: t.info.mitre,
     extracted: extra.extracted,
@@ -585,14 +590,14 @@ const RX = (part: Matcher['part'], regex: string[], condition: 'and' | 'or' = 'o
 function expose(
   id: string, path: string, severity: RuleSeverity,
   name: string, body: Matcher, remediation: string,
-  opts: { tags?: string[]; cwe?: string[]; cvss?: number; group?: string; extractors?: Extractor[]; status?: number[] } = {}
+  opts: { tags?: string[]; cwe?: string[]; cve?: string[]; cvss?: number; group?: string; extractors?: Extractor[]; status?: number[] } = {}
 ): Template {
   return {
     id, kind: 'http-active', confidence: 'confirmed', group: opts.group,
     request: { method: 'GET', path },
     info: {
       name, severity, tags: opts.tags || ['exposure'], remediation,
-      classification: { cwe: opts.cwe, cvss: opts.cvss }
+      classification: { cwe: opts.cwe, cve: opts.cve, cvss: opts.cvss }
     },
     matchers: [S(...(opts.status || [200])), body],
     matchersCondition: 'and',
@@ -603,7 +608,7 @@ function expose(
 /** A technology/panel detection active template: presence, info severity. */
 function detect(
   id: string, path: string, name: string, marker: Matcher,
-  opts: { severity?: RuleSeverity; tags?: string[]; status?: number[]; extractors?: Extractor[]; remediation?: string } = {}
+  opts: { severity?: RuleSeverity; tags?: string[]; status?: number[]; extractors?: Extractor[]; remediation?: string; cve?: string[] } = {}
 ): Template {
   return {
     id, kind: 'http-active', confidence: 'confirmed',
@@ -611,7 +616,7 @@ function detect(
     info: {
       name, severity: opts.severity || 'info', tags: opts.tags || ['tech', 'panel'],
       remediation: opts.remediation || 'Restrict access to this interface to trusted networks; ensure strong authentication.',
-      classification: { cwe: ['CWE-200'] }
+      classification: { cwe: ['CWE-200'], cve: opts.cve }
     },
     matchers: [S(...(opts.status || [200])), marker],
     matchersCondition: 'and',
@@ -1259,14 +1264,14 @@ const CURATED: Template[] = [
 // =========================================================================
 
 // ---- active exposed-file helper ----
-interface AfOpts { cwe?: string[]; cvss?: number; tags?: string[]; cond?: 'and' | 'or'; rx?: boolean; part?: Matcher['part']; status?: number[]; group?: string; extractors?: Extractor[] }
+interface AfOpts { cwe?: string[]; cve?: string[]; cvss?: number; tags?: string[]; cond?: 'and' | 'or'; rx?: boolean; part?: Matcher['part']; status?: number[]; group?: string; extractors?: Extractor[] }
 function af(id: string, path: string, sev: RuleSeverity, name: string, marker: string | string[], rem: string, ex: AfOpts = {}): Template {
   const words = Array.isArray(marker) ? marker : [marker]
   const m = ex.rx ? RX(ex.part || 'body', words, ex.cond || 'or') : W(ex.part || 'body', words, ex.cond || 'or')
   return {
     id, kind: 'http-active', confidence: 'confirmed', group: ex.group,
     request: { method: 'GET', path },
-    info: { name, severity: sev, tags: ex.tags || ['exposure'], remediation: rem, classification: { cwe: ex.cwe, cvss: ex.cvss } },
+    info: { name, severity: sev, tags: ex.tags || ['exposure'], remediation: rem, classification: { cwe: ex.cwe, cve: ex.cve, cvss: ex.cvss } },
     matchers: [S(...(ex.status || [200])), m], matchersCondition: 'and', extractors: ex.extractors
   }
 }
@@ -1377,7 +1382,8 @@ function genActuators(): Template[] {
     af('act-legacy-trace', '/trace', 'medium', 'Spring legacy /trace exposed', ['"timestamp"', '"headers"'], 'Disable the legacy /trace actuator.', { cond: 'and', tags: ['exposure', 'spring', 'debug'] }),
     af('act-legacy-beans', '/beans', 'medium', 'Spring legacy /beans exposed', ['"bean"', '"scope"'], 'Disable the legacy /beans actuator.', { cond: 'and', tags: ['exposure', 'spring', 'debug'] }),
     // other frameworks
-    af('act-ignition', '/_ignition/health-check', 'high', 'Laravel Ignition reachable (CVE-2021-3129 surface)', ['"can_execute_commands"'], 'Upgrade facade/ignition and disable debug mode (APP_DEBUG=false).', { tags: ['exposure', 'laravel', 'debug'], cwe: ['CWE-200'] }),
+    // Require the value true: a false reply means the sensitive execution path is off.
+    af('act-ignition', '/_ignition/health-check', 'high', 'Laravel Ignition reachable (CVE-2021-3129 surface)', ['"can_execute_commands"\\s*:\\s*true'], 'Upgrade facade/ignition and disable debug mode (APP_DEBUG=false).', { rx: true, tags: ['exposure', 'laravel', 'debug'], cwe: ['CWE-200'], cve: ['CVE-2021-3129'] }),
     af('act-horizon', '/horizon/api/stats', 'medium', 'Laravel Horizon reachable', ['"jobsPerMinute"', 'Horizon'], 'Restrict Laravel Horizon to authorized users.', { cond: 'or', tags: ['exposure', 'laravel'] }),
     af('act-debugbar', '/_debugbar/open', 'medium', 'PHP Debug Bar reachable', ['phpdebugbar', '__meta'], 'Disable PHP Debug Bar in production.', { cond: 'or', tags: ['exposure', 'php', 'debug'] }),
     af('act-wdt', '/_wdt/latest', 'medium', 'Symfony Web Debug Toolbar reachable', ['sf-toolbar', 'Symfony'], 'Disable the Symfony profiler/WDT in production.', { cond: 'or', tags: ['exposure', 'symfony', 'debug'], cwe: ['CWE-489'] }),
