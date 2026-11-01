@@ -80,18 +80,27 @@ afterAll(async () => {
 })
 
 describe('GUI e2e — product-level KEV findings', () => {
-  it('a deep scan shows an Apache product finding labelled KEV product, with at most three CVE IDs', async () => {
+  it('a deep scan shows an Apache product finding as a KEV CVE count, without listing the IDs', async () => {
     await deepScan(A.page)
     await nav(A.page, 'Exposure Monitor')
     const row = A.page.locator('tr', { hasText: 'Apache HTTP Server detected' }).filter({ hasText: 'KEV product' })
     await row.waitFor({ state: 'visible', timeout: 15_000 })
-    expect((await row.textContent()) ?? '').toContain('(version not verified)')
-    const ids = ((await row.textContent()) ?? '').match(/CVE-\d{4}-\d+/g) ?? []
-    expect(ids.length).toBeGreaterThan(0)
-    expect(ids.length).toBeLessThanOrEqual(3)
+    const text = (await row.textContent()) ?? ''
+    expect(text).toContain('(version not verified)')
+    expect(text).toMatch(/\d+ KEV CVEs? \(product\)/)
+    expect(text).not.toMatch(/CVE-\d{4}-\d+/)
     await shot(A.page, 'fingerprint-01-product-finding')
     expect(A.pageErrors, `renderer errors: ${A.pageErrors.join(' | ')}`).toHaveLength(0)
   }, 240_000)
+
+  it('the full list is one click away in the Rule Engine', async () => {
+    await nav(A.page, 'Rule Engine')
+    await A.page.locator('tr', { hasText: 'Apache HTTP Server detected' }).first().click()
+    const detail = (await A.page.locator('tr.detail-row').first().textContent()) ?? ''
+    expect(detail).toContain('KEV CVEs for this product (not matched to your version)')
+    expect(detail).toMatch(/CVE-\d{4}-\d+/)
+    await shot(A.page, 'fingerprint-03-detail')
+  }, 60_000)
 
   it('product-level findings are not counted as actively exploited', async () => {
     await nav(A.page, 'Exposure Monitor')
