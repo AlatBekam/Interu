@@ -71,3 +71,40 @@ export function kevByProduct(keys: string[]): KevInfo[] {
   }
   return out
 }
+
+/** Short CVE label for a table cell: up to three IDs, then a count. The full list goes in a tooltip. */
+export function cveSummary(cves?: string[]): string {
+  if (!cves || cves.length === 0) return '—'
+  return cves.length > 3 ? `${cves.slice(0, 3).join(', ')} +${cves.length - 3}` : cves.join(', ')
+}
+
+/**
+ * CVE cell text. A product-level hit (tag kev-product) shows a count, not a list:
+ * its CVEs apply to the product in general, not to the detected version.
+ */
+export function cveCellText(f: { cve?: string[]; tags?: string[] }): string {
+  if (f.tags?.includes('kev-product')) {
+    const n = f.cve?.length ?? 0
+    if (n === 0) return '—'
+    return `${n} KEV ${n === 1 ? 'CVE' : 'CVEs'} (product)`
+  }
+  return cveSummary(f.cve)
+}
+
+/** Tooltip for the CVE cell: a product-level hit says its list is not matched to the version. */
+export function cveCellTitle(f: { cve?: string[]; tags?: string[] }): string | undefined {
+  if (!f.cve?.length) return undefined
+  const list = f.cve.join(', ')
+  return f.tags?.includes('kev-product')
+    ? `KEV CVEs for this product, not matched to the detected version: ${list}`
+    : list
+}
+
+/** Badge for a finding's KEV entries. A product-level hit is labelled as such, never as an exploited CVE. */
+export function kevBadge(f: { tags?: string[]; kev?: KevInfo[] }): { text: 'KEV' | 'KEV product'; title: string } | null {
+  if (!f.kev?.length) return null
+  if (f.tags?.includes('kev-product')) {
+    return { text: 'KEV product', title: `Product-level match, version not verified • ${kevTooltip(f.kev)}` }
+  }
+  return { text: 'KEV', title: kevTooltip(f.kev) }
+}

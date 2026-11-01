@@ -31,6 +31,7 @@ Panel "Recent Activity" di Dashboard membaca sumber yang sama (6 event terakhir)
 
 - Bukan IDS. Tidak melihat serangan terhadap komputer atau jaringanmu. Telemetri host (Windows Event Log, log firewall, IDS seperti Suricata) **tidak termasuk** dan merupakan fitur terpisah.
 - Aktivitas hilang saat aplikasi ditutup. Ini disengaja: tidak ada yang disimpan.
+- Temuan produk KEV (dari fingerprint banner/header) tidak dihitung sebagai "actively exploited"; lihat [041](041_rule-engine.md).
 - Firewall Rules dan kartu host di Dashboard masih memakai data mock (lihat [035](035_firewall.md)).
 
 ## File terkait

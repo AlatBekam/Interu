@@ -33,10 +33,15 @@ export function severityLevel(s: RuleSeverity): ActivityLevel {
   return 'info'
 }
 
+/** A version-blind product hit (see fingerprint.ts), not a CVE that is proven exploited here. */
+export function isProductLevel(f: Finding): boolean {
+  return !!f.tags?.includes('kev-product')
+}
+
 export function eventFromFinding(f: Finding, at = new Date().toISOString()): ActivityDraft {
   return {
     ts: at,
-    level: f.kev?.length ? 'crit' : severityLevel(f.severity),
+    level: isProductLevel(f) ? 'warn' : f.kev?.length ? 'crit' : severityLevel(f.severity),
     category: 'finding',
     message: `New finding: ${f.name}`,
     target: f.target
@@ -46,7 +51,7 @@ export function eventFromFinding(f: Finding, at = new Date().toISOString()): Act
 /** KEV-listed first, then severity, then confirmed before suspected. Never mutates the input. */
 export function priorityQueue(findings: Finding[], limit = Infinity): Finding[] {
   const rank = (f: Finding): number[] => [
-    f.kev?.length ? 0 : 1,
+    f.kev?.length && !isProductLevel(f) ? 0 : 1,
     SEVERITY_RANK[f.severity],
     f.confidence === 'confirmed' ? 0 : 1
   ]
@@ -76,7 +81,7 @@ export function exposureByTarget(findings: Finding[]): TargetExposure[] {
     const row = rows.get(host) ?? { host, total: 0, bySeverity: emptyBySeverity(), kev: 0 }
     row.total++
     row.bySeverity[f.severity]++
-    if (f.kev?.length) row.kev++
+    if (f.kev?.length && !isProductLevel(f)) row.kev++
     rows.set(host, row)
   }
   return [...rows.values()].sort((a, b) =>
@@ -88,7 +93,7 @@ export function summarize(findings: Finding[]): { critHigh: number; confirmed: n
   return {
     critHigh: findings.filter((f) => f.severity === 'critical' || f.severity === 'high').length,
     confirmed: findings.filter((f) => f.confidence === 'confirmed').length,
-    kev: findings.filter((f) => !!f.kev?.length).length,
+    kev: findings.filter((f) => !!f.kev?.length && !isProductLevel(f)).length,
     hosts: new Set(findings.map((f) => hostOf(f.target))).size
   }
 }

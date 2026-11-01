@@ -48,7 +48,7 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 | Dokumen | Status | Catatan utama |
 |---|---|---|
 | [030 Pengantar Operations](030_operations.md) | — | Mana yang sudah nyata, strategi untuk sisanya |
-| [031 Dashboard](031_dashboard.md) | ⚪ | Data dari `mock.ts` (store findings belum dipakai) |
+| [031 Dashboard](031_dashboard.md) | 🟡 | Panel Recent Activity nyata; kartu host masih dari `mock.ts` |
 | [032 Network Scanner](032_network-scanner.md) | ✅ | TCP connect scan nyata, scope-gated; mode simulasi tetap ada |
 | [033 Vulnerabilities](033_vulnerabilities.md) | 🟡 | Live = temuan Rule Engine (nyata); Demo = katalog statis |
 | [034 Exposure Monitor](034_threat-monitor.md) | ✅ | Temuan & aktivitas nyata (dulu Threat Monitor) |
@@ -61,7 +61,7 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 | Dokumen | Status | Catatan utama |
 |---|---|---|
 | [040 Pengantar Detection](040_detection.md) | — | Alur scanner/proxy/probe → Rule Engine → findings |
-| [041 Rule Engine](041_rule-engine.md) | ✅ | 27 template bergaya Nuclei; Suspected vs Confirmed; probe aktif scope-gated |
+| [041 Rule Engine](041_rule-engine.md) | ✅ | 408 template bergaya Nuclei; deteksi produk KEV; verifikasi probe; Suspected vs Confirmed |
 
 ### 09 — Penutup
 
