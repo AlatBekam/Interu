@@ -10,6 +10,7 @@ import { hostInScope } from '../../../../shared/http'
 import { useSettings } from '../../store/store'
 import { setTransfer } from '../../store/transfer'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
+import CopyButton from '../../components/CopyButton'
 
 type Mode = 'sim' | 'live'
 
@@ -45,7 +46,8 @@ export default function Target() {
         { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw, mode }); navigate('/web/repeater') } },
         { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw, mode }); navigate('/web/intruder') } },
         { sep: true },
-        { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(target + raw.split(' ')[1]) }
+        { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(target + raw.split(' ')[1]) },
+        { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) }
       ]
     })
   }
@@ -140,8 +142,8 @@ export default function Target() {
               <Panel title="Selected Item" sub={tx ? `${tx.method} ${tx.path}` : 'none'}>
                 {tx && (
                   <div className="split" style={{ gridTemplateColumns: '1fr' }}>
-                    <div><div className="code-head">Request</div><div className="code-pane" style={{ minHeight: 150, maxHeight: 190 }}>{rawRequest(tx)}</div></div>
-                    <div><div className="code-head">Response</div><div className="code-pane" style={{ minHeight: 150, maxHeight: 190 }}>{rawResponse(tx)}</div></div>
+                    <div><div className="code-head"><span>Request</span><CopyButton text={rawRequest(tx)} /></div><div className="code-pane" style={{ minHeight: 150, maxHeight: 190 }}>{rawRequest(tx)}</div></div>
+                    <div><div className="code-head"><span>Response</span><CopyButton text={rawResponse(tx)} /></div><div className="code-pane" style={{ minHeight: 150, maxHeight: 190 }}>{rawResponse(tx)}</div></div>
                   </div>
                 )}
               </Panel>
@@ -178,7 +180,12 @@ export default function Target() {
                 )}
               </Panel>
               <Panel title="Response" sub={selHit ? `GET ${selHit.path}` : 'select a path'}>
-                {selHit?.raw ? <div className="code-pane" style={{ minHeight: 300 }}>{selHit.raw}</div> : <div className="empty" style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Select a discovered path to view its real response.</div>}
+                {selHit?.raw ? (
+                  <>
+                    <div className="code-head"><span>Real response</span><CopyButton text={selHit.raw} /></div>
+                    <div className="code-pane" style={{ minHeight: 300 }}>{selHit.raw}</div>
+                  </>
+                ) : <div className="empty" style={{ minHeight: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Select a discovered path to view its real response.</div>}
               </Panel>
             </div>
           </>

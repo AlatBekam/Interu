@@ -8,6 +8,7 @@ import { parseRawRequest, sendLive } from '../../lib/http'
 import { hostInScope } from '../../../../shared/http'
 import { useSettings } from '../../store/store'
 import { useTransfer } from '../../store/transfer'
+import CopyButton from '../../components/CopyButton'
 
 interface Row { payload: string; status: number | string; length: number; ms: number; note?: string }
 type Mode = 'sim' | 'live'
@@ -129,7 +130,7 @@ export default function Intruder() {
 
         <div className="split mt-16">
           <Panel title="Positions" sub={`Wrap an injection point in §…§ · ${positions} marked`}>
-            <div className="code-head">Request template</div>
+            <div className="code-head"><span>Request template</span><CopyButton text={template} /></div>
             <textarea className="code-pane" value={template} onChange={(e) => setTemplate(e.target.value)} style={{ minHeight: 300 }} spellCheck={false} />
           </Panel>
           <Panel title="Payloads" sub="Choose a payload set">
@@ -138,6 +139,7 @@ export default function Intruder() {
                 {Object.keys(PAYLOAD_SETS).map((k) => <option key={k} value={k}>{k} ({PAYLOAD_SETS[k].length})</option>)}
               </select>
             </label>
+            <div className="code-head"><span>{PAYLOAD_SETS[setName].length} payloads</span><CopyButton text={PAYLOAD_SETS[setName].join('\n')} /></div>
             <div className="code-pane" style={{ minHeight: 170 }}>{PAYLOAD_SETS[setName].join('\n')}</div>
             <div className="flex gap-12 mt-16">
               {!running ? (

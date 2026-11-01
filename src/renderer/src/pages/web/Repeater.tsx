@@ -3,6 +3,7 @@ import TopBar from '../../components/TopBar'
 import { Panel, Disclaimer } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconSend } from '../../components/icons'
+import CopyButton from '../../components/CopyButton'
 import { HTTP_HISTORY, rawRequest, rawResponse, HttpTx } from '../../data/burp'
 import { parseRawRequest, sendLive } from '../../lib/http'
 import { hostInScope } from '../../../../shared/http'
@@ -111,11 +112,17 @@ export default function Repeater() {
 
         <div className="split mt-16">
           <Panel title="Request">
-            <div className="code-head">{mode === 'live' ? 'Editable raw request (path + headers)' : 'Editable raw request'}</div>
+            <div className="code-head">
+              <span>{mode === 'live' ? 'Editable raw request (path + headers)' : 'Editable raw request'}</span>
+              <CopyButton text={request} />
+            </div>
             <textarea className="code-pane" value={request} onChange={(e) => setRequest(e.target.value)} style={{ minHeight: 360 }} spellCheck={false} />
           </Panel>
           <Panel title="Response">
-            <div className="code-head">{mode === 'live' ? 'Real response' : 'Simulated response'}</div>
+            <div className="code-head">
+              <span>{mode === 'live' ? 'Real response' : 'Simulated response'}</span>
+              <CopyButton text={response} />
+            </div>
             {response ? (
               <div className="code-pane" style={{ minHeight: 360 }}>{response}</div>
             ) : (

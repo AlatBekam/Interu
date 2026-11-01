@@ -4,7 +4,11 @@
 
 ## Status
 
-✅ **NYATA** — Mesin deteksi bergaya Nuclei: template berupa **data**, dievaluasi terhadap sinyal nyata (hasil Network Scanner, respons Proxy yang ter-capture, dan probe HTTP aktif yang scope-gated). Tanpa eksploitasi. Diuji dengan `npm test` (vitest).
+✅ **NYATA** — Mesin deteksi bergaya Nuclei: template berupa **data**, dievaluasi terhadap sinyal nyata (hasil Network Scanner, respons Proxy yang ter-capture, dan probe HTTP aktif yang scope-gated). Tanpa eksploitasi (probe aktif hanya **membaca**). **408 template** (28 port/banner, 47 HTTP pasif, 333 HTTP aktif oracle-confirmed). Diuji dengan `npm test` (vitest, 47 tes).
+
+**Prinsip anti-false-positive:** setiap template HTTP aktif **wajib** punya penanda konten spesifik (tidak pernah status 200 saja — dijaga oleh tes `isStatusOnly`). Penanda yang terlalu ketat paling banter menghasilkan *false negative*, bukan *false positive*. Keluarga varian (mis. 12 ekstensi backup per file config) berbagi `group` sehingga `correlate` menyatukannya jadi **satu temuan per host**. Probe aktif dijalankan paralel terbatas (pool 10) dengan baseline soft-404 lebih dulu.
+
+Fitur engine kelas Nuclei yang sudah ada: **6+1 tipe matcher** (termasuk `dsl`), **extractors** (regex/kval/word → data terstruktur), **interpolasi variabel** `{{BaseURL}}`/`{{Hostname}}`/dll, **baseline soft-404** anti false-positive, **korelasi Suspected→Confirmed**, dan **penyimpanan bukti request/response** per temuan.
 
 ## Tujuan fitur
 
@@ -37,9 +41,46 @@ flowchart LR
 
 ### Matcher
 
-- Tipe: `status`, `word`, `regex`, `port`, `service`, `time`. Gabungan per matcher via `condition` (and/or), antar matcher via `matchersCondition` (default `and`). `negative: true` = cocok bila pola **tidak ada** (header hilang).
+- Tipe: `status`, `word`, `regex`, `port`, `service`, `time`, **`dsl`**. Gabungan per matcher via `condition` (and/or), antar matcher via `matchersCondition` (default `and`). `negative: true` = cocok bila pola **tidak ada** (header hilang).
 - `part`: `header` / `body` / `response` / `banner`.
 - Regex dikompilasi dengan flag `im` (case-insensitive, `^`/`$` per baris) — tiap baris `Set-Cookie` dinilai terpisah, jadi satu cookie tanpa flag sudah cukup memicu temuan.
+
+### Matcher `dsl` (bahasa ekspresi aman)
+
+`src/shared/dsl.ts` adalah evaluator ekspresi **tanpa `eval`** (tokenizer + recursive-descent parser → AST → evaluasi atas konteks fakta tetap). Template tidak akan pernah bisa menjalankan kode sembarang.
+
+- Variabel: `status`, `content_length`, `duration` (ms), `body`, `header`, `response`, `banner`, `port`, `service`. Variabel tak dikenal = `null` (falsey), tidak error.
+- Operator: `! -`, `* / %`, `+ -`, `< <= > >=`, `== !=`, `&& ||`. `+` menyambung string bila salah satu sisi bukan angka.
+- Fungsi: `len`, `contains`, `icontains`, `startswith`, `endswith`, `regex(pola, teks)`, `tolower`, `toupper`, `trim`, `int`, `str`.
+- Contoh: `status == 200 && contains(body, "phpinfo()") && content_length > 50`. Ekspresi yang gagal di-parse dihitung **false** (tidak crash).
+
+### Extractors
+
+`extractors[]` pada template menarik data terstruktur saat template cocok, disimpan di `finding.extracted` (mis. versi PHP, `cluster_name`, username, kunci API).
+
+- `type: 'regex'` (dengan `group` untuk capture group), `'kval'` (baca header `key: value`), `'word'`.
+- Contoh: `http-server-version` meng-extract header `Server`; `expose-phpinfo` meng-extract `PHP Version`; `expose-wp-users` meng-extract tiap `slug`.
+
+### Interpolasi variabel (probe aktif)
+
+`request.path/headers/body` mendukung `{{Nama}}` ala Nuclei, diisi `requestVars(baseUrl)`:
+
+`{{BaseURL}}` `{{RootURL}}` `{{Hostname}}` `{{Host}}` `{{Port}}` `{{Scheme}}` `{{Path}}` `{{RandomString}}`. Path boleh URL absolut (lewat `{{BaseURL}}`) atau root-relative (`/.git/config`).
+
+### Baseline soft-404 (anti false-positive)
+
+Sebelum menjalankan probe aktif, `RuleEngine.tsx` mem-probe satu path yang **dijamin tidak ada** (`/interu-not-here-<random>.html`) lalu `computeBaseline(res)`:
+
+- Jika host tak merespons → probe **dibatalkan** (tidak ada gunanya menembak terus).
+- Jika server menjawab 2xx untuk path acak itu = **catch-all** → temuan yang hanya mengandalkan status (`isStatusOnly`) di-**demote** ke `suspected` dengan catatan `baseline: server is catch-all 2xx`. Template yang punya penanda konten tetap `confirmed` (halaman catch-all tak memuat penanda spesifik).
+
+### Korelasi (Suspected → Confirmed)
+
+Template boleh punya `group`. `correlate(findings)` menggabungkan temuan yang berbagi `group` + `target`: yang berkeyakinan lebih tinggi (confirmed > suspected, lalu severity) **menang**, sisanya ditandai `superseded` (disembunyikan default di tabel, bisa ditampilkan). Inilah jalur upgrade suspected → confirmed saat oracle membuktikan isu yang sama. Dipanggil di `addFindings`.
+
+### Bukti request/response
+
+Temuan aktif menyimpan `request` (baris request yang dikirim) dan `response` (mentah, dipotong ~8 KB) untuk Reports; temuan pasif menyimpan `response`; plus `matchedAt`, `extracted`, `cwe`, `cvss`, `reference`, `mitre`. Tabel Findings bisa di-klik untuk membuka baris detail.
 
 ### Kunci temuan (de-dup)
 
@@ -48,57 +89,69 @@ flowchart LR
 - Store dipotong ke **1000** temuan paling parah (`sortFindings`: severity → confirmed dulu → target).
 - Flag `persistence` (Settings) dihormati saat load dan save; bila off, Clear juga menghapus data tersimpan.
 
-### Katalog template (27)
+### Katalog template (408)
 
-**Port — 11** (`analyzeScan`)
+Daftar lengkap ada di **Template library** (UI Rule Engine) dan di `src/shared/rules.ts`. Katalog = **CURATED** (kurasi tangan) + **generator packs** (ekspansi data-driven). Ringkasan:
 
-| ID | Severity | Confidence | Pemicu |
-| --- | --- | --- | --- |
-| `svc-telnet-exposed` | high | suspected | port 23 |
-| `svc-ftp-exposed` | medium | suspected | port 21 |
-| `svc-smb-exposed` | high | suspected | port 445 |
-| `svc-rdp-exposed` | high | suspected | port 3389 |
-| `svc-db-exposed` | high | suspected | 3306, 5432, 1433, 1521 |
-| `svc-nosql-exposed` | high | suspected | 6379, 27017, 9200, 11211 |
-| `svc-vnc-exposed` | high | suspected | 5900, 5901 |
-| `svc-docker-exposed` | critical | suspected | 2375, 2376 |
-| `banner-vsftpd-234` | critical | suspected | banner `vsftpd 2.3.4` (CVE-2011-2523) |
-| `banner-openssh-regresshion` | high | suspected | banner `OpenSSH_8.5–9.7` (CVE-2024-6387) |
-| `banner-apache-traversal` | critical | suspected | banner `Apache/2.4.49/50` (CVE-2021-41773, CVE-2021-42013) |
+**Generator packs** (fungsi `gen*()` di `rules.ts`, digabung ke `TEMPLATES`):
+- `genBackups` — 8 file config × 12 ekstensi backup (`.bak/.old/~/…`), penanda = isi rahasia (DB_PASSWORD dll), per-config `group` → dedup.
+- `genEnv` — 9 varian `.env.*` (penanda `APP_/DB_/SECRET=…`, +extract key).
+- `genFiles` — ~45 file spesifik: VCS (`.git/index|logs|packed-refs`), log (Laravel/Rails/error/debug), CI/IaC (CircleCI/GitHub Actions/Jenkinsfile/Terraform state/Ansible/serverless), kredensial cloud (`.aws/config`, `.boto`, `.s3cfg`, `.docker/config.json`, `.kube/config`, `.netrc`), config app (appsettings.json/web.config/htaccess), manifest dependensi, info (robots/sitemap/security.txt).
+- `genActuators` — ~22 surface debug: Spring Actuator (beans/env/threaddump/httptrace/prometheus/gateway/…) + legacy `/env`/`/trace`/`/beans`, Laravel Ignition/Horizon/DebugBar, Symfony WDT, Rails info, Werkzeug console, Sidekiq.
+- `genApis` — ~10 spesifikasi API (Swagger/OpenAPI v2/v3, GraphiQL/Playground, WADL, OIDC discovery, OData).
+- `genPanels` — ~90 deteksi panel/produk (path kanonik + penanda nama produk → FP sangat kecil): Joomla, Magento, Grafana, Jenkins, GitLab, Jira/Confluence, SonarQube, Nexus, Artifactory, Harbor, Rancher, Prometheus, Consul, Vault, Traefik, Airflow, Metabase, Jupyter, Zabbix, WebLogic/WebSphere/JBoss, ColdFusion, Tomcat sample apps, Spark/Hadoop/NiFi/Flink, MinIO, pfSense/OPNsense/MikroTik, dsb.
+- `genSecrets` — 11 regex token presisi di body (Stripe `sk_live`, GitHub PAT, GitLab PAT, Slack, SendGrid, Mailgun, Twilio, npm, Google OAuth, PGP).
+- `genTechHeaders` — 8 cookie fingerprint (PHPSESSID/JSESSIONID/ASP.NET_SessionId/laravel_session/…) + 5 header (X-Generator/X-Drupal/X-Varnish/x-amz/Server-tech).
+- `genPortVersions` — 6 banner versi (SSH/FTP/SMTP/HTTP/MySQL/Redis, info + extract versi).
 
-Semua `svc-*` **suspected** karena yang diketahui hanya nomor port, bukan layanan yang benar-benar berjalan. Template banner hanya bisa cocok di profil scan `deep`.
+Ringkasan kurasi (CURATED):
 
-**HTTP pasif — 11** (`analyzeHttpResponse`)
+**Port / banner — 28 total** (`analyzeScan`, semua **suspected** — scan hanya membuktikan port terbuka, bukan layanan sebenarnya)
 
-| ID | Severity | Confidence | Pemicu | Kunci |
-| --- | --- | --- | --- | --- |
-| `http-missing-hsts` | low | confirmed | tanpa `Strict-Transport-Security` (HTTPS saja) | origin |
-| `http-missing-csp` | low | confirmed | tanpa `Content-Security-Policy` | origin |
-| `http-missing-xfo` | low | confirmed | tanpa `X-Frame-Options` / `frame-ancestors` | origin |
-| `http-missing-xcto` | info | confirmed | tanpa `X-Content-Type-Options` | origin |
-| `http-server-version` | low | confirmed | header `Server` berisi versi | origin |
-| `http-powered-by` | info | confirmed | ada `X-Powered-By` | origin |
-| `http-cookie-httponly` | low | confirmed | `Set-Cookie` tanpa `HttpOnly` | origin |
-| `http-cookie-secure` | medium | confirmed | `Set-Cookie` tanpa `Secure` (HTTPS saja) | origin |
-| `http-dir-listing` | medium | confirmed | status 200 + `Index of /` | URL |
-| `http-sql-error` | high | suspected | pesan error SQL di body | URL |
-| `http-stacktrace` | medium | suspected | stack trace / debug di body | URL |
+- **14 layanan ter-ekspos** (`svc-*`): telnet, ftp, smb/netbios, rdp, database (MySQL/PostgreSQL/MSSQL/Oracle/DB2), NoSQL/cache (Redis/Mongo/Elastic/Memcached/CouchDB/Cassandra), message broker (RabbitMQ/AMQP/MQTT/Kafka), VNC, X11, SMTP, LDAP/SNMP/NFS/rpcbind, Docker API, Kubernetes/etcd, port backdoor umum (4444/31337/1337/12345).
+- **8 banner → CVE** (hanya CVE mapan, tetap suspected karena banner bisa dipalsukan/back-port): vsftpd 2.3.4 `CVE-2011-2523`, ProFTPD 1.3.5 `CVE-2015-3306`, OpenSSH 8.5–9.7 regreSSHion `CVE-2024-6387`, OpenSSH <7.7 user-enum `CVE-2018-15473`, Apache 2.4.49/50 `CVE-2021-41773`/`CVE-2021-42013`, nginx 1.3.9–1.4.0 `CVE-2013-2028`, Exim 4.87–4.91 `CVE-2019-10149`, IIS 6.0 WebDAV `CVE-2017-7269`. Banner hanya ter-grab di profil scan `deep`.
 
-**HTTP aktif — 5** (`matchActive`, semua status 200 + pola body)
+**HTTP pasif — 23** (`analyzeHttpResponse`)
 
-| ID | Severity | Confidence | Probe |
-| --- | --- | --- | --- |
-| `expose-git-config` | high | confirmed | `GET /.git/config` |
-| `expose-dotenv` | critical | confirmed | `GET /.env` |
-| `expose-phpinfo` | medium | confirmed | `GET /phpinfo.php` |
-| `expose-backup-sql` | high | confirmed | `GET /backup.sql` |
-| `expose-apache-status` | medium | confirmed | `GET /server-status` |
+- **Header keamanan hilang** (origin-wide, confirmed): HSTS, CSP, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy.
+- **CORS**: `access-control-allow-origin: *` (medium), reflektif + credentials (high).
+- **Cookie** (per baris `Set-Cookie`): tanpa HttpOnly, tanpa Secure (HTTPS), tanpa SameSite.
+- **Disclosure/debug**: Server version (+extract), X-Powered-By (+extract), ASP.NET version, header debug Symfony, Basic-auth via HTTP, IP privat (RFC1918, +extract), kebocoran secret/API key di body (AWS/Google/GitHub/Slack/private key, +extract), JWT di body.
+- **Body**: directory listing, halaman default server (nginx/Apache/IIS), pesan error SQL (suspected), stack trace/debug (suspected).
+
+**HTTP aktif — 58** (`matchActive`, scope-gated, **confirmed**, semua GET + penanda konten spesifik — baca saja)
+
+- **VCS/SCM**: `.git/config`, `.git/HEAD`, `.git-credentials`, `.svn/wc.db`, `.hg/requires`, `.bzr/README`.
+- **Env/secret/config**: `.env` (+extract keys), `.aws/credentials`, `.npmrc`, `.htpasswd`, `web.config`, `id_rsa`, `docker-compose.yml`, `Dockerfile`, `composer.json`, `package.json`, `.gitlab-ci.yml`, `.DS_Store`, `wp-config.php.bak`.
+- **Backup/dump SQL**: `backup.sql`, `dump.sql`, `database.sql` (satu `group` → dedup).
+- **Status/info**: Apache `server-status`/`server-info`, nginx `stub_status`, `phpinfo.php`/`info.php` (+extract versi PHP).
+- **Framework/actuator/debug**: Spring `actuator`/`/env`/`/health`, Symfony profiler, Laravel Telescope, Go `pprof`, ASP.NET `trace.axd`, ELMAH.
+- **API**: `swagger.json`, `openapi.json`, Swagger UI, GraphQL introspection.
+- **CMS**: WP user-enum `wp-json/wp/v2/users` (+extract slug), WP `debug.log`, `wp-login.php`, `readme.html` (+extract versi), Drupal `CHANGELOG.txt` (+extract versi).
+- **Policy**: `crossdomain.xml`/`clientaccesspolicy.xml` wildcard.
+- **DB over HTTP**: Elasticsearch (+extract cluster), CouchDB.
+- **Panel** (deteksi keberadaan, bukan bypass): phpMyAdmin, Adminer, Tomcat Manager, Solr, Jenkins, Grafana, Kibana, GitLab, Jira, Webmin.
+
+### Attack / Defense advisor (`advice.ts`)
+
+Tiap temuan **confirmed** otomatis dapat dua rekomendasi lewat `getAdvice(finding)` (modul murni `src/shared/advice.ts`, di-key per **kelas kerentanan**, bukan per-template):
+
+- **🛡 Defense (patching)**: ringkasan, langkah, dan **snippet config siap-salin** (nginx/Apache/framework), plus tombol **Re-test fix** (untuk temuan aktif: jalankan ulang oracle template yang sama; kalau sudah tidak cocok → temuan dihapus dari store = loop tertutup).
+- **⚔ Attack**: berlabel `kind` —
+  - `verify` = reproduksi **baca-saja** (mengulang bukti yang sama persis dengan oracle → deterministik, **tak mungkin false-positive**); app boleh jalan sendiri.
+  - `operator` = payload **disiapkan**, dieksekusi manual via **Send to Repeater/Intruder** (tanpa auto-exploit; SQLi pakai payload *deteksi* boolean/time, panel pakai daftar default-cred).
+  - `info` = tak ada eksploit server langsung (mis. header hardening hilang) → penjelasan risiko + **PoC lokal tak berbahaya** (clickjacking iframe, fetch CORS).
+- Label `destructive-capable` muncul bila `safe=false` (mis. pakai token bocor / exploit CVE). Semua handoff tetap **scope-gated**.
+
+Anti-FP: advisor **tidak** melakukan deteksi baru — murni menurunkan aksi dari temuan yang sudah confirmed. Diuji di `advice.test.ts` (9 tes).
 
 ## File terkait
 
 | File | Fungsi / data utama |
 | --- | --- |
-| [../src/shared/rules.ts](../src/shared/rules.ts) | `TEMPLATES`, `evalMatcher`, `analyzeScan`, `analyzeHttpResponse`, `buildActiveRequest`, `matchActive`, `sortFindings` |
+| [../src/shared/rules.ts](../src/shared/rules.ts) | `TEMPLATES` (408 = CURATED + `gen*` packs), `evalMatcher`, extractors, `analyzeScan`, `analyzeHttpResponse`, `buildActiveRequest`/`interpolate`/`requestVars`, `matchActive`, `computeBaseline`, `correlate`, `sortFindings` |
+| [../src/shared/dsl.ts](../src/shared/dsl.ts) | Evaluator ekspresi DSL aman (tokenizer + parser + eval, tanpa `eval`) |
+| [../src/shared/advice.ts](../src/shared/advice.ts) | `getAdvice(finding)` → rekomendasi Defense (patching) + Attack (verify/operator/info) per kelas |
 | [../src/renderer/src/store/findings.ts](../src/renderer/src/store/findings.ts) | Store `ruy.v1.findings`: `addFindings`, `clearFindings`, `useFindings`, batas 1000 |
 | [../src/renderer/src/pages/RuleEngine.tsx](../src/renderer/src/pages/RuleEngine.tsx) | Halaman `/detection`: probe aktif, tabel Findings, Template library |
 | [../src/renderer/src/pages/NetworkScanner.tsx](../src/renderer/src/pages/NetworkScanner.tsx) | Memanggil `analyzeScan` setelah scan Live |
@@ -107,7 +160,8 @@ Semua `svc-*` **suspected** karena yang diketahui hanya nomor port, bukan layana
 | [../src/main/index.ts](../src/main/index.ts) | Handler `ruy:http` (scope gate probe aktif) |
 | [../src/main/proxy.ts](../src/main/proxy.ts) | Proxy hanya me-log/dekripsi host in-scope |
 | [../src/renderer/src/App.tsx](../src/renderer/src/App.tsx) · [../src/renderer/src/components/Sidebar.tsx](../src/renderer/src/components/Sidebar.tsx) | Route `/detection`, grup sidebar "Detection" |
-| [../src/shared/rules.test.ts](../src/shared/rules.test.ts) | Tes cookie rules & target temuan (origin vs URL) |
+| [../src/shared/rules.test.ts](../src/shared/rules.test.ts) | Tes cookie, CORS, secret-leak, banner, interpolasi, oracle, baseline, korelasi, integritas katalog |
+| [../src/shared/dsl.test.ts](../src/shared/dsl.test.ts) | Tes evaluator DSL (literal, operator, fungsi, keamanan) |
 
 ## Cara pakai
 
@@ -120,27 +174,30 @@ Semua `svc-*` **suspected** karena yang diketahui hanya nomor port, bukan layana
 
 ## Batasan / temuan
 
-- Tidak ada **extractor** (mis. menarik versi ke field terpisah) — bukti hanya string `evidence`.
-- Matcher `time` dan `service` sudah diimplementasi tetapi **belum dipakai** template mana pun.
-- Tidak ada **baseline soft-404**: server yang menjawab 200 untuk semua path bisa memicu false positive bila body juga cocok.
-- **Suspected tidak pernah di-upgrade** jadi Confirmed: probe aktif memakai template & key berbeda, jadi keduanya muncul terpisah.
-- Probe aktif berurutan, satu base URL per jalan, timeout 8000 ms; berhenti di probe pertama yang di-block scope.
+- Matcher `time` dan `service` sudah diimplementasi tetapi belum ada template yang memakainya (disediakan untuk template mendatang).
+- Korelasi `group` sekarang men-dedup/menandai `superseded`, tetapi belum ada pasangan suspected-port → confirmed-aktif yang terhubung otomatis (butuh probe yang membuktikan layanan, bukan sekadar versi).
+- Probe aktif berurutan, satu base URL per jalan, timeout 8000 ms; berhenti di probe pertama yang di-block scope. 58 probe = bisa makan waktu bila host lambat (ada guard: dibatalkan jika host mati).
 - Template di-hardcode di `rules.ts` (belum bisa memuat file YAML/JSON dari luar).
-- Komentar kepala `rules.ts` masih menyebut "open port … confirmed", padahal kini semua template port = suspected.
+- Beberapa template aktif meng-GET `/` (Elasticsearch/CouchDB/Webmin) — penanda konten spesifik mencegah tabrakan, tetapi baseline hanya mem-probe satu path acak.
 
 ## Checklist pengerjaan
 
-- [x] Mesin template data-driven dengan 6 tipe matcher + kondisi and/or + negative.
-- [x] 27 template: 11 port, 11 HTTP pasif, 5 HTTP aktif.
+- [x] Mesin template data-driven dengan 7 tipe matcher (termasuk `dsl`) + kondisi and/or + negative.
+- [x] **408 template**: 28 port/banner, 47 HTTP pasif, 333 HTTP aktif (CURATED + generator packs data-driven).
+- [x] Anti-FP: setiap probe aktif wajib penanda konten (tes `isStatusOnly`), varian dedup via `group`, runner paralel pool 10.
 - [x] Jalur Scanner → `analyzeScan`, Proxy → `analyzeHttpResponse`, probe aktif scope-gated.
 - [x] Store temuan bersama, de-dup per key, batas 1000, hormati flag persistence.
 - [x] Temuan header per origin, body per URL; cookie dinilai per baris.
 - [x] Halaman `/detection` + grup sidebar "Detection".
-- [x] Tes vitest (`rules.test.ts`, `scope.test.ts`).
-- [ ] Upgrade Suspected → Confirmed saat oracle membuktikan temuan yang sama.
-- [ ] Baseline soft-404 sebelum probe aktif.
-- [ ] Extractor (versi, token) ke field terstruktur.
-- [ ] Pakai matcher `time`/`service` (mis. time-based check, verifikasi service dari banner).
-- [ ] Muat template dari file eksternal (YAML/JSON) agar bisa ditambah tanpa rebuild.
-- [ ] Simpan bukti request/response lengkap per temuan untuk Reports.
+- [x] Tes vitest (`rules.test.ts`, `dsl.test.ts`, `scope.test.ts` — 45 tes).
+- [x] Matcher `dsl`: evaluator ekspresi aman tanpa `eval` (`dsl.ts`).
+- [x] Extractor (versi, token, cluster, slug) ke field `extracted` terstruktur.
+- [x] Interpolasi variabel `{{BaseURL}}`/`{{Hostname}}`/dll di request aktif.
+- [x] Baseline soft-404 sebelum probe aktif (+ guard host mati).
+- [x] Korelasi `group`: confirmed menggeser suspected → `superseded`.
+- [x] Simpan bukti request/response + `matchedAt` per temuan (untuk Reports).
+- [x] Baris detail temuan di UI (extracted, request, response, CWE/CVSS/ATT&CK).
 - [x] Perbarui komentar kepala `rules.ts` agar sesuai (port = suspected).
+- [ ] Hubungkan pasangan suspected (scanner) → confirmed (aktif) via `group` nyata.
+- [ ] Pakai matcher `time`/`service` di template konkret.
+- [ ] Muat template dari file eksternal (YAML/JSON) agar bisa ditambah tanpa rebuild.
