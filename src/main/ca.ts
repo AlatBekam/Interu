@@ -1,12 +1,20 @@
 import forge from 'node-forge'
-import { app } from 'electron'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { app, safeStorage } from 'electron'
+import { existsSync, mkdirSync, readFileSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
 
 // Local certificate authority for HTTPS interception (TLS MITM).
 // A root CA is generated once and persisted; per-host leaf certificates are
 // minted on demand and cached. The embedded proxied browser trusts this CA
 // automatically; for an external browser the user exports & trusts the CA.
+//
+// The CA's PRIVATE KEY is secret (it can mint certs for any host), so it is
+// stored encrypted at rest with Electron safeStorage — OS-backed (DPAPI on
+// Windows, Keychain on macOS), bound to the current OS user. A legacy plaintext
+// key from an older build is migrated to the encrypted form on first read. The
+// CA certificate itself is public and stays as plain PEM.
+
+export const CA_COMMON_NAME = 'Interu Root CA'
 
 export interface CaBundle {
   caCert: forge.pki.Certificate
@@ -21,6 +29,43 @@ function caDir(): string {
   const d = join(app.getPath('userData'), 'ca')
   if (!existsSync(d)) mkdirSync(d, { recursive: true })
   return d
+}
+
+function certPathOf(): string { return join(caDir(), 'interu-ca.crt') }
+function keyPlainPathOf(): string { return join(caDir(), 'interu-ca.key') }
+function keyEncPathOf(): string { return join(caDir(), 'interu-ca.key.enc') }
+
+/** Persist the CA private key, encrypted with safeStorage when available. */
+function writeCaKey(pem: string): void {
+  if (safeStorage.isEncryptionAvailable()) {
+    writeFileSync(keyEncPathOf(), safeStorage.encryptString(pem))
+    try { rmSync(keyPlainPathOf(), { force: true }) } catch { /* ignore */ }
+  } else {
+    // Rare: OS keyring unavailable. Fall back to plaintext so the tool still
+    // works, but this is the less-safe path.
+    console.warn('[interu] safeStorage unavailable — CA key stored unencrypted')
+    writeFileSync(keyPlainPathOf(), pem)
+  }
+}
+
+/** Read the CA private key PEM, migrating a legacy plaintext key to encrypted. */
+function readCaKey(): string | null {
+  const encPath = keyEncPathOf()
+  const plainPath = keyPlainPathOf()
+  try {
+    if (existsSync(encPath) && safeStorage.isEncryptionAvailable()) {
+      return safeStorage.decryptString(readFileSync(encPath))
+    }
+  } catch { /* fall through to plaintext/regenerate */ }
+  try {
+    if (existsSync(plainPath)) {
+      const pem = readFileSync(plainPath, 'utf8')
+      // Migrate the old plaintext key to the encrypted store, then remove it.
+      if (safeStorage.isEncryptionAvailable()) writeCaKey(pem)
+      return pem
+    }
+  } catch { /* regenerate */ }
+  return null
 }
 
 function createRootCA(): CaBundle {
@@ -48,13 +93,12 @@ function createRootCA(): CaBundle {
 
 export function getCA(): CaBundle {
   if (bundle) return bundle
-  const dir = caDir()
-  const certPath = join(dir, 'interu-ca.crt')
-  const keyPath = join(dir, 'interu-ca.key')
+  const certPath = certPathOf()
   try {
-    if (existsSync(certPath) && existsSync(keyPath)) {
+    const keyPem = readCaKey()
+    if (existsSync(certPath) && keyPem) {
       const caCert = forge.pki.certificateFromPem(readFileSync(certPath, 'utf8'))
-      const caKey = forge.pki.privateKeyFromPem(readFileSync(keyPath, 'utf8')) as forge.pki.rsa.PrivateKey
+      const caKey = forge.pki.privateKeyFromPem(keyPem) as forge.pki.rsa.PrivateKey
       bundle = { caCert, caKey, caPem: forge.pki.certificateToPem(caCert) }
       return bundle
     }
@@ -64,11 +108,29 @@ export function getCA(): CaBundle {
   bundle = createRootCA()
   try {
     writeFileSync(certPath, bundle.caPem)
-    writeFileSync(keyPath, forge.pki.privateKeyToPem(bundle.caKey))
+    writeCaKey(forge.pki.privateKeyToPem(bundle.caKey))
   } catch {
     /* non-fatal */
   }
   return bundle
+}
+
+/** Delete the stored CA (cert + key, encrypted and legacy) and clear caches.
+ *  The next getCA() mints a fresh root CA; any browser/OS that trusted the old
+ *  CA no longer trusts the new one until re-exported. */
+export function deleteCA(): void {
+  bundle = null
+  hostCache.clear()
+  for (const p of [certPathOf(), keyPlainPathOf(), keyEncPathOf()]) {
+    try { rmSync(p, { force: true }) } catch { /* ignore */ }
+  }
+}
+
+/** SHA-256 fingerprint of the root CA cert (hex, colon-separated), for display. */
+export function caFingerprint(): string {
+  const der = forge.asn1.toDer(forge.pki.certificateToAsn1(getCA().caCert)).getBytes()
+  const hex = forge.md.sha256.create().update(der).digest().toHex().toUpperCase()
+  return hex.match(/.{2}/g)?.join(':') ?? hex
 }
 
 /** PEM for a leaf certificate valid for `host`, signed by the root CA. */

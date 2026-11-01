@@ -4,8 +4,9 @@
 
 ## 1. Status
 
-✅ **NYATA** — root CA dan sertifikat per-host dibuat dengan node-forge dan
-dipakai untuk mendekripsi HTTPS di proxy. Berfungsi penuh.
+✅ **NYATA & DIPERKUAT** — root CA dan sertifikat per-host dibuat dengan
+node-forge untuk mendekripsi HTTPS di proxy. Private key CA kini **disimpan
+terenkripsi** (Electron safeStorage/DPAPI) dan ada **Remove CA** (`deleteCA()`).
 
 ## 2. Tujuan fitur
 
@@ -15,11 +16,18 @@ Interu, sehingga trafik HTTPS bisa dibaca dan diintercept.
 
 ## 3. Cara kerja
 
-- `getCA()` — kembalikan bundle CA (cert + key). Dibaca dari
-  `userData/ca/interu-ca.crt` & `interu-ca.key` bila ada; jika tidak ada atau
-  gagal dibaca, `createRootCA()` membuat baru (RSA 2048, `commonName` "Interu
-  Root CA", `basicConstraints cA:true`, masa berlaku 10 tahun) lalu menulisnya ke
-  disk. Di-cache di memori (`bundle`).
+- `getCA()` — kembalikan bundle CA (cert + key). Cert publik dibaca dari
+  `userData/ca/interu-ca.crt`; private key dibaca dari `interu-ca.key.enc`
+  (terenkripsi safeStorage/DPAPI). Jika tidak ada/gagal, `createRootCA()` membuat
+  baru (RSA 2048, CN "Interu Root CA", `cA:true`, berlaku 10 tahun) lalu menulis
+  cert plaintext + **key terenkripsi**. Key plaintext lama (`interu-ca.key`) dari
+  build sebelumnya otomatis **dimigrasi** ke bentuk terenkripsi lalu dihapus.
+  Di-cache di memori (`bundle`).
+- `writeCaKey()/readCaKey()` — enkripsi/dekripsi key via Electron `safeStorage`
+  (DPAPI di Windows, Keychain di macOS), terikat ke user OS. Bila keyring OS tak
+  tersedia, fallback plaintext dengan peringatan.
+- `deleteCA()` — hapus cert + key (enc & plaintext) dan reset cache; CA baru
+  dibuat otomatis saat dipakai lagi. `caFingerprint()` — SHA-256 cert untuk UI.
 - `getHostCert(host)` — buat/cache leaf cert untuk host (RSA 2048, SAN DNS atau IP,
   `extKeyUsage serverAuth`, berlaku 2 tahun), ditandatangani oleh key CA.
   Dipakai oleh `SNICallback` server MITM di `proxy.ts`.
@@ -38,8 +46,9 @@ flowchart TD
   G --> H["Handshake TLS selesai"]
 ```
 
-**Trust:** browser bawaan "Open Browser" memercayai CA otomatis lewat
-`ses.setCertificateVerifyProc((_req, cb) => cb(0))` di `../src/main/index.ts`.
+**Trust:** browser bawaan "Open Browser" memercayai CA lewat
+`setCertificateVerifyProc` di `../src/main/index.ts` — kini **hanya** cert yang
+di-issue `Interu Root CA` yang di-`cb(0)`; cert lain divalidasi normal (`cb(-3)`).
 Browser eksternal harus meng-import `Interu-Root-CA.crt` manual (lihat
 [002](002_setup-dan-build.md)).
 
@@ -60,12 +69,11 @@ Browser eksternal harus meng-import `Interu-Root-CA.crt` manual (lihat
 
 ## 6. Batasan / temuan
 
-- **Private key tanpa enkripsi.** `interu-ca.key` ditulis via
-  `forge.pki.privateKeyToPem(bundle.caKey)` tanpa passphrase. Siapa pun yang
-  membaca file itu bisa menyamar sebagai CA tepercaya di mesin yang trust CA
-  tersebut.
-- **Tanpa cleanup / revoke.** Tidak ada kode untuk menghapus folder `ca/`,
-  mencabut CA, atau men-distrust. Hapus trust harus manual di OS/browser.
+- **Private key kini terenkripsi** via safeStorage (DPAPI) — tidak lagi plaintext.
+  Hanya user OS yang sama yang bisa mendekripsi. Fallback plaintext hanya bila
+  keyring OS tak tersedia (jarang), dengan peringatan di konsol.
+- **Remove CA tersedia** (`deleteCA()` + tombol di UI Proxy): menghapus cert+key.
+  Men-distrust di OS/browser tetap manual (CA bisa sudah di-import ke sana).
 - **Cache host hanya di memori** (`hostCache` Map) — leaf cert tak dipersist,
   dibuat ulang tiap proses; wajar.
 - `getHostCert` memakai `serialNumber` berbasis `Date.now()+random` — cukup unik,
@@ -75,8 +83,8 @@ Browser eksternal harus meng-import `Interu-Root-CA.crt` manual (lihat
 
 ## 7. Checklist pengerjaan
 
-- [ ] Enkripsi `interu-ca.key` saat ditulis (passphrase via `privateKeyToPem(key, passphrase)` atau DPAPI Windows).
-- [ ] Tambah fungsi `deleteCA()` / tombol "Remove CA" yang menghapus folder `ca/` dan reset `bundle`.
+- [x] Enkripsi `interu-ca.key` saat ditulis (Electron safeStorage / DPAPI) + migrasi key plaintext lama.
+- [x] Tambah fungsi `deleteCA()` + tombol "Remove CA" (handler `ruy:proxy:removeCA`, UI Proxy) yang menghapus cert+key dan reset `bundle`.
 - [ ] Tambah helper/instruksi uninstall trust (certmgr / Firefox) di UI setelah export.
 - [ ] Batasi izin file pada folder `ca/` (ACL/permission) saat dibuat.
 - [ ] Pertimbangkan masa berlaku CA lebih pendek + regenerasi, bukan 10 tahun.

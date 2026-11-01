@@ -106,6 +106,13 @@ export default function Proxy() {
     setCaNote(r.ok ? `✓ Root CA diekspor ke: ${r.path} — import & trust di OS/browser untuk dekripsi https di browser eksternal.` : `⚠ ${r.error}`)
   }
 
+  const removeCA = async () => {
+    if (!hasBridge) return
+    if (!window.confirm('Hapus root CA Interu (cert + private key terenkripsi)? Browser/OS yang sudah mem-trust CA lama tidak akan mempercayai CA baru sampai di-export & di-trust ulang.')) return
+    const r = await window.ruy.proxy.removeCA()
+    setCaNote(r.ok ? '✓ Root CA dihapus. CA baru dibuat otomatis saat dipakai lagi — export & trust ulang bila perlu.' : `⚠ ${r.error}`)
+  }
+
   const forward = async () => {
     if (!held) return
     await window.ruy.proxy.resolve(held.id, 'forward', heldEdit !== held.raw ? heldEdit : undefined)
@@ -163,6 +170,7 @@ export default function Proxy() {
           <input type="text" value={browserUrl} onChange={(e) => setBrowserUrl(e.target.value)} placeholder="http://target/" className="mono" style={{ flex: 1, minWidth: 220 }} />
           <button className="btn btn-primary btn-sm" onClick={openBrowser} disabled={!running} title="Open a real browser routed through the proxy"><IconGlobe />Open Browser</button>
           <button className="btn btn-sm" onClick={exportCA} disabled={!hasBridge} title="Export the Interu root CA for external browsers">Export CA</button>
+          <button className="btn btn-sm btn-danger" onClick={removeCA} disabled={!hasBridge} title="Delete the stored root CA (encrypted key + cert)">Remove CA</button>
           <button className="btn btn-ghost btn-sm" onClick={() => setShowBrowser((v) => !v)} title="Offline simulated browser">{showBrowser ? 'Close Demo' : 'Demo (offline)'}</button>
         </div>
         {caNote && <div className="disclaimer" style={{ background: 'rgba(79,178,134,0.06)', borderColor: 'rgba(79,178,134,0.25)' }}><div className="small">{caNote}</div></div>}

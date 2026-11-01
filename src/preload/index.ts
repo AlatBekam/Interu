@@ -40,6 +40,10 @@ const api = {
       ipcRenderer.invoke('ruy:proxy:openBrowser', url),
     exportCA: (): Promise<{ ok: boolean; path?: string; error?: string }> =>
       ipcRenderer.invoke('ruy:proxy:exportCA'),
+    removeCA: (): Promise<{ ok: boolean; error?: string }> =>
+      ipcRenderer.invoke('ruy:proxy:removeCA'),
+    caInfo: (): Promise<{ ok: boolean; name?: string; fingerprint?: string; error?: string }> =>
+      ipcRenderer.invoke('ruy:proxy:caInfo'),
     onLog: (cb: (entry: unknown) => void): (() => void) => {
       const l = (_e: unknown, d: unknown): void => cb(d)
       ipcRenderer.on('ruy:proxy:log', l)

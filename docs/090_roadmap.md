@@ -9,8 +9,8 @@ Dokumen ini menggabungkan checklist dari setiap dokumen fitur menjadi satu renca
 Jika ada butir yang belum selesai, juri keamanan kemungkinan akan menemukannya.
 
 1. ✔ ~~**Pasang scope gate pada proxy.**~~ Selesai: host di luar scope di-tunnel tanpa didekripsi atau dicatat. Lihat [011](011_scope-gate.md) dan [021](021_proxy-mitm.md).
-2. **Enkripsi private key CA dan sediakan tombol "Remove CA".** Lihat [012](012_root-ca-dan-sertifikat.md).
-3. **Perketat `setCertificateVerifyProc`.** Terima hanya sertifikat yang ditandatangani Interu CA, bukan `cb(0)` untuk semua sertifikat. Lihat [013](013_hardening-electron.md).
+2. ✔ ~~**Enkripsi private key CA dan sediakan tombol "Remove CA".**~~ Selesai: key disimpan via safeStorage/DPAPI (+ migrasi key lama), `deleteCA()` + tombol Remove CA. Lihat [012](012_root-ca-dan-sertifikat.md).
+3. ✔ ~~**Perketat `setCertificateVerifyProc`.**~~ Selesai: `cb(0)` hanya untuk cert ber-issuer Interu CA; selain itu `cb(-3)` (verifikasi normal). Lihat [013](013_hardening-electron.md).
 4. ✔ ~~**Perbaiki README.**~~ Selesai: status modul dan API preload sudah sesuai dengan kode.
 5. **Beri label jujur pada setiap halaman simulasi.** Dashboard, Threat Monitor, Firewall, dan Reports masih memakai data contoh. Lihat [030](030_operations.md).
 6. **Isi Authorized scope sebelum demo.** Dengan scope kosong, history proxy, scanner, dan probe aktif tidak akan menghasilkan apa-apa.
@@ -22,8 +22,9 @@ Jika ada butir yang belum selesai, juri keamanan kemungkinan akan menemukannya.
 | Scope gate di proxy, scanner, dan `ruy:http`; dukungan CIDR; test unit | ✔ | [011](011_scope-gate.md) |
 | Dukungan IPv6 dan port pada entri scope IP; pengecekan ulang tunnel yang sudah terbuka saat scope berubah | | [011](011_scope-gate.md) |
 | Audit log setiap penolakan scope | | [011](011_scope-gate.md) |
-| Enkripsi key CA, `deleteCA()`, ACL folder `ca/`, panduan uninstall trust | | [012](012_root-ca-dan-sertifikat.md) |
-| Evaluasi `sandbox:true` | | [013](013_hardening-electron.md) |
+| Enkripsi key CA (safeStorage/DPAPI) + `deleteCA()`/Remove CA | ✔ | [012](012_root-ca-dan-sertifikat.md) |
+| ACL folder `ca/`, panduan uninstall trust | | [012](012_root-ca-dan-sertifikat.md) |
+| `sandbox:true` diaktifkan | ✔ | [013](013_hardening-electron.md) |
 | Batasi `rejectUnauthorized:false` hanya untuk host dalam scope | ✔ | [013](013_hardening-electron.md) |
 
 ## Fase 2 — Verifikasi & perbaikan Web Security Suite
