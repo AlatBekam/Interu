@@ -1,13 +1,13 @@
 import React, { useMemo, useState } from 'react'
 import TopBar from '../components/TopBar'
 import KevBadge from '../components/KevBadge'
-import { cveSummary } from '../../../shared/kev'
+import { isProductLevel } from '../../../shared/activity'
+import { cveCellText, cveCellTitle } from '../../../shared/kev'
 import { Panel, Stat, Disclaimer } from '../components/ui'
 import { IconBug, IconCheck } from '../components/icons'
 import { MOCK_VULNS, Severity, severityPill, SEVERITY_ORDER } from '../data/mock'
 import { usePersistentState } from '../store/store'
 import { useFindings } from '../store/findings'
-import { } from '../../../shared/kev'
 
 type StatusMap = Record<string, 'open' | 'investigating' | 'mitigated'>
 type View = 'live' | 'demo'
@@ -26,7 +26,7 @@ export default function Vulnerabilities() {
   const liveRows = useMemo(
     () => findings.filter((f) => {
       if (sevFilter !== 'all' && f.severity !== sevFilter) return false
-      if (query && !(`${f.name} ${f.target} ${(f.cve || []).join(' ')} ${f.evidence}`.toLowerCase().includes(query.toLowerCase()))) return false
+      if (query && !(`${f.name} ${f.target} ${(isProductLevel(f) ? [] : f.cve || []).join(' ')} ${f.evidence}`.toLowerCase().includes(query.toLowerCase()))) return false
       return true
     }),
     [findings, sevFilter, query]
@@ -132,7 +132,7 @@ export default function Vulnerabilities() {
                       <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                       <td className="small muted" style={{ maxWidth: 240 }} title={f.evidence}>{f.evidence}</td>
                       <td className="mono small">
-                        <span title={f.cve?.join(', ')}>{cveSummary(f.cve)}</span>
+                        <span title={cveCellTitle(f)}>{cveCellText(f)}</span>
                         <KevBadge f={f} />
                       </td>
                       <td className="small muted">{f.source}</td>

@@ -1,7 +1,7 @@
 import React from 'react'
 import TopBar from '../components/TopBar'
 import KevBadge from '../components/KevBadge'
-import { cveSummary } from '../../../shared/kev'
+import { cveCellText, cveCellTitle } from '../../../shared/kev'
 import { Panel, Stat, Disclaimer } from '../components/ui'
 import { IconShieldAlert, IconBug } from '../components/icons'
 import { severityPill, Severity } from '../data/mock'
@@ -52,7 +52,7 @@ export default function ThreatMonitor() {
                       <td>{f.name}</td>
                       <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                       <td className="mono small">
-                        <span title={f.cve?.join(', ')}>{cveSummary(f.cve)}</span>
+                        <span title={cveCellTitle(f)}>{cveCellText(f)}</span>
                         <KevBadge f={f} />
                       </td>
                     </tr>

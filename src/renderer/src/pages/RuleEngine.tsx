@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../components/TopBar'
+import { isProductLevel } from '../../../shared/activity'
 import KevBadge from '../components/KevBadge'
-import { cveSummary } from '../../../shared/kev'
+import { cveCellText, cveCellTitle } from '../../../shared/kev'
 import { Panel, Disclaimer, Stat, Meter } from '../components/ui'
 import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
@@ -261,7 +262,7 @@ export default function RuleEngine() {
                         <td className="mono small">{f.target}{f.port != null ? `:${f.port}` : ''}</td>
                         <td className="small muted" style={{ maxWidth: 260 }} title={f.evidence}>{f.evidence}</td>
                         <td className="mono small">
-                          <span title={f.cve?.join(', ')}>{cveSummary(f.cve)}</span>
+                          <span title={cveCellTitle(f)}>{cveCellText(f)}</span>
                           <KevBadge f={f} />
                         </td>
                         <td className="small muted">{f.source}</td>
@@ -278,6 +279,9 @@ export default function RuleEngine() {
                                 {f.mitre?.length ? <span>ATT&CK: <span className="mono">{f.mitre.join(', ')}</span></span> : null}
                                 {f.tags?.length ? <span>tags: {f.tags.join(', ')}</span> : null}
                               </div>
+                              {isProductLevel(f) && f.cve?.length ? (
+                                <div className="mono small">KEV CVEs for this product (not matched to your version): {f.cve.join(', ')}</div>
+                              ) : null}
                               {f.extracted && Object.keys(f.extracted).length > 0 && (
                                 <div className="mono small">extracted: {Object.entries(f.extracted).map(([k, v]) => `${k}=[${v.join(', ')}]`).join('  ')}</div>
                               )}
