@@ -24,12 +24,15 @@ PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
 
 2. STATUS KESELURUHAN
 --------------------------------------------------------------------------------
-  [######----] ~65% menuju "produk lomba siap pakai"
+  [#######---] ~70% menuju "produk lomba siap pakai"
 
   Web Security Suite (Burp)  : SELESAI & FUNGSIONAL (bisa dipakai beneran)
-  Network Scanner            : REAL — TCP connect scan asli, scope-gated  (BARU)
-  Rule Engine (Detection)    : DASAR JADI — template data-driven, Suspected/
-                               Confirmed + active oracle (scope-gated)    (BARU)
+                               + request/response kini bisa di-COPY di semua tool
+  Network Scanner            : REAL — TCP connect scan asli, scope-gated
+  Rule Engine (Detection)    : NUCLEI-GRADE — 408 template data-driven, matcher
+                               DSL (tanpa eval), extractor, interpolasi, baseline
+                               soft-404, korelasi Suspected->Confirmed, bukti
+                               lengkap, + ADVISOR ATTACK/DEFENSE per temuan  (BARU)
   Operations lain            : MASIH MOCK (Dashboard, Threat Monitor, Firewall)
   Analysis / Reports         : MASIH MOCK -> perlu di-realkan
 
@@ -67,15 +70,18 @@ Struktur penting:
   src/shared/      -> dipakai bareng main & renderer:
     http.ts        -> tipe HTTP + scope gate host (hostInScope)
     proxy.ts       -> tipe event proxy
-    scan.ts        -> parse target CIDR/range, daftar port, ipInScope      (BARU)
-    rules.ts       -> Rule Engine: template data-driven + matcher + CVE    (BARU)
+    scan.ts        -> parse target CIDR/range, daftar port, ipInScope
+    rules.ts       -> Rule Engine: 408 template + matcher + extractor +
+                      interpolasi + baseline + korelasi + CVE
+    dsl.ts         -> evaluator ekspresi DSL aman (tanpa eval)             (BARU)
+    advice.ts      -> advisor Attack/Defense per temuan                    (BARU)
   src/renderer/src/
     pages/web/     -> Web Security Suite (Proxy, Repeater, Intruder, Target,
                       Decoder, Comparer, Sequencer, BrowserSim)
     pages/         -> Dashboard, NetworkScanner (REAL), RuleEngine (BARU),
                       Vulnerabilities, ThreatMonitor, Firewall, Reports, Settings
-    components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu, Crest,
-                      icons, ui
+    components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
+                      CopyButton, Crest, icons, ui
     data/          -> mock.ts, burp.ts (data simulasi)
     store/         -> store.ts (settings+persist), transfer.ts (send-to bus),
                       findings.ts (store temuan Rule Engine)               (BARU)
@@ -91,7 +97,8 @@ Struktur penting:
                         - Export CA (buat browser eksternal)
                         - HTTP History live + Inspector
                         - Klik kanan baris: Send to Repeater/Intruder, Copy URL,
-                          Copy as curl, Inspect
+                          Copy request, Copy response, Copy as curl, Inspect
+                        - Inspector request/response bisa diseleksi + tombol Copy
   [DONE] Repeater     : Live (kirim HTTP asli) + Simulation
   [DONE] Intruder     : Live (serang payload asli) + Simulation
   [DONE] Target/Site  : Live content discovery (fuzzing path asli) + sim map
@@ -118,30 +125,51 @@ Struktur penting:
   [MOCK] Reports          : rangkuman dari data palsu, export .txt/.json
                             -> TODO: laporan dari temuan ASLI + PDF + Bahasa Indo
 
-== DETECTION (DASAR JADI) ==
-  [DONE] Rule Engine      : engine ala-Nuclei, template sebagai DATA (27 template).
-                            - Matcher: status/word/regex/time, kombinasi and/or
+== DETECTION (NUCLEI-GRADE) ==
+  [DONE] Rule Engine      : engine ala-Nuclei, template sebagai DATA (408 template:
+                            28 port/banner, 47 HTTP pasif, 333 HTTP aktif).
+                            - Matcher: status/word/regex/time/port/service + DSL
+                              (evaluator ekspresi AMAN tanpa eval), kombinasi and/or,
+                              negative; EXTRACTOR (versi/token/username ke field);
+                              interpolasi {{BaseURL}} di request
                             - Pasif: makan hasil Network Scanner (port/banner->CVE)
-                              + respons Proxy (header hilang, cookie, error SQL)
-                            - Aktif (oracle): kirim GET /.git/config, /.env, dll
-                              lewat HTTP sender scope-gated -> Confirmed + bukti
+                              + respons Proxy (header hilang, cookie, CORS, secret
+                              leak, error SQL, dll)
+                            - Aktif (oracle): 333 GET baca-saja (/.git/config, /.env,
+                              backup, actuator, panel, dll) scope-gated -> Confirmed
+                            - Anti-FP: baseline soft-404 (catch-all 2xx -> demote),
+                              tiap probe WAJIB penanda konten, korelasi group
+                              (confirmed menggeser suspected), guard host mati
                             - Keyakinan jujur: Confirmed (teramati) vs Suspected
+                            - Bukti lengkap: request/response + extracted per temuan
+                            - ADVISOR ATTACK/DEFENSE per temuan confirmed:
+                              * Defense = langkah patching + snippet config siap-salin
+                                + tombol Re-test fix (jalankan ulang oracle)
+                              * Attack = verify (baca-saja, nol FP) / operator (payload
+                                disiapkan, Send to Repeater/Intruder) / info (PoC lokal)
                             - Halaman Detection: library template + active checks
-                            -> TODO: tambah template, oracle boolean/time/OOB,
-                               Attack Path Graph
+                            - Diuji: 56 tes (vitest) rules/dsl/advice/scope
+                            -> TODO: oracle boolean/time/OOB, template eksternal
+                               YAML/JSON, Attack Path Graph
 
 
 5. SISA YANG HARUS DIBIKIN (ROADMAP — urut prioritas)
 --------------------------------------------------------------------------------
-PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")  [DASAR JADI]
+PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")  [NUCLEI-GRADE]
   [x] Aturan sebagai DATA (array of rules): kondisi -> temuan+severity+saran
+  [x] 408 template (28 port/banner, 47 HTTP pasif, 333 HTTP aktif)
   [x] Tahap 1 PASIF: baca sinyal dari traffic proxy & hasil scan
-        (header hilang, banner versi -> CVE, pesan error SQL, dll) => "Suspected"
-  [~] Tahap 2 VERIFIKASI (oracle): active HTTP probe (mis. /.git/config, /.env)
-        sudah jalan & scope-gated -> "Confirmed"
+        (header hilang, banner versi -> CVE, CORS, secret leak, error SQL, dll)
+  [~] Tahap 2 VERIFIKASI (oracle): 333 active HTTP probe scope-gated -> "Confirmed"
         [ ] sisa: boolean-based / time-based / out-of-band (OOB)
+  [x] Matcher DSL (evaluator ekspresi aman tanpa eval)
+  [x] Extractor (versi/token/username) -> field terstruktur
+  [x] Interpolasi variabel {{BaseURL}}/{{Hostname}}/dll di request aktif
+  [x] Baseline soft-404 (anti false-positive) + korelasi Suspected->Confirmed
   [x] Tingkat keyakinan: Suspected vs Confirmed (dipisah)
-  [x] Tempel BUKTI di tiap temuan (evidence: header/port/body/status yang cocok)
+  [x] Tempel BUKTI di tiap temuan (request/response + extracted)
+  [x] ADVISOR ATTACK/DEFENSE per temuan (patching + PoC verify/operator/info)
+  [x] Tes unit (vitest) untuk rules, DSL, advisor, scope (56 tes)
 
 PRIORITAS 2 — OPERATIONS JADI REAL
   [x] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
@@ -187,6 +215,7 @@ CATATAN STRATEGI (buat lomba):
 --------------------------------------------------------------------------------
   RUY CYBERSECURITY TEAM
   Produk: INTERU — Cyber Operations
-  Versi: 1.0.0 (tahap: Web Suite + Network Scanner REAL, Rule Engine dasar jadi;
-         Dashboard/Threat Monitor/Firewall/Reports masih dikembangkan)
+  Versi: 1.0.0 (tahap: Web Suite + Network Scanner REAL, Rule Engine NUCLEI-GRADE
+         408 template + advisor Attack/Defense; Dashboard/Threat Monitor/Firewall/
+         Reports masih dikembangkan)
 ================================================================================
