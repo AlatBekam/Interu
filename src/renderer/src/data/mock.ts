@@ -29,15 +29,6 @@ export interface Vulnerability {
   discovered: string
 }
 
-export interface ThreatEvent {
-  id: string
-  ts: string
-  level: 'info' | 'warn' | 'crit' | 'ok'
-  source: string
-  category: string
-  message: string
-}
-
 export interface FirewallRule {
   id: string
   name: string
@@ -118,20 +109,7 @@ export const DEFAULT_FIREWALL_RULES: FirewallRule[] = [
   { id: 'fw-6', name: 'Quarantine IoT subnet egress', direction: 'outbound', protocol: 'ANY', port: '*', source: '10.20.0.80/28', action: 'deny', enabled: false, builtin: true }
 ]
 
-// --------------------------------------------------------------- threat feed generator
-const SOURCES = ['10.20.0.37', '203.0.113.88', '198.51.100.23', '10.20.0.52', '192.0.2.45', '10.20.0.91']
-const FEED_TEMPLATES: { level: ThreatEvent['level']; category: string; message: (s: string) => string }[] = [
-  { level: 'crit', category: 'Intrusion', message: (s) => `Brute-force login burst detected from ${s} (SIMULATED)` },
-  { level: 'warn', category: 'Anomaly', message: (s) => `Unusual outbound volume from ${s} flagged by heuristics` },
-  { level: 'info', category: 'Discovery', message: (s) => `Port sweep observed targeting ${s}` },
-  { level: 'crit', category: 'Malware', message: (s) => `Signature match: trojan beacon pattern near ${s}` },
-  { level: 'ok', category: 'Mitigation', message: (s) => `Auto-rule applied, source ${s} throttled` },
-  { level: 'warn', category: 'Policy', message: (s) => `TLS downgrade attempt blocked for ${s}` },
-  { level: 'info', category: 'Telemetry', message: (s) => `Heartbeat received from sensor ${s}` },
-  { level: 'warn', category: 'Exfil', message: (s) => `DNS tunneling pattern scored elevated for ${s}` }
-]
-
-// A small seeded PRNG keeps the "live" feed deterministic per seed so the demo
+// A small seeded PRNG keeps the demo traffic series deterministic per seed so the demo
 // is reproducible rather than genuinely random system data.
 export function makeRng(seed: number) {
   let s = seed >>> 0
@@ -139,30 +117,6 @@ export function makeRng(seed: number) {
     s = (s * 1664525 + 1013904223) >>> 0
     return s / 0xffffffff
   }
-}
-
-export function generateEvent(rng: () => number, at = new Date()): ThreatEvent {
-  const tpl = FEED_TEMPLATES[Math.floor(rng() * FEED_TEMPLATES.length)]
-  const src = SOURCES[Math.floor(rng() * SOURCES.length)]
-  const ts = at.toLocaleTimeString('en-GB', { hour12: false })
-  return {
-    id: `${at.getTime()}-${Math.floor(rng() * 1e6)}`,
-    ts,
-    level: tpl.level,
-    source: src,
-    category: tpl.category,
-    message: tpl.message(src)
-  }
-}
-
-export function seedEvents(count: number): ThreatEvent[] {
-  const rng = makeRng(20261019)
-  const now = Date.now()
-  const out: ThreatEvent[] = []
-  for (let i = 0; i < count; i++) {
-    out.push(generateEvent(rng, new Date(now - (count - i) * 7000)))
-  }
-  return out
 }
 
 // --------------------------------------------------------------- 24h traffic series
