@@ -51,7 +51,7 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 | [031 Dashboard](031_dashboard.md) | ⚪ | Data dari `mock.ts` (store findings belum dipakai) |
 | [032 Network Scanner](032_network-scanner.md) | ✅ | TCP connect scan nyata, scope-gated; mode simulasi tetap ada |
 | [033 Vulnerabilities](033_vulnerabilities.md) | 🟡 | Live = temuan Rule Engine (nyata); Demo = katalog statis |
-| [034 Threat Monitor](034_threat-monitor.md) | ⚪ | Event sintetis |
+| [034 Exposure Monitor](034_threat-monitor.md) | ✅ | Temuan & aktivitas nyata (dulu Threat Monitor) |
 | [035 Firewall](035_firewall.md) | ⚪ | Tidak mengubah firewall OS |
 | [036 Reports](036_reports.md) | 🟡 | Export file nyata, isinya masih data contoh |
 | [037 Settings](037_settings.md) | 🟡 | Preferensi nyata |
@@ -78,7 +78,7 @@ flowchart TD
     A["01 Fondasi Keamanan<br/>✔ scope gate · enkripsi CA, sandbox"] --> B["02 Web Security Suite<br/>verifikasi + perbaikan kecil"]
     B --> C["✔ 032 Network Scanner nyata"]
     C --> D["✔ 041 Rule Engine + 033 Vulnerabilities Live"]
-    B --> E["034 Threat Monitor dari log proxy"]
+    B --> E["034 Exposure Monitor dari temuan & aktivitas"]
     D --> F["031 Dashboard dari findings nyata"]
     E --> F
     D --> G["036 Reports dari findings + PDF"]

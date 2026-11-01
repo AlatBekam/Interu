@@ -1,6 +1,6 @@
 # 035 — Firewall Rules
 
-← [034 — Threat Monitor](034_threat-monitor.md) · [Index](000_index.md) · [036 — Reports](036_reports.md) →
+← [034 — Exposure Monitor](034_threat-monitor.md) · [Index](000_index.md) · [036 — Reports](036_reports.md) →
 
 ## Status
 

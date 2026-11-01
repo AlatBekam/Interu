@@ -4,8 +4,7 @@ import { Panel, Disclaimer, Meter } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconCrosshair, IconPlay, IconStop } from '../../components/icons'
 import { PAYLOAD_SETS, TARGET_HOST } from '../../data/burp'
-import { parseRawRequest, sendLive } from '../../lib/http'
-import { hostInScope } from '../../../../shared/http'
+import { parseRawRequest, sendLive, inScopeOrNote } from '../../lib/http'
 import { useSettings } from '../../store/store'
 import { useTransfer } from '../../store/transfer'
 import CopyButton from '../../components/CopyButton'
@@ -71,7 +70,7 @@ export default function Intruder() {
   const startLive = async () => {
     const payloads = PAYLOAD_SETS[setName]
     const probe = parseRawRequest(template.replace(/§[^§]*§/, 'x'), target)
-    if (!hostInScope(probe.url, settings.scope)) {
+    if (!inScopeOrNote(probe.url, settings.scope, 'intruder')) {
       setNote(`⛔ ${(() => { try { return new URL(probe.url).hostname } catch { return 'target' } })()} belum ada di Authorized scope.`)
       return
     }

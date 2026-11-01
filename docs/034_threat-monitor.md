@@ -1,60 +1,62 @@
-# 034 — Threat Monitor
+# 034 — Exposure Monitor (dulu Threat Monitor)
 
 ← [033 — Vulnerability Assessment](033_vulnerabilities.md) · [Index](000_index.md) · [035 — Firewall Rules](035_firewall.md) →
 
 ## Status
 
-⚪ **SIMULASI** — Aliran event dihasilkan sintetis oleh PRNG lokal. Tidak ada deteksi intrusi, penangkapan paket, atau intersepsi. Sumber dan signature fiktif. (Catatan roadmap: Threat Monitor boleh tetap demo bila waktu mepet.)
+✅ **NYATA** — Halaman ini hanya menampilkan apa yang diamati Interu sendiri: temuan, scan, keputusan scope, dan request yang ditahan proxy. Generator event palsu sudah dihapus. Halaman ini **bukan sistem deteksi intrusi** dan tidak memantau komputer atau jaringanmu dari serangan.
 
 ## Tujuan fitur
 
-Menampilkan feed ancaman "live": event intrusi/anomali berjalan terus dengan hitungan critical/warning/auto-mitigated, bisa di-pause/resume.
+Menjawab "apa yang perlu ditindak lebih dulu dari hasil kerja saya?": antrian prioritas (KEV dahulu, lalu severity), eksposur per host, dan linimasa aktivitas sesi ini.
 
-## Cara kerja saat ini
+## Cara kerja
 
-- State awal: `seedEvents(14).reverse()` — 14 event fiksi deterministik.
-- `running` diinisialisasi dari `settings.liveFeed` (toggle di Settings).
-- Saat `running`, `setInterval` 2600 ms menambah `generateEvent(rng.current)` ke depan buffer, dipotong `slice(0, 200)`.
-- `rng` di-seed dari `Date.now() & 0xffff` (bervariasi per sesi).
-- Kartu menghitung `crit`, `warn`, dan `ok` (label "Auto-Mitigated") dari buffer.
-- Pesan dirakit `FEED_TEMPLATES` × `SOURCES` (IP fiksi, beberapa diberi akhiran "(SIMULATED)").
+Sumber data (semua sudah ada di aplikasi):
 
-```mermaid
-flowchart TD
-  S["seedEvents(14) saat mount"] --> B["buffer event"]
-  LF["settings.liveFeed"] --> RUN["running?"]
-  RUN -- ya --> TMR["setInterval 2600ms"]
-  TMR --> GEN["generateEvent(rng) → prepend, slice(0,200)"]
-  GEN --> B
-  B --> UI["daftar + hitungan crit/warn/ok"]
-  PAUSE["tombol Pause/Resume"] --> RUN
-```
+| Sumber | Event yang dicatat |
+| --- | --- |
+| Store temuan (`store/findings.ts`) | `New finding: <nama>` saat temuan baru masuk; `Resolved: <nama>` saat dihapus setelah re-test |
+| Network Scanner (`startLive`) | `Scan started: <target> (<profil>)`, `Scan finished: <n> host(s) up, <n> open port(s)` |
+| Penolakan scope (`inScopeOrNote`, `sendLive`) | `Blocked by scope: <target> (<fitur>)` |
+| Proxy intercept (`onIntercept`) | `Request held: <metode> <host>` |
 
-## File terkait
+Logika murni ada di `src/shared/activity.ts` (antrian prioritas, eksposur per host, ringkasan, format waktu). Store `store/activity.ts` menyimpan maksimal **200** event terbaru di memori saja; restart aplikasi mengosongkannya.
 
-| File | Fungsi / data utama |
-|------|---------------------|
-| [../src/renderer/src/pages/ThreatMonitor.tsx](../src/renderer/src/pages/ThreatMonitor.tsx) | state `events/running`, efek timer, `counts` |
-| [../src/renderer/src/data/mock.ts](../src/renderer/src/data/mock.ts) | `makeRng`, `generateEvent`, `seedEvents`, `FEED_TEMPLATES`, `SOURCES` |
-| [../src/renderer/src/store/store.ts](../src/renderer/src/store/store.ts) | `useSettings` → `liveFeed` menentukan auto-start |
+Level event: `critical`/`high` → crit, `medium` → warn, `low`/`info` → info. Temuan ber-KEV selalu crit, dan temuan yang sudah resolved bernilai ok.
 
-## Cara pakai
-
-1. Buka **Threat Monitor** (`/threats`).
-2. Jika "Live threat feed" aktif di Settings, feed langsung berjalan.
-3. **Pause** menghentikan generator; **Resume** memulai lagi.
+Panel "Recent Activity" di Dashboard membaca sumber yang sama (6 event terakhir).
 
 ## Batasan / temuan
 
-- Buffer tidak di-persist — berganti halaman/restart mengosongkan event (hanya seed awal muncul lagi).
-- "Auto-Mitigated" hanya menghitung event level `ok`; tidak ada mitigasi nyata.
-- IP sumber dan kategori semuanya dari daftar fiksi `SOURCES`/`FEED_TEMPLATES`.
+- Bukan IDS. Tidak melihat serangan terhadap komputer atau jaringanmu. Telemetri host (Windows Event Log, log firewall, IDS seperti Suricata) **tidak termasuk** dan merupakan fitur terpisah.
+- Aktivitas hilang saat aplikasi ditutup. Ini disengaja: tidak ada yang disimpan.
+- Firewall Rules dan kartu host di Dashboard masih memakai data mock (lihat [035](035_firewall.md)).
+
+## File terkait
+
+| File | Fungsi |
+| --- | --- |
+| [../src/shared/activity.ts](../src/shared/activity.ts) | Logika murni: `eventFromFinding`, `priorityQueue`, `exposureByTarget`, `summarize`, `timeLabel` |
+| [../src/renderer/src/store/activity.ts](../src/renderer/src/store/activity.ts) | Store aktivitas dalam memori (200 event): `pushActivity`, `noteScopeBlock`, `useActivity` |
+| [../src/renderer/src/pages/ThreatMonitor.tsx](../src/renderer/src/pages/ThreatMonitor.tsx) | Halaman "Exposure Monitor" (route `/threats`) |
+| [../src/renderer/src/pages/Dashboard.tsx](../src/renderer/src/pages/Dashboard.tsx) | Panel "Recent Activity" |
+| [../src/renderer/src/lib/http.ts](../src/renderer/src/lib/http.ts) | `inScopeOrNote` dan pencatatan penolakan di `sendLive` |
+| [../testcase/e2e/monitor.e2e.ts](../testcase/e2e/monitor.e2e.ts) | GUI e2e: kosong di awal, temuan nyata, dashboard, penolakan scope |
+
+## Cara pakai
+
+1. Buka **Exposure Monitor** (sidebar grup Operations). Halaman kosong sampai ada temuan atau aktivitas.
+2. Jalankan scan (Network Scanner) atau active checks (Rule Engine) terhadap target yang ada di scope. Antrian dan eksposur akan terisi.
+3. **Clear** di panel Activity menghapus linimasa. Temuan tidak ikut terhapus.
 
 ## Checklist pengerjaan
 
-- [ ] Putuskan: tetap demo (beri label jujur) atau jadikan nyata.
-- [ ] Jika nyata: alirkan `proxy.onLog` yang sudah ada dari main process sebagai sumber event.
-- [ ] (Opsional) Baca Windows Event Log / log lokal via handler IPC baru.
-- [ ] Terapkan klasifikasi severity dari Rule Engine, bukan template acak.
-- [ ] Persist buffer (atau ring-buffer) agar event bertahan antar navigasi.
-- [ ] Tautkan event ke temuan/aset nyata agar bisa di-drill-down.
+- [x] Logika murni aktivitas dengan tes (`activity.test.ts`).
+- [x] Store dalam memori dengan batas 200 event.
+- [x] Sumber nyata: temuan, scan, scope, proxy intercept.
+- [x] Generator palsu dan setting `liveFeed` dihapus.
+- [x] Dashboard memakai aktivitas nyata.
+- [x] GUI e2e (`monitor.e2e.ts`).
+- [ ] Sensor host (Windows Event Log / IDS): di luar cakupan.
+

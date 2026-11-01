@@ -8,6 +8,7 @@ import { usePersistentState, useSettings } from '../store/store'
 import { profilePorts, ScanHost, ScanEvent, ScanProfile, ScanSummary } from '../../../shared/scan'
 import { analyzeScan } from '../../../shared/rules'
 import { addFindings } from '../store/findings'
+import { pushActivity, noteScopeBlock } from '../store/activity'
 
 type Phase = 'idle' | 'scanning' | 'done'
 type Mode = 'live' | 'sim'
@@ -145,10 +146,12 @@ export default function NetworkScanner() {
     const id = Date.now()
     scanIdRef.current = id
     try {
+      pushActivity({ ts: new Date().toISOString(), level: 'info', category: 'scan', message: `Scan started: ${target} (${profile})`, target })
       const res = await window.ruy.scan.run({ target, profile }, settings.scope, id)
       // A newer scan (live or sim) started meanwhile: don't let this result overwrite it.
       if (runRef.current !== run) return
       if (!res.ok) {
+        if (res.blocked) noteScopeBlock(target, 'scan')
         setNote(res.blocked ? `⛔ ${res.error}` : `⚠️ ${res.error}`)
         setLog((l) => [...l, `> ${res.error}`])
         setPhase('idle')
@@ -157,7 +160,10 @@ export default function NetworkScanner() {
       }
       // The resolved result is authoritative (covers hosts that streamed late).
       if (res.hosts) setFound(res.hosts.map(liveToDisplay))
-      if (res.summary) setSummary(res.summary)
+      if (res.summary) {
+        setSummary(res.summary)
+        pushActivity({ ts: new Date().toISOString(), level: 'ok', category: 'scan', message: `Scan finished: ${res.summary.hostsUp} host(s) up, ${res.summary.openPortCount} open port(s)`, target })
+      }
       // Feed the Rule Engine with real open-port/banner signals.
       if (res.hosts && res.hosts.length) {
         const added = addFindings(analyzeScan(res.hosts))

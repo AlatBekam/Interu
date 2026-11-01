@@ -9,8 +9,8 @@ import { severityPill, Severity } from '../data/mock'
 import { useSettings } from '../store/store'
 import { useFindings, addFindings, clearFindings, removeFinding } from '../store/findings'
 import { setTransfer } from '../store/transfer'
-import { rawFromParts } from '../lib/http'
-import { hostInScope } from '../../../shared/http'
+import { rawFromParts, inScopeOrNote } from '../lib/http'
+import { noteScopeBlock } from '../store/activity'
 import { getAdvice } from '../../../shared/advice'
 import { KEV_COUNT, KEV_CATALOG_VERSION, kevTooltip } from '../../../shared/kev'
 import type { AttackKind } from '../../../shared/advice'
@@ -64,7 +64,7 @@ export default function RuleEngine() {
     setLog((l) => [...l, `> re-test ${t.info.name} @ ${base}`])
     try {
       const res = await window.ruy.http.send(req, settings.scope)
-      if (res.blocked) { setLog((l) => [...l, '  ⛔ blocked by scope']); return }
+      if (res.blocked) { noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, '  ⛔ blocked by scope']); return }
       const still = matchActive(t, req.url, res, { req })
       if (still) setLog((l) => [...l, `  ✗ still present — ${still.evidence}`])
       else { removeFinding(f.key); setOpen(null); setLog((l) => [...l, '  ✓ resolved — removed from findings']) }
@@ -94,7 +94,7 @@ export default function RuleEngine() {
     const full = /^https?:\/\//i.test(target) ? target : 'http://' + target
     let host = ''
     try { host = new URL(full).hostname } catch { setNote('URL target tidak valid.'); return }
-    if (!hostInScope(full, settings.scope)) {
+    if (!inScopeOrNote(full, settings.scope, 'rule-engine')) {
       setNote(`⛔ ${host} belum ada di Authorized scope. Tambahkan dulu di bar di atas.`)
       return
     }
@@ -109,7 +109,7 @@ export default function RuleEngine() {
     let baseline: Baseline | undefined
     try {
       const baseRes = await window.ruy.http.send({ method: 'GET', url: vars.BaseURL + baseProbe, headers: {}, timeoutMs: 8000 }, settings.scope)
-      if (baseRes.blocked) { setLog((l) => [...l, `  ⛔ blocked by scope`]); setRunning(false); return }
+      if (baseRes.blocked) { noteScopeBlock(vars.BaseURL + baseProbe, 'rule-engine'); setLog((l) => [...l, `  ⛔ blocked by scope`]); setRunning(false); return }
       if (!baseRes.ok) {
         setLog((l) => [...l, `  ! host tidak bisa dihubungi (${baseRes.error || 'unknown'}) — dibatalkan`])
         setNote(`Host ${host} tidak merespons. Pastikan target hidup & URL benar.`)
@@ -138,7 +138,7 @@ export default function RuleEngine() {
         if (req) {
           try {
             const res = await http.send(req, settings.scope)
-            if (res.blocked) { blocked = true; setLog((l) => [...l, `  ⛔ blocked by scope — stopped`]); return }
+            if (res.blocked) { blocked = true; noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, `  ⛔ blocked by scope — stopped`]); return }
             const finding = matchActive(t, req.url, res, { req, baseline })
             if (finding) {
               collected.push(finding)

@@ -19,7 +19,7 @@ Dokumen ini jujur menandai mana yang nyata dan mana yang simulasi — juri akan 
 | [031_dashboard.md](031_dashboard.md) | Dashboard / Security Overview | `mock.ts` (hosts, vulns, traffic, events) | ⚪ SIMULASI |
 | [032_network-scanner.md](032_network-scanner.md) | Network Scanner | Live: IPC `ruy:scan:tcp` (Node `net`) · Sim: `MOCK_HOSTS` | ✅ NYATA (+ fallback sim) |
 | [033_vulnerabilities.md](033_vulnerabilities.md) | Vulnerability Assessment | Live: store temuan Rule Engine · Demo: `MOCK_VULNS` | 🟡 SEBAGIAN (Live nyata) |
-| [034_threat-monitor.md](034_threat-monitor.md) | Threat Monitor | generator event PRNG | ⚪ SIMULASI |
+| [034_threat-monitor.md](034_threat-monitor.md) | Exposure Monitor (dulu Threat Monitor) | temuan, scan, scope & intercept nyata | ✅ NYATA |
 | [035_firewall.md](035_firewall.md) | Firewall Rules | `DEFAULT_FIREWALL_RULES` + localStorage | ⚪ SIMULASI |
 | [036_reports.md](036_reports.md) | Reports | rakitan dari `mock.ts` | 🟡 SEBAGIAN (export file nyata) |
 | [037_settings.md](037_settings.md) | Settings | store settings + versi runtime | 🟡 SEBAGIAN (preferensi nyata) |
@@ -53,7 +53,7 @@ flowchart LR
   RE --> FS
   FS --> VULN["033 Vulnerabilities (Live)"]
   V -.demo.-> VULN
-  GEN --> THR["034 Threat Monitor"]
+  GEN --> THR["034 Exposure Monitor"]
   FW --> FWP["035 Firewall"]
   H --> REP["036 Reports"]
   V --> REP
@@ -96,7 +96,7 @@ Pola yang terbukti: renderer memanggil `ipcRenderer.invoke('ruy:...')` lewat pre
 | Rule Engine | ✅ Selesai ([041](041_rule-engine.md)) | Upgrade Suspected → Confirmed, soft-404 |
 | Reports | ⏭ | Rakit dari `useFindings()` + PDF |
 | Dashboard | ⏭ | Agregasi dari findings store (`useFindingCounts` sudah tersedia) |
-| Threat Monitor | Opsional | Alirkan `proxy.onLog` atau tetap demo berlabel |
+| Exposure Monitor | Selesai | Dibangun dari temuan & aktivitas nyata; sensor host di luar cakupan |
 | Firewall | Opsional, hati-hati | Mulai dari *export* rule, baru `netsh` |
 
 ### Urutan yang disarankan
@@ -106,7 +106,7 @@ Pola yang terbukti: renderer memanggil `ipcRenderer.invoke('ruy:...')` lewat pre
 3. ~~**Vulnerabilities**~~ — ✅ tampilan Live selesai.
 4. **Reports** — laporkan temuan nyata + PDF.
 5. **Dashboard** — ganti sumber mock jadi agregasi store nyata.
-6. **Threat Monitor** (opsional) — alirkan log proxy/OS.
+6. **Exposure Monitor** — selesai. Monitor sensor host (Event Log / IDS) tetap di luar cakupan.
 7. **Firewall** (opsional, hati-hati) — mulai dari export, baru integrasi `netsh`.
 
 > Saran lomba: alur demo **target → scan → Rule Engine → Vulnerabilities** kini berjalan nyata; mata rantai terakhir yang kurang adalah **Reports** dari temuan nyata.

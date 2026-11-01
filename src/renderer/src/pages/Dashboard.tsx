@@ -2,11 +2,13 @@ import React, { useMemo } from 'react'
 import TopBar from '../components/TopBar'
 import { Panel, Stat, Gauge, BarChart, Disclaimer, Meter } from '../components/ui'
 import { IconShieldAlert, IconBug, IconScan, IconServer, IconActivity } from '../components/icons'
-import { MOCK_HOSTS, MOCK_VULNS, trafficSeries, seedEvents, severityPill, SEVERITY_ORDER } from '../data/mock'
+import { MOCK_HOSTS, MOCK_VULNS, trafficSeries, severityPill, SEVERITY_ORDER } from '../data/mock'
+import { useActivity } from '../store/activity'
+import { timeLabel } from '../../../shared/activity'
 
 export default function Dashboard() {
   const traffic = useMemo(() => trafficSeries(), [])
-  const recent = useMemo(() => seedEvents(6).reverse(), [])
+  const recent = useActivity().slice(0, 6)
 
   const openVulns = MOCK_VULNS.filter((v) => v.status !== 'mitigated')
   const critical = MOCK_VULNS.filter((v) => v.severity === 'critical' && v.status !== 'mitigated').length
@@ -93,11 +95,12 @@ export default function Dashboard() {
             </div>
           </Panel>
 
-          <Panel title="Recent Activity" sub="Simulated event stream" right={<IconScan />}>
+          <Panel title="Recent Activity" sub="What Interu observed this session" right={<IconScan />}>
             <div className="feed">
+              {recent.length === 0 && <div className="empty">No activity yet.</div>}
               {recent.map((e) => (
                 <div className="ln" key={e.id}>
-                  <span className="ts">{e.ts}</span>
+                  <span className="ts">{timeLabel(e.ts)}</span>
                   <span className={`lv ${e.level}`}>{e.level.toUpperCase()}</span>
                   <span className="msg">{e.message}</span>
                 </div>
