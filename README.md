@@ -21,7 +21,7 @@ midnight / royal-navy accents) and **"Silver Daylight"** (light).
 > Each confirmed finding also carries an **Attack/Defense advisor** (patching steps +
 > copy-ready config, and a verify/operator/info attack recipe with Send-to-Repeater/Intruder
 > + Re-test). Request/response panes across the suite are now selectable with Copy buttons.
-> Still mock / simulated UI: Dashboard, Threat Monitor, Firewall, and Reports.
+> Still mock / simulated UI: Dashboard (host cards), Firewall, and Reports.
 
 > ⚠️ **Authorized use only — legal by design.** Every "Live" action is
 > **authorization-gated by Scope**: real requests only reach hosts you add to the Scope
@@ -77,7 +77,7 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 | **Rule Engine** (Detection) | **Nuclei-grade detection engine — 408 data-driven templates.** Matchers: status / word / regex / time / port / service / **dsl** (a safe, no-`eval` expression evaluator), combined and/or with negative; **extractors** pull structured data (versions, tokens, usernames); request paths support `{{BaseURL}}`-style **interpolation**. Passive over scanner results + captured proxy responses → *Suspected / Confirmed*; **333 scope-gated, read-only active HTTP probes** (e.g. `/.git/config`, `/.env`, exposures, actuators, panels) prove findings → *Confirmed*. A **soft-404 baseline** suppresses false positives, variant families **correlate** (confirmed supersedes suspected), and each finding stores full request/response **evidence**. Every confirmed finding gets an **Attack/Defense advisor**: patching steps + copy-ready config, and a `verify`/`operator`/`info` attack recipe (Send-to-Repeater/Intruder, Re-test-fix). |
 | **Vulnerabilities** | Live findings from the Rule Engine (Confirmed/Suspected + evidence + CVE), with a Demo-catalog toggle. |
 
-**Still simulated (UI / mock):** Dashboard, Threat Monitor, Firewall Rules, Reports, Settings.
+**Still simulated (UI / mock):** Dashboard host cards, Firewall Rules, Reports, Settings. The Exposure Monitor (formerly Threat Monitor) shows only real findings and activity.
 
 > Decoder, Comparer and Sequencer run entirely offline. Proxy, Repeater, Intruder,
 > Target, the Network Scanner and the Rule Engine's active checks send **real traffic**

@@ -13,7 +13,7 @@ Satu aplikasi menyatukan:
 
 - **Web Security Suite** gaya Burp Suite (Proxy, Repeater, Intruder, Target,
   Decoder, Comparer, Sequencer).
-- **Operations** (Dashboard, Network Scanner, Vulnerabilities, Threat Monitor,
+- **Operations** (Dashboard, Network Scanner, Vulnerabilities, Exposure Monitor,
   Firewall Rules).
 - **Detection** (Rule Engine gaya Nuclei, route `/detection`).
 - **Analysis / Reporting**.
