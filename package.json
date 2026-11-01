@@ -17,7 +17,9 @@
     "smoke": "cross-env RUY_SMOKE_TEST=1 electron .",
     "dist": "npm run build && electron-builder --win --x64",
     "dist:dir": "npm run build && electron-builder --win --dir",
-    "test": "vitest run"
+    "test": "vitest run",
+    "kev:update": "node scripts/update-kev.mjs",
+    "kev:coverage": "node scripts/kev-coverage.mjs"
   },
   "dependencies": {
     "node-forge": "^1.3.1",
