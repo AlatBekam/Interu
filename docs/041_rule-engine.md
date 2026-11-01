@@ -152,10 +152,43 @@ Anti-FP: advisor **tidak** melakukan deteksi baru — murni menurunkan aksi dari
 - Penjaga: `src/shared/cve-tags.test.ts` gagal bila nama template menyebut CVE tanpa mencantumkannya di `classification.cve`.
 - Batasan: validasi `act-ignition` hanya terhadap body mock, belum terhadap instance Laravel asli.
 
+## Deteksi produk KEV (berbasis fingerprint)
+
+Selain template, mesin mengenali **produk** dari banner scan dan header/meta respons Proxy, lalu mencocokkannya ke katalog CISA KEV. Tabel fingerprint ada di [../src/shared/fingerprint.ts](../src/shared/fingerprint.ts).
+
+| Produk | Sumber yang dikenali | Kunci KEV |
+| --- | --- | --- |
+| Apache HTTP Server | banner / `Server: Apache/x` | `Apache\|HTTP Server` |
+| Apache Tomcat | banner / `Server: Apache-Coyote` | `Apache\|Tomcat` |
+| Microsoft IIS | banner / `Server: Microsoft-IIS/x` | `Microsoft\|Internet Information Services (IIS)` |
+| PHP | `X-Powered-By: PHP/x` | `PHP Group\|PHP`, `PHP\|PHP` |
+| ProFTPD | banner | `ProFTPD\|ProFTPD` |
+| Exim | banner | `Exim\|Exim` |
+| WordPress | `<meta name="generator">` | `WordPress\|Core` |
+| Drupal | meta generator / `X-Generator` | `Drupal\|Core` |
+| Joomla! | meta generator | `Joomla!\|Joomla!` |
+
+- **Version-blind.** Hasil hanya berarti produk itu punya entri KEV, bukan bahwa host rentan. Versi tidak dicocokkan, dan daftar CVE bisa memuat yang tidak berlaku untuk versi yang terpasang (contoh: CVE-2021-41773 muncul untuk Apache 2.4.58, padahal hanya berlaku untuk 2.4.49 dan 2.4.50). Karena itu temuannya `suspected`, berlabel "version not verified", dengan severity `medium`.
+- **Badge `KEV product`** (kuning), bukan `KEV` (merah). Temuan produk tidak dihitung sebagai "actively exploited", tidak mendapat dorongan prioritas KEV, dan dicatat sebagai `warn` di aktivitas.
+- CVE yang sudah dilaporkan template presisi di port yang sama tidak diulang.
+- Respons Proxy menghasilkan satu temuan per produk per origin.
+- Tidak tercakup: nginx dan OpenSSH (tidak ada entri KEV), dan ASP.NET (tidak ada produk KEV dengan nama itu).
+- Penjaga drift: `fingerprint.test.ts` gagal bila ada kunci produk yang hilang dari snapshot KEV.
+
+## Memperbarui KEV
+
+1. `npm run kev:update` mengambil feed CISA dan menulis ulang `src/shared/kev-index.ts`. Ini satu-satunya akses jaringan, dijalankan developer saat build, bukan saat aplikasi berjalan.
+2. `npm test`. Penjaga drift memastikan semua kunci produk masih ada di snapshot.
+3. `npm run kev:coverage [N]` menampilkan produk KEV terbanyak yang belum punya fingerprint.
+4. Untuk menambah produk, tambahkan entri di `FINGERPRINTS` (`src/shared/fingerprint.ts`): id, label, `kevProducts` dengan kunci persis dari laporan coverage, serta regex banner/header/body. Lalu tambahkan satu tes deteksi di `fingerprint.test.ts`.
+5. Commit `kev-index.ts` dan perubahan fingerprint bersama-sama.
+
 ## File terkait
 
 | File | Fungsi / data utama |
 | --- | --- |
+| [../src/shared/fingerprint.ts](../src/shared/fingerprint.ts) | `FINGERPRINTS` (produk → kunci KEV), `detectProducts`, penjaga drift |
+| [../src/renderer/src/components/KevBadge.tsx](../src/renderer/src/components/KevBadge.tsx) · [../scripts/kev-coverage.mjs](../scripts/kev-coverage.mjs) | Badge `KEV` / `KEV product`; laporan cakupan KEV |
 | [../src/shared/rules.ts](../src/shared/rules.ts) | `TEMPLATES` (408 = CURATED + `gen*` packs), `evalMatcher`, extractors, `analyzeScan`, `analyzeHttpResponse`, `buildActiveRequest`/`interpolate`/`requestVars`, `matchActive`, `computeBaseline`, `correlate`, `sortFindings` |
 | [../src/shared/dsl.ts](../src/shared/dsl.ts) | Evaluator ekspresi DSL aman (tokenizer + parser + eval, tanpa `eval`) |
 | [../src/shared/advice.ts](../src/shared/advice.ts) | `getAdvice(finding)` → rekomendasi Defense (patching) + Attack (verify/operator/info) per kelas |
