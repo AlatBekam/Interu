@@ -59,12 +59,6 @@ export default function Settings() {
                 <span className="track" />
               </label>
             </Row>
-            <Row title="Live threat feed" desc="Auto-start the simulated event stream on the Threat Monitor.">
-              <label className="switch">
-                <input type="checkbox" checked={settings.liveFeed} onChange={(e) => patch({ liveFeed: e.target.checked })} />
-                <span className="track" />
-              </label>
-            </Row>
             <Row title="Reduce motion" desc="Minimize page transitions and animated indicators.">
               <label className="switch">
                 <input type="checkbox" checked={settings.reduceMotion} onChange={(e) => patch({ reduceMotion: e.target.checked })} />

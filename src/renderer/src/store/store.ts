@@ -15,7 +15,6 @@ export type ThemeName = 'dark' | 'light'
 export interface Settings {
   theme: ThemeName
   persistence: boolean
-  liveFeed: boolean
   reduceMotion: boolean
   operatorName: string
   /** Hosts the operator is authorized to test. Live requests are gated to these. */
@@ -25,7 +24,6 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
   persistence: true,
-  liveFeed: true,
   reduceMotion: false,
   operatorName: 'Operator',
   scope: []
