@@ -16,13 +16,17 @@ import {
   IconColumns,
   IconSequence,
   IconGlobe,
-  IconShieldAlert
+  IconShieldAlert,
+  IconSpider,
+  IconFlask
 } from './icons'
 
 const NAV = [
   { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, group: 'Overview' },
 
   { to: '/web/target', label: 'Target / Site Map', icon: IconTarget, group: 'Web Security Suite' },
+  { to: '/web/crawler', label: 'Crawler', icon: IconSpider, group: 'Web Security Suite' },
+  { to: '/web/activescan', label: 'Active Scan', icon: IconFlask, group: 'Web Security Suite' },
   { to: '/web/proxy', label: 'Proxy', icon: IconGlobe, group: 'Web Security Suite' },
   { to: '/web/repeater', label: 'Repeater', icon: IconRepeat, group: 'Web Security Suite' },
   { to: '/web/intruder', label: 'Intruder', icon: IconCrosshair, group: 'Web Security Suite' },

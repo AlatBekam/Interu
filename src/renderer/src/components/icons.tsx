@@ -24,6 +24,12 @@ export const IconShieldAlert = ({ size, className }: P) => (
 export const IconRadar = ({ size, className }: P) => (
   <svg {...base(size)} className={className}><path d="M19.07 4.93A10 10 0 1 1 12 2v10l6.5 3.75" /><path d="M12 12l5-3" /></svg>
 )
+export const IconFlask = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}><path d="M9 3h6M10 3v6l-5.5 9.5A2 2 0 0 0 6.2 21h11.6a2 2 0 0 0 1.7-2.5L14 9V3" /><path d="M7.5 15h9" /></svg>
+)
+export const IconSpider = ({ size, className }: P) => (
+  <svg {...base(size)} className={className}><circle cx="12" cy="12" r="2.5" /><path d="M12 9.5V5m0 0 2-2m-2 2-2-2" /><path d="M14.3 11l3.2-2.2m0 0 2.5.4m-2.5-.4.6-2.5" /><path d="M14.3 13l3.2 2.2m0 0 2.5-.4m-2.5.4.6 2.5" /><path d="M9.7 11 6.5 8.8m0 0L4 9.2m2.5-.4L5.9 6.3" /><path d="M9.7 13 6.5 15.2m0 0L4 14.8m2.5.4L5.9 17.7" /></svg>
+)
 export const IconFirewall = ({ size, className }: P) => (
   <svg {...base(size)} className={className}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18M3 15h18M8 4v5M14 4v5M11 9v6M17 15v5M7 15v5" /></svg>
 )

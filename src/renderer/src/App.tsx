@@ -16,6 +16,8 @@ import Decoder from './pages/web/Decoder'
 import Comparer from './pages/web/Comparer'
 import Sequencer from './pages/web/Sequencer'
 import Target from './pages/web/Target'
+import Crawler from './pages/web/Crawler'
+import ActiveScan from './pages/web/ActiveScan'
 import { useSettings, useApplyTheme, useBodyMotionFlag } from './store/store'
 
 export default function App() {
@@ -33,6 +35,8 @@ export default function App() {
           <Route path="/" element={<Dashboard />} />
           {/* Web Security Suite (Burp-style, simulated) */}
           <Route path="/web/target" element={<Target />} />
+          <Route path="/web/crawler" element={<Crawler />} />
+          <Route path="/web/activescan" element={<ActiveScan />} />
           <Route path="/web/proxy" element={<Proxy />} />
           <Route path="/web/repeater" element={<Repeater />} />
           <Route path="/web/intruder" element={<Intruder />} />
