@@ -21,6 +21,10 @@ midnight / royal-navy accents) and **"Silver Daylight"** (light).
 > Each confirmed finding also carries an **Attack/Defense advisor** (patching steps +
 > copy-ready config, and a verify/operator/info attack recipe with Send-to-Repeater/Intruder
 > + Re-test). Request/response panes across the suite are now selectable with Copy buttons.
+> Two **autopilot** modules extend the suite: a **Web Crawler** (BFS endpoint/form discovery,
+> scope-gated, passive analysis per page) and an **Active Scan** engine with FP-safe oracles
+> (error-based **SQLi** and reflected **XSS** → *Confirmed*; **IDOR / access-control / CSRF**
+> → *Suspected*) — enter a target IP/URL and it maps and tests automatically.
 > Still mock / simulated UI: Dashboard (host cards), Firewall, and Reports.
 
 > ⚠️ **Authorized use only — legal by design.** Every "Live" action is
@@ -61,6 +65,8 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 | **Repeater** | **Live** mode sends real HTTP requests to a scoped target and shows the real response (status/time/length); Simulation mode for offline demo. |
 | **Intruder** | **Live** mode fires real requests per payload (payload at `§…§`), real status/length/time + outlier flagging; plus Simulation mode. |
 | **Target / Site Map** | **Live content discovery** (real path fuzzing against a scoped target) building a real map; plus the simulated map. |
+| **Crawler** | **Autopilot BFS web crawler** (scope-gated). Enter a target → it discovers pages, links, forms and inline `fetch()` endpoints (follows `.js` for endpoint discovery, skips static assets), with bounded concurrency + depth/max-page limits. Runs **passive** `analyzeHttpResponse` per page (auto-detect only on 2xx non-binary responses — anti-FP) and feeds findings to Vulnerabilities / Exposure Monitor. Right-click rows → Send to Repeater/Intruder. |
+| **Active Scan** | **Autopilot web-vulnerability scanner** (scope-gated) with **false-positive-safe oracles**. Enter a target → shallow crawl → inject probes into each parameter/form. **Error-based SQLi** (DB error attributable to an injected quote, gone when balanced) and **reflected XSS** (unique `<x-interu-token>` reflected verbatim/unencoded) → **Confirmed**; **IDOR** (numeric-id neighbour), **access-control** (sensitive path 200) and **CSRF** (state-changing POST form without token) → **Suspected** only, never auto-confirmed. Findings flow to the store with full evidence. |
 | **Decoder** | **Fully working, offline** URL / Base64 / Hex / HTML-entity / ASCII encode & decode, output→input chaining. |
 | **Comparer** | **Real, offline** LCS line-diff between two responses. |
 | **Sequencer** | **Real Shannon-entropy** analysis (quality score + per-position bars). |
@@ -137,6 +143,8 @@ Interu/
    │  ├─ rules.ts              #   Rule Engine: 408 templates, matchers, extractors,
    │  │                        #     interpolation, baseline, correlation (+ *.test.ts)
    │  ├─ dsl.ts                #   safe DSL expression evaluator (no eval) (+ *.test.ts)
+   │  ├─ crawl.ts              #   BFS crawler: link/form/endpoint discovery (+ *.test.ts)
+   │  ├─ webvuln.ts            #   FP-safe SQLi/XSS/IDOR/access/CSRF oracles (+ *.test.ts)
    │  └─ advice.ts             #   Attack/Defense advisor per finding (+ *.test.ts)
    └─ renderer/                # the React UI
       ├─ index.html            # locked-down offline CSP
@@ -149,8 +157,9 @@ Interu/
          ├─ pages/             # Dashboard, NetworkScanner, RuleEngine,
          │  │                  #   Vulnerabilities, ThreatMonitor, Firewall,
          │  │                  #   Reports, Settings
-         │  └─ web/            # Web Security Suite: Target, Proxy, BrowserSim,
-         │                     #   Repeater, Intruder, Sequencer, Decoder, Comparer
+         │  └─ web/            # Web Security Suite: Target, Crawler, ActiveScan,
+         │                     #   Proxy, BrowserSim, Repeater, Intruder,
+         │                     #   Sequencer, Decoder, Comparer
          ├─ data/mock.ts       # simulated data for the ops modules
          ├─ data/burp.ts       # simulated HTTP history / payloads / tokens
          ├─ lib/http.ts        # parse raw request, curl, sendLive
@@ -168,7 +177,7 @@ Interu/
 | `npm run icons` | Regenerate `build/icon.ico` / `.png` from the crest SVG. |
 | `npm run dev` | Launch the app with Vite HMR (**development** — uses a dev server). |
 | `npm run typecheck` | Type-check both the Node side and the web side. |
-| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL and advisor (56 tests). |
+| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL, advisor, crawler and web-vuln oracles (160 tests). |
 | `npm run build` | Production build → `out/` (main, preload, renderer). No dev server. |
 | `npm run smoke` | Launch the production bundle in Electron and confirm the UI loads (prints `RUY_SMOKE_RESULT: RENDER_OK`), then exit. |
 | `npm run dist` | `build` **+** package Windows installer **and** portable exe → `release/`. |
@@ -280,8 +289,9 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 ## 9. Verification performed for this build
 
 - `npm run typecheck` — passes clean (Node side + web side).
-- `npm test` — **56 tests pass** (vitest): scope gate, rule matchers/extractors/baseline/
-  correlation, the DSL evaluator, and the Attack/Defense advisor.
+- `npm test` — **160 tests pass** (vitest, 3 skipped): scope gate, rule matchers/extractors/
+  baseline/correlation, the DSL evaluator, the Attack/Defense advisor, the BFS crawler, and
+  the FP-safe SQLi/XSS/IDOR/access/CSRF oracles.
 - `npm run build` — `out/main`, `out/preload`, `out/renderer` produced.
 - Smoke test on the production bundle **and** on the packaged `win-unpacked` exe — both
   print `RUY_SMOKE_RESULT: RENDER_OK`, proving the UI loads over `file://` with **no dev

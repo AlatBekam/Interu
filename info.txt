@@ -10,7 +10,8 @@ Interu adalah PLATFORM OPERASI SIBER OFENSIF all-in-one buatan Indonesia,
 berbentuk aplikasi DESKTOP WINDOWS (Electron + React + TypeScript).
 
 Satu aplikasi menggabungkan:
-  - Web Security Suite gaya Burp Suite (Proxy, Repeater, Intruder, dll)
+  - Web Security Suite gaya Burp Suite (Proxy, Repeater, Intruder, Crawler,
+    Active Scan, dll)
   - Modul Operations (Scanner, Vulnerabilities, Threat Monitor, Firewall)
   - Reporting
 Dilengkapi SCOPE / AUTHORIZATION (legal-by-design): fitur "Live" hanya boleh
@@ -28,6 +29,9 @@ PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
 
   Web Security Suite (Burp)  : SELESAI & FUNGSIONAL (bisa dipakai beneran)
                                + request/response kini bisa di-COPY di semua tool
+  Crawler + Active Scan      : BARU — autopilot: Crawler petakan endpoint/form,
+                               Active Scan uji SQLi/XSS (Confirmed) + IDOR/
+                               access/CSRF (Suspected), oracle FP-safe
   Network Scanner            : REAL — TCP connect scan asli, scope-gated
   Rule Engine (Detection)    : NUCLEI-GRADE — 408 template data-driven, matcher
                                DSL (tanpa eval), extractor, interpolasi, baseline
@@ -74,10 +78,12 @@ Struktur penting:
     rules.ts       -> Rule Engine: 408 template + matcher + extractor +
                       interpolasi + baseline + korelasi + CVE
     dsl.ts         -> evaluator ekspresi DSL aman (tanpa eval)             (BARU)
+    crawl.ts       -> crawler BFS: temukan link/form/endpoint fetch()      (BARU)
+    webvuln.ts     -> oracle SQLi/XSS/IDOR/access/CSRF (FP-safe)           (BARU)
     advice.ts      -> advisor Attack/Defense per temuan                    (BARU)
   src/renderer/src/
-    pages/web/     -> Web Security Suite (Proxy, Repeater, Intruder, Target,
-                      Decoder, Comparer, Sequencer, BrowserSim)
+    pages/web/     -> Web Security Suite (Target, Crawler, ActiveScan, Proxy,
+                      Repeater, Intruder, Decoder, Comparer, Sequencer, BrowserSim)
     pages/         -> Dashboard, NetworkScanner (REAL), RuleEngine (BARU),
                       Vulnerabilities, ThreatMonitor, Firewall, Reports, Settings
     components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
@@ -106,6 +112,12 @@ Struktur penting:
   [DONE] Decoder      : URL/Base64/Hex/HTML/ASCII encode-decode (offline, REAL)
   [DONE] Comparer     : Diff dua response (LCS, offline, REAL)
   [DONE] Sequencer    : Analisa entropi token (hitungan REAL, token masih sampel)
+  [DONE] Crawler      : autopilot BFS crawler (scope-gated) — petakan page,
+                        link, form, endpoint inline fetch(); passive per page
+                        (auto-detect hanya pada 2xx non-binary -> anti-FP)   (BARU)
+  [DONE] Active Scan  : autopilot scanner vuln (scope-gated), oracle FP-safe:
+                        SQLi error-based + reflected XSS -> Confirmed;
+                        IDOR / access-control / CSRF -> Suspected (tak auto)  (BARU)
   [DONE] Scope gate   : semua Live digerbang host berizin
 
 == OPERATIONS (SEBAGIAN REAL) ==
@@ -148,7 +160,8 @@ Struktur penting:
                               * Attack = verify (baca-saja, nol FP) / operator (payload
                                 disiapkan, Send to Repeater/Intruder) / info (PoC lokal)
                             - Halaman Detection: library template + active checks
-                            - Diuji: 56 tes (vitest) rules/dsl/advice/scope
+                            - Diuji: 160 tes (vitest) rules/dsl/advice/crawl/
+                              webvuln/scope
                             -> TODO: oracle boolean/time/OOB, template eksternal
                                YAML/JSON, Attack Path Graph
 
@@ -169,7 +182,9 @@ PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")  [NUCLEI-GRADE]
   [x] Tingkat keyakinan: Suspected vs Confirmed (dipisah)
   [x] Tempel BUKTI di tiap temuan (request/response + extracted)
   [x] ADVISOR ATTACK/DEFENSE per temuan (patching + PoC verify/operator/info)
-  [x] Tes unit (vitest) untuk rules, DSL, advisor, scope (56 tes)
+  [x] Crawler autopilot (BFS) + Active Scan: SQLi error-based & reflected XSS
+        -> Confirmed; IDOR/access/CSRF -> Suspected (oracle FP-safe)
+  [x] Tes unit (vitest) rules, DSL, advisor, crawler, webvuln, scope (160 tes)
 
 PRIORITAS 2 — OPERATIONS JADI REAL
   [x] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
@@ -216,6 +231,7 @@ CATATAN STRATEGI (buat lomba):
   RUY CYBERSECURITY TEAM
   Produk: INTERU — Cyber Operations
   Versi: 1.0.0 (tahap: Web Suite + Network Scanner REAL, Rule Engine NUCLEI-GRADE
-         408 template + advisor Attack/Defense; Dashboard/Threat Monitor/Firewall/
+         408 template + advisor Attack/Defense, + Crawler & Active Scan autopilot
+         (SQLi/XSS/IDOR/access/CSRF, FP-safe); Dashboard/Threat Monitor/Firewall/
          Reports masih dikembangkan)
 ================================================================================
