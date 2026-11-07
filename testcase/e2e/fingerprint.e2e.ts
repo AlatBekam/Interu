@@ -38,7 +38,6 @@ async function clearFindings(page: Page): Promise<void> {
 
 async function deepScan(page: Page): Promise<void> {
   await nav(page, 'Network Scanner')
-  await page.getByRole('button', { name: 'Live', exact: true }).click()
   await page.getByPlaceholder('127.0.0.1  /  10.20.0.0/24  /  10.0.0.1-50').fill(HOST)
   await page.locator('select', { has: page.locator('option[value="deep"]') }).selectOption('deep')
   await page.getByRole('button', { name: 'Run Scan' }).click()

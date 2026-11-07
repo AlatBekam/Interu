@@ -35,7 +35,6 @@ describe('GUI e2e — Repeater Live against a real target (main build)', () => {
   it('opens Repeater, blocks an out-of-scope target, then sends once authorized', async () => {
     const page = A.page
     await nav(page, 'Repeater')
-    await page.getByRole('button', { name: 'Live', exact: true }).click()
     await page.getByPlaceholder('https://target-host:port').fill(TARGET_URL)
     await page.locator('textarea.code-pane').fill(
       `GET / HTTP/1.1\nHost: ${TARGET_HOST}\nUser-Agent: Interu-E2E\nAccept: */*\n\n`

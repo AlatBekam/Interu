@@ -5,7 +5,7 @@ import { Panel, Disclaimer, Stat, Meter } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import CopyButton from '../../components/CopyButton'
 import { IconPlay, IconStop, IconBug, IconShieldAlert, IconCrosshair, IconCheck } from '../../components/icons'
-import { severityPill, Severity } from '../../data/mock'
+import { severityPill, Severity } from '../../lib/severity'
 import { useSettings } from '../../store/store'
 import { sendLive, rawFromParts, inScopeOrNote } from '../../lib/http'
 import { setTransfer } from '../../store/transfer'
@@ -200,7 +200,7 @@ export default function ActiveScan() {
 
   const sendTo = (f: Finding, to: 'repeater' | 'intruder'): void => {
     const u = f.matchedAt || f.target
-    try { const x = new URL(u); setTransfer({ to, target: x.origin, raw: rawFromParts('GET', x.host, x.pathname + x.search), mode: 'live' }); navigate(to === 'repeater' ? '/web/repeater' : '/web/intruder') } catch { /* */ }
+    try { const x = new URL(u); setTransfer({ to, target: x.origin, raw: rawFromParts('GET', x.host, x.pathname + x.search) }); navigate(to === 'repeater' ? '/web/repeater' : '/web/intruder') } catch { /* */ }
   }
 
   const confirmed = findings.filter((f) => f.confidence === 'confirmed').length

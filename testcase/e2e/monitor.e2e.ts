@@ -96,11 +96,10 @@ describe('GUI e2e — Exposure Monitor shows only real activity', () => {
     expect(A.pageErrors, `renderer errors: ${A.pageErrors.join(' | ')}`).toHaveLength(0)
   }, 240_000)
 
-  it('the Dashboard shows the same real activity', async () => {
-    await nav(A.page, 'Dashboard')
-    await A.page.getByText('Recent Activity').first().waitFor({ state: 'visible', timeout: 15_000 })
-    expect((await A.page.textContent('body')) ?? '').toContain('New finding')
-    await shot(A.page, 'monitor-03-dashboard')
+  it('has no fake-data pages and no simulation badge', async () => {
+    const body = (await A.page.textContent('body')) ?? ''
+    for (const gone of ['Dashboard', 'Firewall Rules', 'Reports', 'Simulation']) expect(body).not.toContain(gone)
+    await shot(A.page, 'monitor-03-no-fake-pages')
   }, 60_000)
 
   it('a refused target is recorded as a scope decision', async () => {

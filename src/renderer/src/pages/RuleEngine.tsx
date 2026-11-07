@@ -8,7 +8,7 @@ import { Panel, Disclaimer, Stat, Meter } from '../components/ui'
 import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
 import CopyButton from '../components/CopyButton'
-import { severityPill, Severity } from '../data/mock'
+import { severityPill, Severity } from '../lib/severity'
 import { useSettings } from '../store/store'
 import { useFindings, addFindings, clearFindings, removeFinding } from '../store/findings'
 import { setTransfer } from '../store/transfer'
@@ -53,7 +53,7 @@ export default function RuleEngine() {
     const u = httpUrlOf(f); if (!u) return
     try {
       const x = new URL(u)
-      setTransfer({ to, target: x.origin, raw: rawFromParts('GET', x.host, x.pathname + x.search), mode: 'live' })
+      setTransfer({ to, target: x.origin, raw: rawFromParts('GET', x.host, x.pathname + x.search) })
       navigate(to === 'repeater' ? '/web/repeater' : '/web/intruder')
     } catch { /* ignore bad url */ }
   }

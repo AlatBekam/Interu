@@ -7,7 +7,6 @@ export interface TransferPayload {
   to: 'repeater' | 'intruder'
   target: string
   raw: string
-  mode: 'sim' | 'live'
 }
 
 let pending: TransferPayload | null = null

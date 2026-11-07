@@ -89,8 +89,8 @@ export default function Crawler() {
       x: e.clientX,
       y: e.clientY,
       items: [
-        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target: origin, raw, mode: 'live' }); navigate('/web/repeater') } },
-        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target: origin, raw, mode: 'live' }); navigate('/web/intruder') } },
+        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target: origin, raw }); navigate('/web/repeater') } },
+        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target: origin, raw }); navigate('/web/intruder') } },
         { sep: true },
         { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(node.url) },
         { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) }
@@ -395,8 +395,8 @@ export default function Crawler() {
                   </div>
                 )}
                 <div className="flex gap-8 mb-8 wrap">
-                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'repeater', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search), mode: 'live' }); navigate('/web/repeater') } catch { /* */ } }}>➤ Repeater</button>
-                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'intruder', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search), mode: 'live' }); navigate('/web/intruder') } catch { /* */ } }}>➤ Intruder</button>
+                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'repeater', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search) }); navigate('/web/repeater') } catch { /* */ } }}>➤ Repeater</button>
+                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'intruder', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search) }); navigate('/web/intruder') } catch { /* */ } }}>➤ Intruder</button>
                 </div>
                 {selRaw && (
                   <>

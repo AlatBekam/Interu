@@ -34,7 +34,7 @@ export default function Settings() {
 
   return (
     <>
-      <TopBar title="Settings" sub="Local preferences & demo environment" />
+      <TopBar title="Settings" sub="Local preferences & stored data" />
       <div className="content page">
         <div className="grid grid-2 mt-16" style={{ alignItems: 'start' }}>
           <Panel title="Preferences" sub="Stored locally on this machine">
@@ -53,7 +53,7 @@ export default function Settings() {
                 <button className={settings.theme === 'dark' ? 'on' : ''} onClick={() => patch({ theme: 'dark' })}>Dark</button>
               </div>
             </Row>
-            <Row title="Local persistence" desc="Remember demo records and settings across restarts.">
+            <Row title="Local persistence" desc="Remember findings, scope and settings across restarts.">
               <label className="switch">
                 <input type="checkbox" checked={settings.persistence} onChange={(e) => patch({ persistence: e.target.checked })} />
                 <span className="track" />
@@ -69,14 +69,14 @@ export default function Settings() {
           </Panel>
 
           <div style={{ display: 'grid', gap: 18 }}>
-            <Panel title="Demo Environment">
+            <Panel title="Local data">
               <Disclaimer>
-                Resetting clears all locally stored demo records (scan settings, finding statuses, custom
-                firewall rules, preferences) and restores the application to its default state.
+                Resetting clears everything stored locally (scope, scan settings, findings, preferences) and
+                restores the application to its default state.
               </Disclaimer>
               <div className="mt-16">
                 {!confirming ? (
-                  <button className="btn btn-danger" onClick={() => setConfirming(true)}><IconTrash />Reset demo environment</button>
+                  <button className="btn btn-danger" onClick={() => setConfirming(true)}><IconTrash />Reset local data</button>
                 ) : (
                   <div className="flex gap-12 items-center wrap">
                     <span className="small">This cannot be undone. Continue?</span>
@@ -98,7 +98,6 @@ export default function Settings() {
                     <tr><td className="muted small">Chromium</td><td className="mono">{versions.chrome}</td></tr>
                     <tr><td className="muted small">Node</td><td className="mono">{versions.node}</td></tr>
                     <tr><td className="muted small">Platform</td><td className="mono">{platform}</td></tr>
-                    <tr><td className="muted small">Mode</td><td><span className="pill pill-warn"><span className="pd" />Offline simulation</span></td></tr>
                   </tbody>
                 </table>
               </div>

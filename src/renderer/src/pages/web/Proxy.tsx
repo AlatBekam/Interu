@@ -4,9 +4,7 @@ import TopBar from '../../components/TopBar'
 import ScopeBar from '../../components/ScopeBar'
 import { Panel, Disclaimer } from '../../components/ui'
 import { IconForward, IconX, IconHistory, IconGlobe, IconPlay, IconStop } from '../../components/icons'
-import { HTTP_HISTORY, rawRequest, rawResponse } from '../../data/burp'
 import type { ProxyLogEntry, HeldRequest } from '../../../../shared/proxy'
-import BrowserSim from './BrowserSim'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
 import CopyButton from '../../components/CopyButton'
 import { setTransfer } from '../../store/transfer'
@@ -27,7 +25,6 @@ export default function Proxy() {
   const [heldEdit, setHeldEdit] = useState('')
   const [sel, setSel] = useState<ProxyLogEntry | null>(null)
   const [tab, setTab] = useState<Tab>('request')
-  const [showBrowser, setShowBrowser] = useState(false)
   const [browserUrl, setBrowserUrl] = useState('http://example.com/')
   const [caNote, setCaNote] = useState('')
   const [menu, setMenu] = useState<CtxState | null>(null)
@@ -48,8 +45,8 @@ export default function Proxy() {
       x: e.clientX,
       y: e.clientY,
       items: [
-        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw, mode: 'live' }); navigate('/web/repeater') } },
-        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw, mode: 'live' }); navigate('/web/intruder') } },
+        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw }); navigate('/web/repeater') } },
+        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw }); navigate('/web/intruder') } },
         { sep: true },
         { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(t.url) },
         { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) },
@@ -126,15 +123,6 @@ export default function Proxy() {
     setHeld(null)
   }
 
-  const loadSample = () => {
-    const sample: ProxyLogEntry[] = HTTP_HISTORY.map((t) => ({
-      id: t.id, time: t.time, method: t.method, host: t.host, path: t.path, url: `http://${t.host}${t.path}`,
-      status: t.status, length: t.length, ms: 20, kind: 'http',
-      request: rawRequest(t), response: rawResponse(t)
-    }))
-    setLogs(sample)
-  }
-
   return (
     <>
       <TopBar title="Proxy" sub="Intercepting forward proxy" />
@@ -173,13 +161,10 @@ export default function Proxy() {
           <button className="btn btn-primary btn-sm" onClick={openBrowser} disabled={!running} title="Open a real browser routed through the proxy"><IconGlobe />Open Browser</button>
           <button className="btn btn-sm" onClick={exportCA} disabled={!hasBridge} title="Export the Interu root CA for external browsers">Export CA</button>
           <button className="btn btn-sm btn-danger" onClick={removeCA} disabled={!hasBridge} title="Delete the stored root CA (encrypted key + cert)">Remove CA</button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowBrowser((v) => !v)} title="Offline simulated browser">{showBrowser ? 'Close Demo' : 'Demo (offline)'}</button>
         </div>
         {caNote && <div className="disclaimer" style={{ background: 'rgba(79,178,134,0.06)', borderColor: 'rgba(79,178,134,0.25)' }}><div className="small">{caNote}</div></div>}
 
         {!hasBridge && <div className="disclaimer"><div>HTTP bridge tidak tersedia (jalankan dari aplikasi desktop, bukan browser biasa).</div></div>}
-
-        {showBrowser && <div className="mb-24"><BrowserSim onClose={() => setShowBrowser(false)} /></div>}
 
         {held && (
           <div ref={heldRef}>
@@ -195,7 +180,6 @@ export default function Proxy() {
           sub={`${logs.length} captured · right-click a row for actions`}
           right={
             <div className="flex gap-8">
-              <button className="btn btn-ghost btn-sm" onClick={loadSample} title="Load offline sample data">Load sample</button>
               <button className="btn btn-ghost btn-sm" onClick={() => setLogs([])}>Clear</button>
             </div>
           }

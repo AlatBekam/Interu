@@ -3,17 +3,16 @@ import TopBar from '../../components/TopBar'
 import { Panel, Disclaimer, Meter } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconCrosshair, IconPlay, IconStop } from '../../components/icons'
-import { PAYLOAD_SETS, TARGET_HOST } from '../../data/burp'
+import { PAYLOAD_SETS } from '../../data/burp'
 import { parseRawRequest, sendLive, inScopeOrNote } from '../../lib/http'
 import { useSettings } from '../../store/store'
 import { useTransfer } from '../../store/transfer'
 import CopyButton from '../../components/CopyButton'
 
 interface Row { payload: string; status: number | string; length: number; ms: number; note?: string }
-type Mode = 'sim' | 'live'
 
 const TEMPLATE = `POST /api/login HTTP/1.1
-Host: ${TARGET_HOST}
+Host: localhost:3000
 Content-Type: application/json
 Connection: close
 
@@ -21,7 +20,6 @@ Connection: close
 
 export default function Intruder() {
   const [settings] = useSettings()
-  const [mode, setMode] = useState<Mode>('sim')
   const [target, setTarget] = useState('http://localhost:3000')
   const [template, setTemplate] = useState<string>(TEMPLATE)
   const [setName, setSetName] = useState<string>(Object.keys(PAYLOAD_SETS)[0])
@@ -30,11 +28,9 @@ export default function Intruder() {
   const [running, setRunning] = useState(false)
   const [note, setNote] = useState('')
   const stopFlag = useRef(false)
-  const timer = useRef<number | null>(null)
 
   // Receive a request handed over via "Send to Intruder" (adds a default marker).
   useTransfer('intruder', (p) => {
-    setMode(p.mode)
     setTarget(p.target)
     setTemplate(p.raw)
     setRows([])
@@ -44,29 +40,10 @@ export default function Intruder() {
 
   const stop = () => {
     stopFlag.current = true
-    if (timer.current) window.clearInterval(timer.current)
-    timer.current = null
     setRunning(false)
   }
 
-  // --- Simulation: synthesize plausible rows locally (no traffic) ---
-  const startSim = () => {
-    const payloads = PAYLOAD_SETS[setName]
-    setRows([]); setProgress(0); setRunning(true); setNote('')
-    let i = 0
-    timer.current = window.setInterval(() => {
-      const p = payloads[i]
-      const anomalous = /OR|UNION|DROP|'|--|admin|\.env|\.git/i.test(p)
-      const status = anomalous ? (p.includes('admin') ? 200 : 500) : [200, 200, 302, 404][i % 4]
-      const length = 200 + (anomalous ? 1200 + p.length * 30 : status === 404 ? 48 : 420 + p.length * 7)
-      setRows((r) => [...r, { payload: p, status, length, ms: 30 + Math.floor(Math.random() * 70) }])
-      i++
-      setProgress(Math.round((i / payloads.length) * 100))
-      if (i >= payloads.length) stop()
-    }, 200)
-  }
-
-  // --- Live: substitute payload at §…§, send real requests, read real results ---
+  // Substitute payload at §…§, send real requests, read real results ---
   const startLive = async () => {
     const payloads = PAYLOAD_SETS[setName]
     const probe = parseRawRequest(template.replace(/§[^§]*§/, 'x'), target)
@@ -96,35 +73,20 @@ export default function Intruder() {
     setRunning(false)
   }
 
-  const start = () => (mode === 'live' ? startLive() : startSim())
-
   return (
     <>
       <TopBar title="Intruder" sub="Automated payload testing" />
       <div className="content page">
-        {mode === 'live' ? (
-          <Disclaimer>
-            <strong>Live mode fires real requests</strong> for every payload, only to hosts in your authorized
-            scope. Use strictly on systems you are permitted to test.
-          </Disclaimer>
-        ) : (
-          <Disclaimer>
-            <strong>Simulation mode.</strong> Result rows are fabricated locally — nothing is sent. Switch to Live
-            to run the payload set against an authorized target.
-          </Disclaimer>
-        )}
+        <Disclaimer>
+          <strong>Fires real requests</strong> for every payload, only to hosts in your authorized
+          scope. Use strictly on systems you are permitted to test.
+        </Disclaimer>
 
         <div className="flex gap-12 items-center mt-16 mb-16 wrap">
-          <div className="theme-toggle">
-            <button className={mode === 'sim' ? 'on' : ''} onClick={() => setMode('sim')}>Simulation</button>
-            <button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>Live</button>
-          </div>
-          {mode === 'live' && (
-            <input type="text" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://target-host:port" className="mono" style={{ flex: 1, minWidth: 240 }} />
-          )}
+          <input type="text" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://target-host:port" className="mono" style={{ flex: 1, minWidth: 240 }} />
         </div>
 
-        {mode === 'live' && <ScopeBar />}
+        <ScopeBar />
         {note && <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}><div>{note}</div></div>}
 
         <div className="split mt-16">
@@ -142,7 +104,7 @@ export default function Intruder() {
             <div className="code-pane" style={{ minHeight: 170 }}>{PAYLOAD_SETS[setName].join('\n')}</div>
             <div className="flex gap-12 mt-16">
               {!running ? (
-                <button className="btn btn-primary" onClick={start}><IconPlay />Start attack</button>
+                <button className="btn btn-primary" onClick={startLive}><IconPlay />Start attack</button>
               ) : (
                 <button className="btn btn-danger" onClick={stop}><IconStop />Stop</button>
               )}
@@ -151,7 +113,7 @@ export default function Intruder() {
         </div>
 
         {(rows.length > 0 || running) && (
-          <Panel title="Attack Results" sub={`${rows.length}/${PAYLOAD_SETS[setName].length} · ${mode === 'live' ? 'live' : 'simulated'}`} className="mt-24" right={<IconCrosshair />}>
+          <Panel title="Attack Results" sub={`${rows.length}/${PAYLOAD_SETS[setName].length}`} className="mt-24" right={<IconCrosshair />}>
             <div className="mb-16"><Meter value={progress} tone={progress === 100 ? 'ok' : undefined} /></div>
             <div className="table-wrap">
               <table className="data">

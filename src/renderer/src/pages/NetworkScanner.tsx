@@ -3,7 +3,6 @@ import TopBar from '../components/TopBar'
 import { Panel, Disclaimer, Meter } from '../components/ui'
 import { IconPlay, IconStop, IconScan } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
-import { MOCK_HOSTS, HostResult, severityPill, Severity } from '../data/mock'
 import { usePersistentState, useSettings } from '../store/store'
 import { profilePorts, ScanHost, ScanEvent, ScanProfile, ScanSummary } from '../../../shared/scan'
 import { analyzeScan } from '../../../shared/rules'
@@ -11,26 +10,14 @@ import { addFindings } from '../store/findings'
 import { pushActivity, noteScopeBlock } from '../store/activity'
 
 type Phase = 'idle' | 'scanning' | 'done'
-type Mode = 'live' | 'sim'
 
-// Unified row shape so the live engine and the simulation share one table.
 interface DisplayHost {
   ip: string
   hostname: string
   os: string
   status: string
   open: { port: number; service: string; state: string; version: string }[]
-  risk?: Severity
 }
-
-const simToDisplay = (h: HostResult): DisplayHost => ({
-  ip: h.ip,
-  hostname: h.hostname,
-  os: h.os,
-  status: h.status,
-  open: h.openPorts.map((p) => ({ port: p.port, service: p.service, state: p.state, version: p.version })),
-  risk: h.risk
-})
 
 const liveToDisplay = (h: ScanHost): DisplayHost => ({
   ip: h.ip,
@@ -44,7 +31,6 @@ const hasBridge = typeof window !== 'undefined' && !!window.ruy?.scan
 
 export default function NetworkScanner() {
   const [settings] = useSettings()
-  const [mode, setMode] = usePersistentState<Mode>('scanner.mode', hasBridge ? 'live' : 'sim')
   const [target, setTarget] = usePersistentState('scanner.target', '127.0.0.1')
   const [profile, setProfile] = usePersistentState<ScanProfile>('scanner.profile', 'quick')
   const [phase, setPhase] = useState<Phase>('idle')
@@ -54,17 +40,9 @@ export default function NetworkScanner() {
   const [note, setNote] = useState<string | null>(null)
   const [summary, setSummary] = useState<ScanSummary | null>(null)
 
-  const timer = useRef<number | null>(null)
   const scanIdRef = useRef<number>(0)
   const runRef = useRef(0)
   const offProgress = useRef<(() => void) | null>(null)
-
-  const effMode: Mode = hasBridge ? mode : 'sim'
-
-  const clearTimer = () => {
-    if (timer.current) window.clearInterval(timer.current)
-    timer.current = null
-  }
 
   // Subscribe once to live progress events; filter by the active scan id.
   useEffect(() => {
@@ -95,44 +73,11 @@ export default function NetworkScanner() {
     return () => { offProgress.current?.(); offProgress.current = null }
   }, [])
 
-  // On leave: stop the sim timer and cancel any live scan still running in main.
+  // On leave: cancel any scan still running in main.
   useEffect(() => () => {
-    clearTimer()
     if (scanIdRef.current) void window.ruy?.scan?.cancel(scanIdRef.current)
     scanIdRef.current = 0
   }, [])
-
-  const stopSim = () => { clearTimer(); setPhase('done') }
-
-  const startSim = () => {
-    runRef.current++
-    clearTimer()
-    setNote(null)
-    setSummary(null)
-    setPhase('scanning')
-    setProgress(0)
-    setFound([])
-    setLog([`> initiating ${profile} sweep of ${target} (SIMULATED)`, '> no packets are sent on the real network'])
-    let step = 0
-    const totalSteps = 36
-    timer.current = window.setInterval(() => {
-      step += 1
-      setProgress(Math.round((step / totalSteps) * 100))
-      if (step % 6 === 0) {
-        const host = MOCK_HOSTS[step / 6 - 1]
-        if (host) {
-          setFound((f) => [...f, simToDisplay(host)])
-          setLog((l) => [...l, `> host up  ${host.ip.padEnd(13)} ${host.hostname}  [${host.openPorts.length} open]`])
-        }
-      }
-      if (step >= totalSteps) {
-        clearTimer()
-        setProgress(100)
-        setPhase('done')
-        setLog((l) => [...l, `> sweep complete — ${MOCK_HOSTS.length} hosts enumerated`])
-      }
-    }, 140)
-  }
 
   const startLive = async () => {
     if (!window.ruy?.scan) return
@@ -148,7 +93,7 @@ export default function NetworkScanner() {
     try {
       pushActivity({ ts: new Date().toISOString(), level: 'info', category: 'scan', message: `Scan started: ${target} (${profile})`, target })
       const res = await window.ruy.scan.run({ target, profile }, settings.scope, id)
-      // A newer scan (live or sim) started meanwhile: don't let this result overwrite it.
+      // A newer scan started meanwhile: don't let this result overwrite it.
       if (runRef.current !== run) return
       if (!res.ok) {
         if (res.blocked) noteScopeBlock(target, 'scan')
@@ -177,16 +122,10 @@ export default function NetworkScanner() {
     }
   }
 
-  const start = () => (effMode === 'live' ? void startLive() : startSim())
-
   const stop = () => {
-    if (effMode === 'live') {
-      if (window.ruy?.scan && scanIdRef.current) window.ruy.scan.cancel(scanIdRef.current)
-      scanIdRef.current = 0
-      setPhase('done')
-    } else {
-      stopSim()
-    }
+    if (window.ruy?.scan && scanIdRef.current) window.ruy.scan.cancel(scanIdRef.current)
+    scanIdRef.current = 0
+    setPhase('done')
   }
 
   const portCount = profilePorts(profile).length
@@ -194,37 +133,31 @@ export default function NetworkScanner() {
 
   return (
     <>
-      <TopBar title="Network Scanner" sub={effMode === 'live' ? 'Real TCP connect scan (scope-gated)' : 'Simulated host & service discovery'} />
+      <TopBar title="Network Scanner" sub="Real TCP connect scan (scope-gated)" />
       <div className="content page">
-        {effMode === 'live' ? (
-          <Disclaimer>
-            <strong>Live mode opens real TCP connections.</strong> Only targets inside your Authorized scope are
-            scanned — add the host or subnet (e.g. <span className="mono">10.20.0.0/24</span>) below. Use this only
-            against systems you own or are authorized to test.
-          </Disclaimer>
-        ) : (
-          <Disclaimer>
-            This module <strong>simulates</strong> a network sweep against a fabricated lab range. It never emits
-            real traffic, probes real hosts, or touches your network interfaces. Results are fixed demo data.
-          </Disclaimer>
-        )}
+        <Disclaimer>
+          <strong>Opens real TCP connections.</strong> Only targets inside your Authorized scope are
+          scanned — add the host or subnet (e.g. <span className="mono">10.20.0.0/24</span>) below. Use this only
+          against systems you own or are authorized to test.
+        </Disclaimer>
+        {!hasBridge && <div className="small mt-12" style={{ color: 'var(--danger, #d6594f)' }}>Scanner bridge unavailable: run Interu as the desktop app to scan.</div>}
 
-        {effMode === 'live' && <div className="mt-16"><ScopeBar /></div>}
+        <div className="mt-16"><ScopeBar /></div>
 
         <Panel title="Scan Configuration" className="mt-16">
           <div className="grid grid-3" style={{ alignItems: 'end' }}>
             <label className="field">
-              <span className="lab">Target {effMode === 'live' ? '(IP / CIDR / range)' : 'Range'}</span>
+              <span className="lab">Target (IP / CIDR / range)</span>
               <input
                 type="text"
                 value={target}
                 onChange={(e) => setTarget(e.target.value)}
                 disabled={scanning}
-                placeholder={effMode === 'live' ? '127.0.0.1  /  10.20.0.0/24  /  10.0.0.1-50' : '10.20.0.0/24'}
+                placeholder="127.0.0.1  /  10.20.0.0/24  /  10.0.0.1-50"
               />
             </label>
             <label className="field">
-              <span className="lab">Profile{effMode === 'live' ? ` — ${portCount} ports` : ''}</span>
+              <span className="lab">Profile — {portCount} ports</span>
               <select value={profile} onChange={(e) => setProfile(e.target.value as ScanProfile)} disabled={scanning}>
                 <option value="quick">Quick (top 100 ports)</option>
                 <option value="standard">Standard (common ports)</option>
@@ -233,22 +166,12 @@ export default function NetworkScanner() {
             </label>
             <div className="flex gap-12">
               {!scanning ? (
-                <button className="btn btn-primary" onClick={start}><IconPlay />Run Scan</button>
+                <button className="btn btn-primary" onClick={() => void startLive()} disabled={!hasBridge}><IconPlay />Run Scan</button>
               ) : (
                 <button className="btn btn-danger" onClick={stop}><IconStop />Stop</button>
               )}
             </div>
           </div>
-
-          {hasBridge && (
-            <div className="flex gap-12 mt-16" style={{ alignItems: 'center' }}>
-              <span className="small muted">Mode:</span>
-              <div className="theme-toggle">
-                <button className={effMode === 'sim' ? 'on' : ''} onClick={() => !scanning && setMode('sim')} disabled={scanning}>Simulation</button>
-                <button className={effMode === 'live' ? 'on' : ''} onClick={() => !scanning && setMode('live')} disabled={scanning}>Live</button>
-              </div>
-            </div>
-          )}
 
           {note && <div className="small mt-12" style={{ color: 'var(--danger, #d6594f)' }}>{note}</div>}
 
@@ -276,7 +199,7 @@ export default function NetworkScanner() {
             ) : (
               <div className="table-wrap">
                 <table className="data">
-                  <thead><tr><th>IP</th><th>Hostname</th><th>OS</th><th>Open</th><th>{effMode === 'live' ? 'State' : 'Risk'}</th></tr></thead>
+                  <thead><tr><th>IP</th><th>Hostname</th><th>OS</th><th>Open</th><th>State</th></tr></thead>
                   <tbody>
                     {found.map((h) => (
                       <tr key={h.ip}>
@@ -285,11 +208,7 @@ export default function NetworkScanner() {
                         <td className="small muted">{h.os}</td>
                         <td className="mono">{h.open.length}</td>
                         <td>
-                          {h.risk ? (
-                            <span className={`pill ${severityPill[h.risk]}`}><span className="pd" />{h.risk}</span>
-                          ) : (
-                            <span className={`pill ${h.status === 'up' ? 'pill-ok' : 'pill-muted'}`}><span className="pd" />{h.status}</span>
-                          )}
+                          <span className={`pill ${h.status === 'up' ? 'pill-ok' : 'pill-muted'}`}><span className="pd" />{h.status}</span>
                         </td>
                       </tr>
                     ))}
@@ -299,7 +218,7 @@ export default function NetworkScanner() {
             )}
           </Panel>
 
-          <Panel title="Scanner Console" sub={effMode === 'live' ? 'Live output' : 'Simulated output'}>
+          <Panel title="Scanner Console" sub="Live output">
             <div className="feed">
               {log.length === 0 ? (
                 <div className="muted small">Idle. Awaiting scan.</div>

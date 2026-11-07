@@ -4,20 +4,16 @@ import { Panel, Disclaimer } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconSend } from '../../components/icons'
 import CopyButton from '../../components/CopyButton'
-import { HTTP_HISTORY, rawRequest, rawResponse, HttpTx } from '../../data/burp'
-import { parseRawRequest, sendLive, inScopeOrNote } from '../../lib/http'
+import { parseRawRequest, rawFromParts, sendLive, inScopeOrNote } from '../../lib/http'
 import { useSettings } from '../../store/store'
 import { useTransfer } from '../../store/transfer'
 
-type Mode = 'sim' | 'live'
-
-const SIM_SEED = HTTP_HISTORY[3] // POST /api/login
+const DEFAULT_REQUEST = rawFromParts('GET', 'localhost:3000', '/')
 
 export default function Repeater() {
   const [settings] = useSettings()
-  const [mode, setMode] = useState<Mode>('sim')
   const [target, setTarget] = useState('http://localhost:3000')
-  const [request, setRequest] = useState<string>(rawRequest(SIM_SEED))
+  const [request, setRequest] = useState<string>(DEFAULT_REQUEST)
   const [response, setResponse] = useState<string>('')
   const [meta, setMeta] = useState<{ status: string; ms: number; len: number } | null>(null)
   const [sending, setSending] = useState(false)
@@ -25,31 +21,13 @@ export default function Repeater() {
 
   // Receive a request handed over via "Send to Repeater".
   useTransfer('repeater', (p) => {
-    setMode(p.mode)
     setTarget(p.target)
     setRequest(p.raw)
     setResponse('')
     setMeta(null)
   })
 
-  const sendSim = () => {
-    setSending(true); setResponse(''); setNote('')
-    const firstLine = request.split('\n')[0] || ''
-    const m = firstLine.match(/^(GET|POST|PUT|PATCH|DELETE)\s+(\S+)/)
-    const method = (m?.[1] as HttpTx['method']) || 'GET'
-    const path = m?.[2] || '/'
-    const match = HTTP_HISTORY.find((t) => t.path === path && t.method === method)
-    const tx: HttpTx = match ?? { ...SIM_SEED, method, path, status: 200, mime: 'JSON', length: 256 }
-    const latency = 40 + Math.floor(Math.random() * 90)
-    window.setTimeout(() => {
-      const res = rawResponse(tx)
-      setResponse(res)
-      setMeta({ status: res.split('\n')[0].replace('HTTP/1.1 ', '').trim(), ms: latency, len: res.length })
-      setSending(false)
-    }, latency + 120)
-  }
-
-  const sendRealLive = async () => {
+  const send = async () => {
     setSending(true); setResponse(''); setMeta(null); setNote('')
     const req = parseRawRequest(request, target)
     if (!inScopeOrNote(req.url, settings.scope, 'repeater')) {
@@ -68,34 +46,19 @@ export default function Repeater() {
     setMeta({ status: `${res.status} ${res.statusText ?? ''}`.trim(), ms: res.timingMs, len: res.size })
   }
 
-  const send = () => (mode === 'live' ? sendRealLive() : sendSim())
-
   return (
     <>
       <TopBar title="Repeater" sub="Craft & resend HTTP requests" />
       <div className="content page">
-        {mode === 'live' ? (
-          <Disclaimer>
-            <strong>Live mode sends real HTTP requests.</strong> Only hosts you add to the authorized scope are
-            allowed. Use this exclusively against systems you own or are explicitly permitted to test.
-          </Disclaimer>
-        ) : (
-          <Disclaimer>
-            <strong>Simulation mode.</strong> Nothing is transmitted — responses are canned demo data. Switch to
-            Live to send real requests to an authorized target.
-          </Disclaimer>
-        )}
+        <Disclaimer>
+          <strong>Sends real HTTP requests.</strong> Only hosts you add to the authorized scope are
+          allowed. Use this exclusively against systems you own or are explicitly permitted to test.
+        </Disclaimer>
 
         <div className="flex gap-12 items-center mt-16 mb-16 wrap">
-          <div className="theme-toggle">
-            <button className={mode === 'sim' ? 'on' : ''} onClick={() => setMode('sim')}>Simulation</button>
-            <button className={mode === 'live' ? 'on' : ''} onClick={() => setMode('live')}>Live</button>
-          </div>
-          {mode === 'live' && (
-            <label className="field" style={{ flex: 1, minWidth: 260 }}>
-              <input type="text" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://target-host:port" className="mono" />
-            </label>
-          )}
+          <label className="field" style={{ flex: 1, minWidth: 260 }}>
+            <input type="text" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://target-host:port" className="mono" />
+          </label>
           <button className="btn btn-primary" onClick={send} disabled={sending}><IconSend />{sending ? 'Sending…' : 'Send'}</button>
           {meta && (
             <div className="flex gap-16 small muted">
@@ -106,20 +69,20 @@ export default function Repeater() {
           )}
         </div>
 
-        {mode === 'live' && <ScopeBar />}
+        <ScopeBar />
         {note && <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}><div>{note}</div></div>}
 
         <div className="split mt-16">
           <Panel title="Request">
             <div className="code-head">
-              <span>{mode === 'live' ? 'Editable raw request (path + headers)' : 'Editable raw request'}</span>
+              <span>Editable raw request (path + headers)</span>
               <CopyButton text={request} />
             </div>
             <textarea className="code-pane" value={request} onChange={(e) => setRequest(e.target.value)} style={{ minHeight: 360 }} spellCheck={false} />
           </Panel>
           <Panel title="Response">
             <div className="code-head">
-              <span>{mode === 'live' ? 'Real response' : 'Simulated response'}</span>
+              <span>Response</span>
               <CopyButton text={response} />
             </div>
             {response ? (

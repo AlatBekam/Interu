@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react'
 import TopBar from '../../components/TopBar'
 import { Panel, Disclaimer } from '../../components/ui'
 import { IconColumns } from '../../components/icons'
-import { rawResponse, HTTP_HISTORY } from '../../data/burp'
 
 type DiffOp = { type: 'same' | 'add' | 'del'; text: string }
 
@@ -25,12 +24,9 @@ function lineDiff(a: string[], b: string[]): DiffOp[] {
   return out
 }
 
-const LEFT = rawResponse(HTTP_HISTORY[5]) // /api/orders?id=1001 (200)
-const RIGHT = rawResponse(HTTP_HISTORY[6]) // /api/orders?id=1002 (403)
-
 export default function Comparer() {
-  const [left, setLeft] = useState(LEFT)
-  const [right, setRight] = useState(RIGHT)
+  const [left, setLeft] = useState('')
+  const [right, setRight] = useState('')
   const [compared, setCompared] = useState(false)
 
   const diff = useMemo(() => lineDiff(left.split('\n'), right.split('\n')), [left, right])
@@ -45,15 +41,15 @@ export default function Comparer() {
       <TopBar title="Comparer" sub="Diff two responses — offline" />
       <div className="content page">
         <Disclaimer>
-          A real, <strong>offline</strong> line-level diff. Pre-loaded with two simulated responses (a 200 vs a
-          403 for different order IDs) to show a classic access-control comparison.
+          A line-level diff that runs entirely offline. Paste two responses (for example a 200 and a 403 for
+          different object IDs) to compare an access-control check.
         </Disclaimer>
 
         <div className="split mt-16">
-          <Panel title="Item A" sub="simulated response (200)">
+          <Panel title="Item A" sub="paste response">
             <textarea className="code-pane" value={left} onChange={(e) => { setLeft(e.target.value); setCompared(false) }} style={{ minHeight: 220 }} spellCheck={false} />
           </Panel>
-          <Panel title="Item B" sub="simulated response (403)">
+          <Panel title="Item B" sub="paste response">
             <textarea className="code-pane" value={right} onChange={(e) => { setRight(e.target.value); setCompared(false) }} style={{ minHeight: 220 }} spellCheck={false} />
           </Panel>
         </div>
