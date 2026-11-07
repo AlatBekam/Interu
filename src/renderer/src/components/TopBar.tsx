@@ -17,10 +17,6 @@ export default function TopBar({ title, sub }: { title: string; sub?: string }) 
       </div>
       <div className="topbar-spacer" />
       <ThemeToggle />
-      <div className="sim-badge" title="All activity in this application is simulated demo data.">
-        <span className="dot" />
-        Simulation Mode
-      </div>
       <div className="clock">
         <div>{now.toLocaleTimeString('en-GB', { hour12: false })}</div>
         <div className="c-date">{now.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short', year: 'numeric' })}</div>

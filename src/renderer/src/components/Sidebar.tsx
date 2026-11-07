@@ -2,12 +2,9 @@ import React from 'react'
 import { NavLink } from 'react-router-dom'
 import Crest from './Crest'
 import {
-  IconDashboard,
   IconScan,
   IconBug,
   IconRadar,
-  IconFirewall,
-  IconReport,
   IconSettings,
   IconTarget,
   IconRepeat,
@@ -22,8 +19,6 @@ import {
 } from './icons'
 
 const NAV = [
-  { to: '/', label: 'Dashboard', icon: IconDashboard, end: true, group: 'Overview' },
-
   { to: '/web/target', label: 'Target / Site Map', icon: IconTarget, group: 'Web Security Suite' },
   { to: '/web/crawler', label: 'Crawler', icon: IconSpider, group: 'Web Security Suite' },
   { to: '/web/activescan', label: 'Active Scan', icon: IconFlask, group: 'Web Security Suite' },
@@ -37,11 +32,9 @@ const NAV = [
   { to: '/scanner', label: 'Network Scanner', icon: IconScan, group: 'Operations' },
   { to: '/vulnerabilities', label: 'Vulnerabilities', icon: IconBug, group: 'Operations' },
   { to: '/threats', label: 'Exposure Monitor', icon: IconRadar, group: 'Operations' },
-  { to: '/firewall', label: 'Firewall Rules', icon: IconFirewall, group: 'Operations' },
 
   { to: '/detection', label: 'Rule Engine', icon: IconShieldAlert, group: 'Detection' },
 
-  { to: '/reports', label: 'Reports', icon: IconReport, group: 'Analysis' },
   { to: '/settings', label: 'Settings', icon: IconSettings, group: 'System' }
 ]
 
@@ -70,7 +63,6 @@ export default function Sidebar() {
               {showGroup && <div className="nav-group-label">{item.group}</div>}
               <NavLink
                 to={item.to}
-                end={item.end}
                 className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
               >
                 <Icon />

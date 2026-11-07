@@ -1,13 +1,10 @@
 import React from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
-import Dashboard from './pages/Dashboard'
 import NetworkScanner from './pages/NetworkScanner'
 import RuleEngine from './pages/RuleEngine'
 import Vulnerabilities from './pages/Vulnerabilities'
 import ThreatMonitor from './pages/ThreatMonitor'
-import Firewall from './pages/Firewall'
-import Reports from './pages/Reports'
 import Settings from './pages/Settings'
 import Proxy from './pages/web/Proxy'
 import Repeater from './pages/web/Repeater'
@@ -32,8 +29,8 @@ export default function App() {
       <Sidebar />
       <main className="main">
         <Routes>
-          <Route path="/" element={<Dashboard />} />
-          {/* Web Security Suite (Burp-style, simulated) */}
+          <Route path="/" element={<Navigate to="/threats" replace />} />
+          {/* Web Security Suite (Burp-style) */}
           <Route path="/web/target" element={<Target />} />
           <Route path="/web/crawler" element={<Crawler />} />
           <Route path="/web/activescan" element={<ActiveScan />} />
@@ -49,8 +46,6 @@ export default function App() {
           <Route path="/detection" element={<RuleEngine />} />
           <Route path="/vulnerabilities" element={<Vulnerabilities />} />
           <Route path="/threats" element={<ThreatMonitor />} />
-          <Route path="/firewall" element={<Firewall />} />
-          <Route path="/reports" element={<Reports />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

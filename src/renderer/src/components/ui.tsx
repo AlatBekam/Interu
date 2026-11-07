@@ -101,25 +101,3 @@ export function Disclaimer({ children }: { children: React.ReactNode }) {
     </div>
   )
 }
-
-export function BarChart({ data, height = 150 }: { data: { h: string; value: number }[]; height?: number }) {
-  const max = Math.max(...data.map((d) => d.value), 1)
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height, padding: '4px 0' }}>
-      {data.map((d, i) => (
-        <div
-          key={i}
-          title={`${d.h} · ${d.value}`}
-          style={{
-            flex: 1,
-            height: `${(d.value / max) * 100}%`,
-            background: 'linear-gradient(180deg, #3765b8, #12284f)',
-            borderRadius: '3px 3px 0 0',
-            minHeight: 3,
-            opacity: 0.85
-          }}
-        />
-      ))}
-    </div>
-  )
-}
