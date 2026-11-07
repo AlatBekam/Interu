@@ -1,5 +1,5 @@
 import React from 'react'
-import { IconWarn } from './icons'
+import { IconWarn, IconLock, IconCheck } from './icons'
 
 export function Panel({
   title,
@@ -54,27 +54,28 @@ export function Stat({
   )
 }
 
-export function Gauge({ value, label, max = 100 }: { value: number; label: string; max?: number }) {
+/** `risk`: high is bad (default). `quality`: high is good. */
+export function Gauge({ value, label, max = 100, tone = 'risk' }: { value: number; label: string; max?: number; tone?: 'risk' | 'quality' }) {
   const pct = Math.max(0, Math.min(1, value / max))
   const r = 56
   const c = 2 * Math.PI * r
   const dash = c * pct
-  const color = pct > 0.75 ? '#d6594f' : pct > 0.5 ? '#d6a84f' : '#3765b8'
+  const color = tone === 'quality'
+    ? (pct > 0.75 ? 'var(--ok)' : pct > 0.5 ? 'var(--med)' : 'var(--crit)')
+    : (pct > 0.75 ? 'var(--crit)' : pct > 0.5 ? 'var(--med)' : 'var(--accent)')
   return (
     <div className="gauge">
       <svg width="132" height="132" viewBox="0 0 132 132">
-        <circle cx="66" cy="66" r={r} fill="none" style={{ stroke: 'var(--panel-600)' }} strokeWidth="10" />
+        <circle className="track" cx="66" cy="66" r={r} fill="none" strokeWidth="10" />
         <circle
           cx="66"
           cy="66"
           r={r}
           fill="none"
-          stroke={color}
+          style={{ stroke: color }}
           strokeWidth="10"
-          strokeLinecap="round"
           strokeDasharray={`${dash} ${c}`}
           transform="rotate(-90 66 66)"
-          style={{ transition: 'stroke-dasharray 0.6s ease, stroke 0.6s ease' }}
         />
       </svg>
       <div className="lbl">
@@ -93,11 +94,21 @@ export function Meter({ value, tone }: { value: number; tone?: 'crit' | 'warn' |
   )
 }
 
-export function Disclaimer({ children }: { children: React.ReactNode }) {
+export type NoteKind = 'warn' | 'block' | 'error' | 'ok'
+/** A message with its state; pages keep one of these instead of a glyph-prefixed string. */
+export interface NoteMsg { kind: NoteKind; text: string }
+
+/** One line of context. The state shows as a 2px rail and an icon, never as emoji. */
+export function Note({ kind, children }: { kind?: NoteKind; children: React.ReactNode }) {
+  const Icon = kind === 'block' ? IconLock : kind === 'ok' ? IconCheck : IconWarn
   return (
-    <div className="disclaimer">
-      <IconWarn />
+    <div className="note" data-kind={kind}>
+      <Icon />
       <div>{children}</div>
     </div>
   )
+}
+
+export function Disclaimer({ children }: { children: React.ReactNode }) {
+  return <Note>{children}</Note>
 }

@@ -32,7 +32,7 @@ function apply(op: Op, mode: 'encode' | 'decode', input: string): string {
           : input.split(/\s+/).filter(Boolean).map((n) => String.fromCharCode(Number(n))).join('')
     }
   } catch {
-    return '⚠ cannot ' + mode + ' as ' + op.toUpperCase() + ' (invalid input)'
+    return 'cannot ' + mode + ' as ' + op.toUpperCase() + ' (invalid input)'
   }
 }
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import TopBar from '../components/TopBar'
-import { Panel, Disclaimer, Meter } from '../components/ui'
+import { Panel, Disclaimer, Meter, Note, NoteMsg } from '../components/ui'
 import { IconPlay, IconStop, IconScan } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
 import { usePersistentState, useSettings } from '../store/store'
@@ -37,7 +37,7 @@ export default function NetworkScanner() {
   const [progress, setProgress] = useState(0)
   const [found, setFound] = useState<DisplayHost[]>([])
   const [log, setLog] = useState<string[]>([])
-  const [note, setNote] = useState<string | null>(null)
+  const [note, setNote] = useState<NoteMsg | null>(null)
   const [summary, setSummary] = useState<ScanSummary | null>(null)
 
   const scanIdRef = useRef<number>(0)
@@ -97,7 +97,7 @@ export default function NetworkScanner() {
       if (runRef.current !== run) return
       if (!res.ok) {
         if (res.blocked) noteScopeBlock(target, 'scan')
-        setNote(res.blocked ? `⛔ ${res.error}` : `⚠️ ${res.error}`)
+        setNote({ kind: res.blocked ? 'block' : 'error', text: res.error ?? 'scan failed' })
         setLog((l) => [...l, `> ${res.error}`])
         setPhase('idle')
         setProgress(0)
@@ -117,7 +117,7 @@ export default function NetworkScanner() {
       setPhase('done')
     } catch (e) {
       if (runRef.current !== run) return
-      setNote(`⚠️ ${(e as Error).message}`)
+      setNote({ kind: 'error', text: (e as Error).message })
       setPhase('idle')
     }
   }
@@ -140,7 +140,7 @@ export default function NetworkScanner() {
           scanned — add the host or subnet (e.g. <span className="mono">10.20.0.0/24</span>) below. Use this only
           against systems you own or are authorized to test.
         </Disclaimer>
-        {!hasBridge && <div className="small mt-12" style={{ color: 'var(--danger, #d6594f)' }}>Scanner bridge unavailable: run Interu as the desktop app to scan.</div>}
+        {!hasBridge && <div className="mt-12"><Note kind="error">Scanner bridge unavailable: run Interu as the desktop app to scan.</Note></div>}
 
         <div className="mt-16"><ScopeBar /></div>
 
@@ -173,7 +173,7 @@ export default function NetworkScanner() {
             </div>
           </div>
 
-          {note && <div className="small mt-12" style={{ color: 'var(--danger, #d6594f)' }}>{note}</div>}
+          {note && <div className="mt-12"><Note kind={note.kind}>{note.text}</Note></div>}
 
           {phase !== 'idle' && (
             <div className="mt-24">

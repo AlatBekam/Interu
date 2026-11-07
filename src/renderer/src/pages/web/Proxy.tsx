@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
 import ScopeBar from '../../components/ScopeBar'
-import { Panel, Disclaimer } from '../../components/ui'
+import { Panel, Disclaimer, Note, NoteMsg } from '../../components/ui'
 import { IconForward, IconX, IconHistory, IconGlobe, IconPlay, IconStop } from '../../components/icons'
 import type { ProxyLogEntry, HeldRequest } from '../../../../shared/proxy'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
@@ -26,7 +26,7 @@ export default function Proxy() {
   const [sel, setSel] = useState<ProxyLogEntry | null>(null)
   const [tab, setTab] = useState<Tab>('request')
   const [browserUrl, setBrowserUrl] = useState('http://example.com/')
-  const [caNote, setCaNote] = useState('')
+  const [caNote, setCaNote] = useState<NoteMsg | null>(null)
   const [menu, setMenu] = useState<CtxState | null>(null)
   const busy = useRef(false)
   const heldRef = useRef<HTMLDivElement>(null)
@@ -45,8 +45,8 @@ export default function Proxy() {
       x: e.clientX,
       y: e.clientY,
       items: [
-        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw }); navigate('/web/repeater') } },
-        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw }); navigate('/web/intruder') } },
+        { label: 'Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw }); navigate('/web/repeater') } },
+        { label: 'Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw }); navigate('/web/intruder') } },
         { sep: true },
         { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(t.url) },
         { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) },
@@ -102,14 +102,14 @@ export default function Proxy() {
   const exportCA = async () => {
     if (!hasBridge) return
     const r = await window.ruy.proxy.exportCA()
-    setCaNote(r.ok ? `✓ Root CA diekspor ke: ${r.path} — import & trust di OS/browser untuk dekripsi https di browser eksternal.` : `⚠ ${r.error}`)
+    setCaNote(r.ok ? { kind: 'ok', text: `Root CA diekspor ke: ${r.path} — import & trust di OS/browser untuk dekripsi https di browser eksternal.` } : { kind: 'error', text: r.error ?? 'export failed' })
   }
 
   const removeCA = async () => {
     if (!hasBridge) return
     if (!window.confirm('Hapus root CA Interu (cert + private key terenkripsi)? Browser/OS yang sudah mem-trust CA lama tidak akan mempercayai CA baru sampai di-export & di-trust ulang.')) return
     const r = await window.ruy.proxy.removeCA()
-    setCaNote(r.ok ? '✓ Root CA dihapus. CA baru dibuat otomatis saat dipakai lagi — export & trust ulang bila perlu.' : `⚠ ${r.error}`)
+    setCaNote(r.ok ? { kind: 'ok', text: 'Root CA dihapus. CA baru dibuat otomatis saat dipakai lagi — export & trust ulang bila perlu.' } : { kind: 'error', text: r.error ?? 'remove failed' })
   }
 
   const forward = async () => {
@@ -138,7 +138,7 @@ export default function Proxy() {
 
         <div className="intercept-bar mt-16">
           <span className={`status-dot ${running ? 'on' : 'off'}`} />
-          <strong style={{ fontSize: 13 }}>Proxy {running ? 'running' : 'stopped'}</strong>
+          <strong>Proxy {running ? 'running' : 'stopped'}</strong>
           {running && <span className="pill pill-info mono"><span className="pd" />127.0.0.1:{port}</span>}
           {!running && (
             <input type="number" value={port} onChange={(e) => setPort(Number(e.target.value) || 8080)} style={{ width: 90 }} className="mono" />
@@ -154,21 +154,21 @@ export default function Proxy() {
           <button className="btn btn-sm" onClick={toggleIntercept} disabled={!running}>{intercept ? 'Turn off' : 'Turn on'}</button>
         </div>
 
-        <div className="intercept-bar" style={{ marginTop: -2, marginBottom: 14 }}>
+        <div className="intercept-bar">
           <IconGlobe size={16} />
-          <strong style={{ fontSize: 12.5 }}>Browser</strong>
+          <strong>Browser</strong>
           <input type="text" value={browserUrl} onChange={(e) => setBrowserUrl(e.target.value)} placeholder="http://target/" className="mono" style={{ flex: 1, minWidth: 220 }} />
           <button className="btn btn-primary btn-sm" onClick={openBrowser} disabled={!running} title="Open a real browser routed through the proxy"><IconGlobe />Open Browser</button>
           <button className="btn btn-sm" onClick={exportCA} disabled={!hasBridge} title="Export the Interu root CA for external browsers">Export CA</button>
           <button className="btn btn-sm btn-danger" onClick={removeCA} disabled={!hasBridge} title="Delete the stored root CA (encrypted key + cert)">Remove CA</button>
         </div>
-        {caNote && <div className="disclaimer" style={{ background: 'rgba(79,178,134,0.06)', borderColor: 'rgba(79,178,134,0.25)' }}><div className="small">{caNote}</div></div>}
+        {caNote && <Note kind={caNote.kind}>{caNote.text}</Note>}
 
-        {!hasBridge && <div className="disclaimer"><div>HTTP bridge tidak tersedia (jalankan dari aplikasi desktop, bukan browser biasa).</div></div>}
+        {!hasBridge && <Note kind="error">HTTP bridge tidak tersedia (jalankan dari aplikasi desktop, bukan browser biasa).</Note>}
 
         {held && (
           <div ref={heldRef}>
-            <Panel title="⏸ Intercepted Request — held" sub={`${held.method} ${held.host}${held.path} · edit then Forward to let it through`} className="mb-24"
+            <Panel title="Intercepted request — held" sub={`${held.method} ${held.host}${held.path} · edit then Forward to let it through`} className="mb-24"
               right={<div className="flex gap-8"><button className="btn btn-primary btn-sm" onClick={forward}><IconForward />Forward</button><button className="btn btn-danger btn-sm" onClick={drop}><IconX />Drop</button></div>}>
               <textarea className="code-pane" value={heldEdit} onChange={(e) => setHeldEdit(e.target.value)} style={{ minHeight: 200 }} spellCheck={false} />
             </Panel>
@@ -196,7 +196,7 @@ export default function Proxy() {
                 <thead><tr><th>#</th><th>Time</th><th>Method</th><th>Host</th><th>Path</th><th>Status</th><th>Length</th></tr></thead>
                 <tbody>
                   {logs.map((t) => (
-                    <tr key={t.id} onClick={() => { setSel(t); setTab('request') }} onContextMenu={(e) => rowMenu(e, t)} style={{ cursor: 'pointer', background: sel?.id === t.id ? 'rgba(47,102,196,0.08)' : undefined }}>
+                    <tr key={t.id} onClick={() => { setSel(t); setTab('request') }} onContextMenu={(e) => rowMenu(e, t)} className={sel?.id === t.id ? 'clickable sel' : 'clickable'} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(t); setTab('request') } }}>
                       <td className="mono">{t.id}</td>
                       <td className="mono small">{t.time}</td>
                       <td><span className={`method ${t.method}`}>{t.method}</span></td>

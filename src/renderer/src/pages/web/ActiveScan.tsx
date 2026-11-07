@@ -1,10 +1,10 @@
 import React, { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
-import { Panel, Disclaimer, Stat, Meter } from '../../components/ui'
+import { Panel, Disclaimer, Stat, Meter, Note, NoteMsg } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import CopyButton from '../../components/CopyButton'
-import { IconPlay, IconStop, IconBug, IconShieldAlert, IconCrosshair, IconCheck } from '../../components/icons'
+import { IconPlay, IconStop, IconBug, IconShieldAlert, IconCrosshair, IconCheck, IconSend } from '../../components/icons'
 import { severityPill, Severity } from '../../lib/severity'
 import { useSettings } from '../../store/store'
 import { sendLive, rawFromParts, inScopeOrNote } from '../../lib/http'
@@ -43,7 +43,7 @@ export default function ActiveScan() {
   const [progress, setProgress] = useState(0)
   const [phase, setPhase] = useState('')
   const [running, setRunning] = useState(false)
-  const [note, setNote] = useState<string | null>(null)
+  const [note, setNote] = useState<NoteMsg | null>(null)
   const [log, setLog] = useState<string[]>([])
   const [stats, setStats] = useState({ pages: 0, tested: 0, requests: 0 })
 
@@ -55,12 +55,12 @@ export default function ActiveScan() {
     sendLive({ method: 'GET', url, headers: { 'User-Agent': 'Interu/1.0', Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' }, timeoutMs: 12000 }, settings.scope)
 
   const launch = async (): Promise<void> => {
-    if (!hasHttp || !window.ruy?.http) { setNote('Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).'); return }
+    if (!hasHttp || !window.ruy?.http) { setNote({ kind: 'error', text: 'Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).' }); return }
     const seed = /^https?:\/\//i.test(target) ? target.trim() : 'http://' + target.trim()
     let host = ''
-    try { host = new URL(seed).hostname } catch { setNote('URL/target tidak valid.'); return }
+    try { host = new URL(seed).hostname } catch { setNote({ kind: 'error', text: 'URL/target tidak valid.' }); return }
     if (!inScopeOrNote(seed, settings.scope, 'active-scan')) {
-      setNote(`⛔ ${host} belum ada di Authorized scope. Tambahkan dulu di bar di bawah.`); return
+      setNote({ kind: 'block', text: `${host} belum ada di Authorized scope. Tambahkan dulu di bar di bawah.` }); return
     }
 
     setNote(null); setRunning(true); setFindings([]); setSel(null); setProgress(0); setStats({ pages: 0, tested: 0, requests: 0 })
@@ -76,7 +76,7 @@ export default function ActiveScan() {
       seenKeys.add(f.key)
       collected.push(f)
       setFindings([...collected])
-      addLog(`  ${f.confidence === 'confirmed' ? '✔ CONFIRMED' : '~ suspected'} [${f.severity}] ${f.name} @ ${f.matchedAt || f.target}`)
+      addLog(`  ${f.confidence === 'confirmed' ? 'CONFIRMED' : '~ suspected'} [${f.severity}] ${f.name} @ ${f.matchedAt || f.target}`)
     }
 
     // ---------- Phase 1: crawl to map the attack surface ----------
@@ -91,7 +91,7 @@ export default function ActiveScan() {
         const item = ctrl.take()
         if (!item) return
         const res = await get(item.url); reqCount++
-        if (res.blocked) { stopRef.current = true; addLog('  ⛔ blocked by scope'); return }
+        if (res.blocked) { stopRef.current = true; addLog('  ! blocked by scope'); return }
         const type = ctOf(res)
         const parse = ['html', 'xml', 'js', 'json', 'text'].includes(type)
         const node = ctrl.record(item, { status: res.ok ? res.status ?? '-' : 'ERR', type, length: res.size, ms: res.timingMs, html: parse ? res.body || '' : '', error: res.ok ? undefined : res.error })
@@ -242,7 +242,7 @@ export default function ActiveScan() {
         </div>
 
         <ScopeBar />
-        {note && <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}><div>{note}</div></div>}
+        {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="grid grid-4 mt-16">
           <Stat label="Pages crawled" value={stats.pages} meta={running ? phase : 'in scope'} icon={<IconCrosshair />} />
@@ -263,7 +263,7 @@ export default function ActiveScan() {
                   <thead><tr><th>Sev</th><th>Conf</th><th>Finding</th><th>Where</th></tr></thead>
                   <tbody>
                     {findings.map((f) => (
-                      <tr key={f.key} onClick={() => setSel(f)} style={{ cursor: 'pointer', background: sel?.key === f.key ? 'rgba(47,102,196,0.08)' : undefined }}>
+                      <tr key={f.key} className={sel?.key === f.key ? 'clickable sel' : 'clickable'} tabIndex={0} onClick={() => setSel(f)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(f) } }}>
                         <td><span className={`pill ${sevPill(f.severity)}`}>{f.severity}</span></td>
                         <td><span className={`pill ${confPill(f.confidence)}`}>{f.confidence}</span></td>
                         <td className="small">{f.name}</td>
@@ -291,8 +291,8 @@ export default function ActiveScan() {
                 <div className="mb-12"><div className="code-head"><span>Evidence</span></div><div style={{ fontSize: 13, lineHeight: 1.6 }}>{sel.evidence}</div></div>
                 {sel.remediation && <div className="mb-12"><div className="code-head"><span>Remediation</span></div><div style={{ fontSize: 13, lineHeight: 1.6 }}>{sel.remediation}</div></div>}
                 <div className="flex gap-8 mb-8 wrap">
-                  <button className="btn btn-sm" onClick={() => sendTo(sel, 'repeater')}>➤ Repeater</button>
-                  <button className="btn btn-sm" onClick={() => sendTo(sel, 'intruder')}>➤ Intruder</button>
+                  <button className="btn btn-sm" onClick={() => sendTo(sel, 'repeater')}><IconSend />Repeater</button>
+                  <button className="btn btn-sm" onClick={() => sendTo(sel, 'intruder')}><IconSend />Intruder</button>
                 </div>
                 {sel.response && (<><div className="code-head"><span>Response evidence</span><CopyButton text={sel.response} /></div><div className="code-pane" style={{ minHeight: 160, maxHeight: 260 }}>{sel.response.slice(0, 16000)}</div></>)}
               </div>

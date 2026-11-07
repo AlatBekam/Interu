@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
-import { Panel, Disclaimer, Stat, Meter } from '../../components/ui'
+import { Panel, Disclaimer, Stat, Meter, Note, NoteMsg } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import ContextMenu, { CtxState } from '../../components/ContextMenu'
 import CopyButton from '../../components/CopyButton'
-import { IconTarget, IconPlay, IconStop, IconGlobe, IconBug, IconCrosshair } from '../../components/icons'
+import { IconTarget, IconPlay, IconStop, IconGlobe, IconBug, IconCrosshair, IconSend } from '../../components/icons'
 import { useSettings } from '../../store/store'
 import { sendLive, rawFromParts, inScopeOrNote } from '../../lib/http'
 import { setTransfer } from '../../store/transfer'
@@ -63,7 +63,7 @@ export default function Crawler() {
   const [sel, setSel] = useState<CrawlNode | null>(null)
   const [progress, setProgress] = useState(0)
   const [running, setRunning] = useState(false)
-  const [note, setNote] = useState<string | null>(null)
+  const [note, setNote] = useState<NoteMsg | null>(null)
   const [log, setLog] = useState<string[]>([])
   const [newFindings, setNewFindings] = useState(0)
   const [menu, setMenu] = useState<CtxState | null>(null)
@@ -89,8 +89,8 @@ export default function Crawler() {
       x: e.clientX,
       y: e.clientY,
       items: [
-        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target: origin, raw }); navigate('/web/repeater') } },
-        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target: origin, raw }); navigate('/web/intruder') } },
+        { label: 'Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target: origin, raw }); navigate('/web/repeater') } },
+        { label: 'Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target: origin, raw }); navigate('/web/intruder') } },
         { sep: true },
         { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(node.url) },
         { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) }
@@ -100,7 +100,7 @@ export default function Crawler() {
 
   const launch = async (): Promise<void> => {
     if (!hasHttp || !window.ruy?.http) {
-      setNote('Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).')
+      setNote({ kind: 'error', text: 'Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).' })
       return
     }
     const seed = /^https?:\/\//i.test(target) ? target.trim() : 'http://' + target.trim()
@@ -108,11 +108,11 @@ export default function Crawler() {
     try {
       host = new URL(seed).hostname
     } catch {
-      setNote('URL/target tidak valid.')
+      setNote({ kind: 'error', text: 'URL/target tidak valid.' })
       return
     }
     if (!inScopeOrNote(seed, settings.scope, 'crawler')) {
-      setNote(`⛔ ${host} belum ada di Authorized scope. Tambahkan dulu di bar di bawah.`)
+      setNote({ kind: 'block', text: `${host} belum ada di Authorized scope. Tambahkan dulu di bar di bawah.` })
       return
     }
 
@@ -159,7 +159,7 @@ export default function Crawler() {
           )
           if (res.blocked) {
             blocked = true
-            addLog('  ⛔ blocked by scope — stopped')
+            addLog('  ! blocked by scope — stopped')
             break
           }
           const ct = headerValue(res.rawHeaders, 'content-type')
@@ -310,11 +310,7 @@ export default function Crawler() {
         </div>
 
         <ScopeBar />
-        {note && (
-          <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}>
-            <div>{note}</div>
-          </div>
-        )}
+        {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="grid grid-4 mt-16">
           <Stat label="Pages crawled" value={sum.pages} meta={running ? 'crawling…' : 'in scope'} icon={<IconGlobe />} />
@@ -341,7 +337,7 @@ export default function Crawler() {
                         key={n.url + i}
                         onClick={() => setSel(n)}
                         onContextMenu={(e) => sendMenu(e, n)}
-                        style={{ cursor: 'pointer', background: sel?.url === n.url ? 'rgba(47,102,196,0.08)' : undefined }}
+                        className={sel?.url === n.url ? 'clickable sel' : 'clickable'} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSel(n) } }}
                       >
                         <td className="mono small" style={{ maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={n.url}>
                           {(() => { try { const u = new URL(n.url); return u.pathname + u.search } catch { return n.url } })()}
@@ -387,7 +383,7 @@ export default function Crawler() {
                   <div className="mb-12">
                     <div className="code-head"><span>Forms ({sel.forms.length})</span></div>
                     {sel.forms.map((f, i) => (
-                      <div key={i} className="mono small mt-6" style={{ padding: '6px 8px', background: 'rgba(255,255,255,0.03)', borderRadius: 6 }}>
+                      <div key={i} className="mono small mt-6 item-box">
                         <span className={`method ${f.method}`}>{f.method}</span> {f.action}
                         {f.inputs.length > 0 && <div style={{ opacity: 0.8 }}>fields: {f.inputs.map((x) => `${x.name}:${x.type}`).join(', ')}</div>}
                       </div>
@@ -395,8 +391,8 @@ export default function Crawler() {
                   </div>
                 )}
                 <div className="flex gap-8 mb-8 wrap">
-                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'repeater', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search) }); navigate('/web/repeater') } catch { /* */ } }}>➤ Repeater</button>
-                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'intruder', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search) }); navigate('/web/intruder') } catch { /* */ } }}>➤ Intruder</button>
+                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'repeater', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search) }); navigate('/web/repeater') } catch { /* */ } }}><IconSend />Repeater</button>
+                  <button className="btn btn-sm" onClick={() => { try { const u = new URL(sel.url); setTransfer({ to: 'intruder', target: u.origin, raw: rawFromParts('GET', u.host, u.pathname + u.search) }); navigate('/web/intruder') } catch { /* */ } }}><IconSend />Intruder</button>
                 </div>
                 {selRaw && (
                   <>

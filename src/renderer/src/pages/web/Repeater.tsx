@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import TopBar from '../../components/TopBar'
-import { Panel, Disclaimer } from '../../components/ui'
+import { Panel, Disclaimer, Note, NoteMsg } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconSend } from '../../components/icons'
 import CopyButton from '../../components/CopyButton'
@@ -17,7 +17,7 @@ export default function Repeater() {
   const [response, setResponse] = useState<string>('')
   const [meta, setMeta] = useState<{ status: string; ms: number; len: number } | null>(null)
   const [sending, setSending] = useState(false)
-  const [note, setNote] = useState<string>('')
+  const [note, setNote] = useState<NoteMsg | null>(null)
 
   // Receive a request handed over via "Send to Repeater".
   useTransfer('repeater', (p) => {
@@ -28,17 +28,17 @@ export default function Repeater() {
   })
 
   const send = async () => {
-    setSending(true); setResponse(''); setMeta(null); setNote('')
+    setSending(true); setResponse(''); setMeta(null); setNote(null)
     const req = parseRawRequest(request, target)
     if (!inScopeOrNote(req.url, settings.scope, 'repeater')) {
-      setNote(`⛔ ${new URL(req.url).hostname} belum ada di Authorized scope. Tambahkan dulu di bar di atas.`)
+      setNote({ kind: 'block', text: `${new URL(req.url).hostname} belum ada di Authorized scope. Tambahkan dulu di bar di atas.` })
       setSending(false)
       return
     }
     const res = await sendLive(req, settings.scope)
     setSending(false)
     if (!res.ok) {
-      setNote(`⚠ ${res.error ?? 'request failed'}`)
+      setNote({ kind: 'error', text: res.error ?? 'request failed' })
       setResponse('')
       return
     }
@@ -62,15 +62,15 @@ export default function Repeater() {
           <button className="btn btn-primary" onClick={send} disabled={sending}><IconSend />{sending ? 'Sending…' : 'Send'}</button>
           {meta && (
             <div className="flex gap-16 small muted">
-              <span>Status: <span className="mono" style={{ color: 'var(--silver-100)' }}>{meta.status}</span></span>
-              <span>Time: <span className="mono" style={{ color: 'var(--silver-100)' }}>{meta.ms} ms</span></span>
-              <span>Length: <span className="mono" style={{ color: 'var(--silver-100)' }}>{meta.len}</span></span>
+              <span>Status: <span className="mono fg">{meta.status}</span></span>
+              <span>Time: <span className="mono fg">{meta.ms} ms</span></span>
+              <span>Length: <span className="mono fg">{meta.len}</span></span>
             </div>
           )}
         </div>
 
         <ScopeBar />
-        {note && <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}><div>{note}</div></div>}
+        {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="split mt-16">
           <Panel title="Request">

@@ -6,9 +6,9 @@ import { useSettings, resetDemoEnvironment } from '../store/store'
 
 function Row({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between" style={{ padding: '14px 0', borderBottom: '1px solid var(--line-soft)' }}>
+    <div className="setting-row">
       <div style={{ maxWidth: 520 }}>
-        <div style={{ color: 'var(--white)', fontWeight: 600, fontSize: 13.5 }}>{title}</div>
+        <div className="t">{title}</div>
         <div className="small muted" style={{ marginTop: 3 }}>{desc}</div>
       </div>
       {children}

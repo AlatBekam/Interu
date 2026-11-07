@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import TopBar from '../../components/TopBar'
-import { Panel, Disclaimer, Meter } from '../../components/ui'
+import { Panel, Disclaimer, Meter, Note, NoteMsg } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconPlay, IconStop } from '../../components/icons'
 import { sendLive, rawFromParts, inScopeOrNote } from '../../lib/http'
@@ -25,7 +25,7 @@ export default function Target() {
   const [selHit, setSelHit] = useState<Hit | null>(null)
   const [progress, setProgress] = useState(0)
   const [running, setRunning] = useState(false)
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState<NoteMsg | null>(null)
   const [menu, setMenu] = useState<CtxState | null>(null)
   const stopFlag = useRef(false)
   const navigate = useNavigate()
@@ -35,8 +35,8 @@ export default function Target() {
     setMenu({
       x: e.clientX, y: e.clientY,
       items: [
-        { label: '➤  Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw }); navigate('/web/repeater') } },
-        { label: '➤  Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw }); navigate('/web/intruder') } },
+        { label: 'Send to Repeater', onClick: () => { setTransfer({ to: 'repeater', target, raw }); navigate('/web/repeater') } },
+        { label: 'Send to Intruder', onClick: () => { setTransfer({ to: 'intruder', target, raw }); navigate('/web/intruder') } },
         { sep: true },
         { label: 'Copy URL', onClick: () => navigator.clipboard?.writeText(target + raw.split(' ')[1]) },
         { label: 'Copy request', onClick: () => navigator.clipboard?.writeText(raw) }
@@ -49,10 +49,10 @@ export default function Target() {
   const discover = async () => {
     const base = target.replace(/\/+$/, '')
     if (!inScopeOrNote(base + '/', settings.scope, 'target')) {
-      setNote(`⛔ ${(() => { try { return new URL(base).hostname } catch { return 'target' } })()} belum ada di Authorized scope.`)
+      setNote({ kind: 'block', text: `${(() => { try { return new URL(base).hostname } catch { return 'target' } })()} belum ada di Authorized scope.` })
       return
     }
-    setHits([]); setSelHit(null); setProgress(0); setRunning(true); setNote(''); stopFlag.current = false
+    setHits([]); setSelHit(null); setProgress(0); setRunning(true); setNote(null); stopFlag.current = false
     for (let i = 0; i < WORDLIST.length; i++) {
       if (stopFlag.current) break
       const path = WORDLIST[i]
@@ -84,7 +84,7 @@ export default function Target() {
         </div>
 
         <ScopeBar />
-        {note && <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}><div>{note}</div></div>}
+        {note && <Note kind={note.kind}>{note.text}</Note>}
 
         {(running || hits.length > 0) && <div className="mb-16 mt-16"><Meter value={progress} tone={progress === 100 ? 'ok' : undefined} /></div>}
         <div className="split">
@@ -101,7 +101,7 @@ export default function Target() {
                         key={h.path}
                         onClick={() => setSelHit(h)}
                         onContextMenu={(e) => sendMenu(e, target.replace(/\/+$/, ''), rawFromParts('GET', liveHost, h.path))}
-                        style={{ cursor: 'pointer', background: selHit?.path === h.path ? 'rgba(47,102,196,0.08)' : undefined }}
+                        className={selHit?.path === h.path ? 'clickable sel' : 'clickable'} tabIndex={0} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelHit(h) } }}
                       >
                         <td className="mono small">{h.path}</td>
                         <td><span className={`sc s${String(h.status)[0]}`}>{h.status}</span></td>

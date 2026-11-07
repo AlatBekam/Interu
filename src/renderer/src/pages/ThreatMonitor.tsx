@@ -105,7 +105,7 @@ export default function ThreatMonitor() {
                   <span className="ts">{timeLabel(e.ts)}</span>
                   <span className={`lv ${e.level}`}>{e.level.toUpperCase()}</span>
                   <span className="msg">
-                    <span className="mono" style={{ color: 'var(--silver-300)' }}>[{e.category}]</span> {e.message}
+                    <span className="mono">[{e.category}]</span> {e.message}
                   </span>
                 </div>
               ))}

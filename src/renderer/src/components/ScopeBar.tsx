@@ -19,9 +19,9 @@ export default function ScopeBar() {
   const remove = (h: string) => patch({ scope: settings.scope.filter((x) => x !== h) })
 
   return (
-    <div className="intercept-bar" style={{ marginBottom: 14 }}>
+    <div className="intercept-bar">
       <IconLock size={16} />
-      <strong style={{ fontSize: 12.5 }}>Authorized scope</strong>
+      <strong>Authorized scope</strong>
       <div className="flex gap-8 wrap" style={{ flex: 1 }}>
         {settings.scope.length === 0 ? (
           <span className="small muted">empty — no live target allowed until you add a host you own/are authorized to test</span>
@@ -29,7 +29,7 @@ export default function ScopeBar() {
           settings.scope.map((h) => (
             <span key={h} className="pill pill-ok" title="Authorized host">
               <span className="pd" />{h}
-              <span onClick={() => remove(h)} style={{ cursor: 'pointer', marginLeft: 4, opacity: 0.7 }} title="Remove"><IconX size={11} /></span>
+              <span role="button" tabIndex={0} aria-label={`Remove ${h}`} className="pill-x" title="Remove" onClick={() => remove(h)} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); remove(h) } }}><IconX size={11} /></span>
             </span>
           ))
         )}

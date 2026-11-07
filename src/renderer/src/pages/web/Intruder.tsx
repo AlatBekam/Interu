@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react'
 import TopBar from '../../components/TopBar'
-import { Panel, Disclaimer, Meter } from '../../components/ui'
+import { Panel, Disclaimer, Meter, Note, NoteMsg } from '../../components/ui'
 import ScopeBar from '../../components/ScopeBar'
 import { IconCrosshair, IconPlay, IconStop } from '../../components/icons'
 import { PAYLOAD_SETS } from '../../data/burp'
@@ -26,7 +26,7 @@ export default function Intruder() {
   const [rows, setRows] = useState<Row[]>([])
   const [progress, setProgress] = useState(0)
   const [running, setRunning] = useState(false)
-  const [note, setNote] = useState('')
+  const [note, setNote] = useState<NoteMsg | null>(null)
   const stopFlag = useRef(false)
 
   // Receive a request handed over via "Send to Intruder" (adds a default marker).
@@ -48,10 +48,10 @@ export default function Intruder() {
     const payloads = PAYLOAD_SETS[setName]
     const probe = parseRawRequest(template.replace(/§[^§]*§/, 'x'), target)
     if (!inScopeOrNote(probe.url, settings.scope, 'intruder')) {
-      setNote(`⛔ ${(() => { try { return new URL(probe.url).hostname } catch { return 'target' } })()} belum ada di Authorized scope.`)
+      setNote({ kind: 'block', text: `${(() => { try { return new URL(probe.url).hostname } catch { return 'target' } })()} belum ada di Authorized scope.` })
       return
     }
-    setRows([]); setProgress(0); setRunning(true); setNote(''); stopFlag.current = false
+    setRows([]); setProgress(0); setRunning(true); setNote(null); stopFlag.current = false
     let baseLen = -1
     for (let i = 0; i < payloads.length; i++) {
       if (stopFlag.current) break
@@ -87,7 +87,7 @@ export default function Intruder() {
         </div>
 
         <ScopeBar />
-        {note && <div className="disclaimer" style={{ borderColor: 'rgba(214,89,79,0.3)', background: 'rgba(214,89,79,0.06)' }}><div>{note}</div></div>}
+        {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="split mt-16">
           <Panel title="Positions" sub={`Wrap an injection point in §…§ · ${positions} marked`}>
@@ -122,7 +122,7 @@ export default function Intruder() {
                   {rows.map((r, i) => {
                     const sc = typeof r.status === 'number' ? String(r.status)[0] : '5'
                     return (
-                      <tr key={i} style={{ background: r.note ? 'rgba(214,168,79,0.08)' : undefined }}>
+                      <tr key={i} className={r.note ? 'flag' : undefined}>
                         <td className="mono">{i}</td>
                         <td className="mono small">{r.payload}</td>
                         <td><span className={`sc s${sc}`}>{r.status}</span></td>

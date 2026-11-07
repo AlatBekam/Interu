@@ -46,7 +46,7 @@ export default function Sidebar() {
   return (
     <aside className="sidebar">
       <div className="brand">
-        <Crest className="crest" size={38} />
+        <Crest className="crest" size={28} />
         <div className="brand-text">
           <span className="brand-name">INTERU</span>
           <span className="brand-sub">Cyber Operations</span>
@@ -74,7 +74,7 @@ export default function Sidebar() {
       </nav>
 
       <div className="sidebar-foot">
-        <div style={{ letterSpacing: '0.14em', color: 'var(--silver-300)', fontWeight: 600 }}>RUY CYBERSECURITY TEAM</div>
+        <div className="team">RUY CYBERSECURITY TEAM</div>
         <div>Interu <span className="ver">v{appVersion}</span> · Electron <span className="ver">{electron}</span></div>
       </div>
     </aside>

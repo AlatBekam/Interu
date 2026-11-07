@@ -4,8 +4,8 @@ import TopBar from '../components/TopBar'
 import { isProductLevel } from '../../../shared/activity'
 import KevBadge from '../components/KevBadge'
 import { cveCellText, cveCellTitle } from '../../../shared/kev'
-import { Panel, Disclaimer, Stat, Meter } from '../components/ui'
-import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash } from '../components/icons'
+import { Panel, Disclaimer, Stat, Meter, Note, NoteMsg } from '../components/ui'
+import { IconShieldAlert, IconPlay, IconCheck, IconBug, IconTrash, IconSend } from '../components/icons'
 import ScopeBar from '../components/ScopeBar'
 import CopyButton from '../components/CopyButton'
 import { severityPill, Severity } from '../lib/severity'
@@ -36,7 +36,7 @@ export default function RuleEngine() {
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [log, setLog] = useState<string[]>([])
-  const [note, setNote] = useState<string | null>(null)
+  const [note, setNote] = useState<NoteMsg | null>(null)
   const [confFilter, setConfFilter] = useState<Confidence | 'all'>('all')
   const [sevFilter, setSevFilter] = useState<RuleSeverity | 'all'>('all')
   const [showSuperseded, setShowSuperseded] = useState(false)
@@ -67,10 +67,10 @@ export default function RuleEngine() {
     setLog((l) => [...l, `> re-test ${t.info.name} @ ${base}`])
     try {
       const res = await window.ruy.http.send(req, settings.scope)
-      if (res.blocked) { noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, '  ⛔ blocked by scope']); return }
+      if (res.blocked) { noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, '  ! blocked by scope']); return }
       const still = matchActive(t, req.url, res, { req })
       if (still) setLog((l) => [...l, `  ✗ still present — ${still.evidence}`])
-      else { removeFinding(f.key); setOpen(null); setLog((l) => [...l, '  ✓ resolved — removed from findings']) }
+      else { removeFinding(f.key); setOpen(null); setLog((l) => [...l, '  + resolved — removed from findings']) }
     } catch (e) { setLog((l) => [...l, `  ! ${(e as Error).message}`]) }
   }
 
@@ -93,12 +93,12 @@ export default function RuleEngine() {
   )
 
   const runActive = async () => {
-    if (!hasHttp || !window.ruy?.http) { setNote('Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).'); return }
+    if (!hasHttp || !window.ruy?.http) { setNote({ kind: 'error', text: 'Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).' }); return }
     const full = /^https?:\/\//i.test(target) ? target : 'http://' + target
     let host = ''
-    try { host = new URL(full).hostname } catch { setNote('URL target tidak valid.'); return }
+    try { host = new URL(full).hostname } catch { setNote({ kind: 'error', text: 'URL target tidak valid.' }); return }
     if (!inScopeOrNote(full, settings.scope, 'rule-engine')) {
-      setNote(`⛔ ${host} belum ada di Authorized scope. Tambahkan dulu di bar di atas.`)
+      setNote({ kind: 'block', text: `${host} belum ada di Authorized scope. Tambahkan dulu di bar di atas.` })
       return
     }
     setNote(null)
@@ -112,10 +112,10 @@ export default function RuleEngine() {
     let baseline: Baseline | undefined
     try {
       const baseRes = await window.ruy.http.send({ method: 'GET', url: vars.BaseURL + baseProbe, headers: {}, timeoutMs: 8000 }, settings.scope)
-      if (baseRes.blocked) { noteScopeBlock(vars.BaseURL + baseProbe, 'rule-engine'); setLog((l) => [...l, `  ⛔ blocked by scope`]); setRunning(false); return }
+      if (baseRes.blocked) { noteScopeBlock(vars.BaseURL + baseProbe, 'rule-engine'); setLog((l) => [...l, `  ! blocked by scope`]); setRunning(false); return }
       if (!baseRes.ok) {
         setLog((l) => [...l, `  ! host tidak bisa dihubungi (${baseRes.error || 'unknown'}) — dibatalkan`])
-        setNote(`Host ${host} tidak merespons. Pastikan target hidup & URL benar.`)
+        setNote({ kind: 'error', text: `Host ${host} tidak merespons. Pastikan target hidup & URL benar.` })
         setRunning(false); return
       }
       baseline = computeBaseline(baseRes)
@@ -141,11 +141,11 @@ export default function RuleEngine() {
         if (req) {
           try {
             const res = await http.send(req, settings.scope)
-            if (res.blocked) { blocked = true; noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, `  ⛔ blocked by scope — stopped`]); return }
+            if (res.blocked) { blocked = true; noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, `  ! blocked by scope — stopped`]); return }
             const finding = matchActive(t, req.url, res, { req, baseline })
             if (finding) {
               collected.push(finding)
-              const tag = finding.confidence === 'confirmed' ? '✔ CONFIRMED' : '~ suspected'
+              const tag = finding.confidence === 'confirmed' ? 'CONFIRMED' : '~ suspected'
               setLog((l) => [...l, `  ${tag} — ${finding.name} [${finding.severity}]  ${req.url}`])
             }
           } catch { /* per-probe error ignored */ }
@@ -196,7 +196,7 @@ export default function RuleEngine() {
             </div>
           </div>
           {!hasHttp && <div className="small muted mt-12">HTTP bridge unavailable — run the desktop app to use active checks.</div>}
-          {note && <div className="small mt-12" style={{ color: 'var(--danger, #d6594f)' }}>{note}</div>}
+          {note && <div className="mt-12"><Note kind={note.kind}>{note.text}</Note></div>}
           {(running || progress > 0) && (
             <div className="mt-16">
               <div className="flex justify-between small muted" style={{ marginBottom: 6 }}><span>{running ? 'Probing…' : 'Done'}</span><span className="mono">{progress}%</span></div>
@@ -269,7 +269,7 @@ export default function RuleEngine() {
                       </tr>
                       {open === f.key && (
                         <tr className="detail-row">
-                          <td colSpan={7} style={{ background: 'var(--surface-2, rgba(255,255,255,0.03))' }}>
+                          <td colSpan={7}>
                             <div className="small" style={{ padding: '8px 4px', display: 'grid', gap: 8 }}>
                               {f.description && <div>{f.description}</div>}
                               <div className="flex gap-12 small muted" style={{ flexWrap: 'wrap' }}>
@@ -290,7 +290,6 @@ export default function RuleEngine() {
                               {(() => {
                                 const adv = getAdvice(f)
                                 const url = httpUrlOf(f)
-                                const cardStyle: React.CSSProperties = { border: '1px solid var(--line-soft)', borderRadius: 8, padding: 12, background: 'var(--obsidian-800, rgba(0,0,0,0.15))' }
                                 const snippet = (label: string, code: string): React.JSX.Element => (
                                   <div className="mt-8">
                                     <div className="code-head"><span>{label}</span><CopyButton text={code} /></div>
@@ -299,7 +298,7 @@ export default function RuleEngine() {
                                 )
                                 return (
                                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 12, marginTop: 10 }}>
-                                    <div style={cardStyle}>
+                                    <div className="sub-block">
                                       <div style={{ fontWeight: 600, marginBottom: 6 }}>🛡 Defense — patching</div>
                                       <div className="small">{adv.defense.summary}</div>
                                       <ol className="small" style={{ margin: '8px 0 0', paddingLeft: 18 }}>
@@ -310,7 +309,7 @@ export default function RuleEngine() {
                                         <button className="btn btn-sm mt-8" onClick={() => retest(f)} disabled={running}><IconCheck size={14} />Re-test fix</button>
                                       )}
                                     </div>
-                                    <div style={cardStyle}>
+                                    <div className="sub-block">
                                       <div style={{ fontWeight: 600, marginBottom: 6 }}>
                                         ⚔ Attack <span className={`pill ${attackKindPill(adv.attack.kind)}`}><span className="pd" />{adv.attack.kind}</span>
                                         {!adv.attack.safe && <span className="pill pill-crit" style={{ marginLeft: 6 }}><span className="pd" />destructive-capable</span>}
@@ -323,8 +322,8 @@ export default function RuleEngine() {
                                       {adv.attack.payloads && adv.attack.payloads.length > 0 && snippet('payloads', adv.attack.payloads.join('\n'))}
                                       {url && (
                                         <div className="flex gap-8 mt-8">
-                                          <button className="btn btn-sm" onClick={() => sendTo(f, 'repeater')}>➤ Send to Repeater</button>
-                                          <button className="btn btn-sm" onClick={() => sendTo(f, 'intruder')}>➤ Send to Intruder</button>
+                                          <button className="btn btn-sm" onClick={() => sendTo(f, 'repeater')}><IconSend />Send to Repeater</button>
+                                          <button className="btn btn-sm" onClick={() => sendTo(f, 'intruder')}><IconSend />Send to Intruder</button>
                                         </div>
                                       )}
                                     </div>

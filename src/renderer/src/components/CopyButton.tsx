@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
+import { IconCheck } from './icons'
 
-/** Small inline "Copy" button. Copies `text` to the clipboard and flashes ✓. */
+/** Small inline "Copy" button. Copies `text` to the clipboard and flashes a check mark. */
 export default function CopyButton({ text, label = 'Copy', title }: { text: string; label?: string; title?: string }): React.JSX.Element {
   const [ok, setOk] = useState(false)
   const copy = async (): Promise<void> => {
@@ -13,7 +14,7 @@ export default function CopyButton({ text, label = 'Copy', title }: { text: stri
   }
   return (
     <button type="button" className={`copy-btn${ok ? ' ok' : ''}`} onClick={copy} disabled={!text} title={title || 'Copy to clipboard'}>
-      {ok ? '✓ Copied' : label}
+      {ok ? <><IconCheck size={12} />Copied</> : label}
     </button>
   )
 }

@@ -42,9 +42,9 @@ describe('GUI e2e — Repeater Live against a real target (main build)', () => {
     await clearScope(page) // start from a known-empty scope (no isolation on main)
     await shot(page, 'gui-01-repeater-live')
 
-    // 1) Scope gate: with scope empty, Send is refused in the UI (⛔ note).
+    // 1) Scope gate: with scope empty, Send is refused in the UI (block note).
     await page.getByRole('button', { name: /Send/ }).click()
-    await page.locator('.disclaimer', { hasText: '⛔' }).waitFor({ state: 'visible', timeout: 10_000 })
+    await page.locator('.note[data-kind="block"]').waitFor({ state: 'visible', timeout: 10_000 })
     await shot(page, 'gui-02-blocked')
 
     // 2) Authorize the host via the ScopeBar, then Send for real.
@@ -55,7 +55,7 @@ describe('GUI e2e — Repeater Live against a real target (main build)', () => {
 
     // Wait for either a rendered response or an error note (demo may be offline).
     const resp = page.locator('div.code-pane')
-    const errNote = page.locator('.disclaimer', { hasText: '⚠' })
+    const errNote = page.locator('.note[data-kind="error"]')
     await Promise.race([
       resp.waitFor({ state: 'visible', timeout: 30_000 }),
       errNote.waitFor({ state: 'visible', timeout: 30_000 })

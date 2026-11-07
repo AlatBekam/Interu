@@ -52,14 +52,14 @@ export default function Sequencer() {
             <div className="grid grid-3 mt-24">
               <Panel title="Overall Quality">
                 <div className="gauge-wrap">
-                  <Gauge value={a.qualityPct} label="Score" />
+                  <Gauge value={a.qualityPct} label="Score" tone="quality" />
                   <div className="small muted">Observed per-character entropy as a share of the maximum for the detected charset.</div>
                 </div>
               </Panel>
               <Panel title="Per-position Entropy" sub={`Bits at each of the ${a.positional.length} character slots`} className="span-2">
                 <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 150 }}>
                   {a.positional.map((h, i) => (
-                    <div key={i} title={`pos ${i + 1}: ${h.toFixed(2)} bits`} style={{ flex: 1, height: `${(h / maxH) * 100}%`, background: 'var(--royal-bright)', borderRadius: '2px 2px 0 0', minHeight: 2 }} />
+                    <div key={i} className="bar-col" title={`pos ${i + 1}: ${h.toFixed(2)} bits`} style={{ height: `${(h / maxH) * 100}%` }} />
                   ))}
                 </div>
                 <div className="small muted mt-8">Even bars indicate uniform randomness across positions; flat-zero bars are constant characters.</div>
