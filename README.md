@@ -61,7 +61,7 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 
 | Module | Status |
 |---|---|
-| **Proxy** | **REAL intercepting proxy with HTTPS MITM.** Start on `127.0.0.1:<port>`; **http and decrypted https of in-scope hosts** are captured in full (out-of-scope traffic is passed through untouched; CONNECT is blind-tunnelled) with intercept **Forward/Drop/edit**. **Open Browser** launches a real browser routed through the proxy that trusts the Interu CA automatically (Burp-style). **Export CA** writes the root CA for external browsers. TLS is terminated with per-host certs minted from a local CA (`src/main/ca.ts`). |
+| **Proxy** | **REAL intercepting proxy with HTTPS MITM.** Start on `127.0.0.1:<port>`; **http and decrypted https of in-scope hosts** are captured in full (out-of-scope traffic is passed through untouched; CONNECT is blind-tunnelled) with intercept **Forward/Drop/edit**. **Open Browser** launches a browser window routed through the proxy that trusts the Interu CA automatically (Burp-style), with an address bar, back/forward and reload/stop (no tabs; Electron's Chromium, not Chrome). **Export CA** writes the root CA for external browsers. TLS is terminated with per-host certs minted from a local CA (`src/main/ca.ts`). |
 | **Repeater** | Sends real HTTP requests to a scoped target and shows the real response (status/time/length). Starts with `GET /` to `localhost:3000`. |
 | **Intruder** | Fires real requests per payload (payload at `§…§`), real status/length/time + outlier flagging. Template: `POST /api/login` to `localhost:3000`. |
 | **Target / Site Map** | **Live content discovery** (real path fuzzing against a scoped target) building a real map. |

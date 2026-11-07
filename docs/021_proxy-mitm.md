@@ -24,7 +24,9 @@ Menangkap trafik HTTP dan (via MITM) HTTPS ke host di **Authorized scope** yang 
 
 **IPC ([`../src/main/index.ts`](../src/main/index.ts)):** `ruy:proxy:start|stop|status|intercept|scope|resolve|openBrowser|exportCA`. Event dikirim ke renderer lewat `emitToRenderer`; khusus `ruy:proxy:intercept`, window utama di-`show()`/`focus()` agar operator bisa menekan Forward/Drop.
 
-**Browser terproksi (`ruy:proxy:openBrowser`):** membuka `BrowserWindow` baru dengan `session.fromPartition('interu-proxied')`, memasang `setProxy({ proxyRules: '127.0.0.1:<port>' })` dan `setCertificateVerifyProc((_req, cb) => cb(0))` (mempercayai sertifikat MITM otomatis). Satu window dipakai ulang (`proxiedBrowser`). `ruy:proxy:exportCA` menulis `Interu-Root-CA.crt` ke folder Downloads untuk browser eksternal.
+**Browser terproksi (`ruy:proxy:openBrowser`):** handler di `index.ts` menyiapkan session `interu-proxied` (`setProxy({ proxyRules: '127.0.0.1:<port>', proxyBypassRules: '<-loopback>' })`, `setCertificateVerifyProc` yang hanya mempercayai sertifikat yang diterbitkan `Interu Root CA`) lalu memanggil `openProxiedBrowser` ([`../src/main/browser.ts`](../src/main/browser.ts)). `<-loopback>` wajib: tanpa itu Chromium tidak pernah mengirim trafik `localhost`/`127.0.0.1` lewat proxy, sehingga target lab lokal tidak tertangkap. `ruy:proxy:exportCA` menulis `Interu-Root-CA.crt` ke folder Downloads untuk browser eksternal.
+
+**Jendela browser:** satu `BrowserWindow` berisi dua `WebContentsView`: *toolbar* (40px: back, forward, reload/stop, address bar, bar loading; halaman kecil di `browser-toolbar.ts` dengan preload `src/preload/browser.ts`) di atas *konten* (session terproksi, sandbox, tanpa preload). Toolbar hanya mengirim niat (`ruy:browser:go|back|forward|reload|stop|focusContent`); main memeriksa pengirimnya adalah toolbar, lalu menavigasi konten dan mengirim balik state (`ruy:browser:state`: url, judul, loading, bisa back/forward, error). Alamat diproses `normalizeAddress` ([`../src/shared/browser.ts`](../src/shared/browser.ts)): tanpa skema menjadi `http://` untuk `localhost`, IP, atau alamat berport, selain itu `https://`; skema selain http/https (`file:`, `javascript:`, `data:`, `chrome:`, `view-source:`) ditolak. Pemeriksaan yang sama (`isNavigableUrl`) menjaga `will-navigate`, `will-redirect`, dan pop-up (`target=_blank`/`window.open` dimuat di view yang sama, tanpa jendela baru). Pintasan: Ctrl+L, Alt+Kiri/Kanan, F5/Ctrl+R, Esc.
 
 **Frontend ([`../src/renderer/src/pages/web/Proxy.tsx`](../src/renderer/src/pages/web/Proxy.tsx)):** menampilkan `ScopeBar` dan `Note` (komponen `ui.tsx`) bahwa hanya host in-scope yang didekripsi/ditangkap. Berlangganan `onLog` (tiap entri dengan `response` diumpankan ke `analyzeHttpResponse` → `addFindings`, lihat [041](041_rule-engine.md)) dan `onIntercept`, tombol Start/Stop, toggle Intercept, Open Browser, Export CA. Klik-kanan baris history → Send to Repeater/Intruder (`setTransfer`), Copy URL, Copy as curl (`toCurl`).
 
@@ -55,6 +57,9 @@ sequenceDiagram
 | [`../src/main/ca.ts`](../src/main/ca.ts) | `getCA`, `getHostCert`, `exportCA` |
 | [`../src/main/index.ts`](../src/main/index.ts) | handler IPC `ruy:proxy:*` (termasuk `ruy:proxy:scope`), `emitToRenderer`, `ruy:proxy:openBrowser`, hook `RUY_PROXY_TEST`/`RUY_PROXY_SCOPE` |
 | [`../src/preload/index.ts`](../src/preload/index.ts) | `proxy.start/stop/status/setIntercept/setScope/resolve/openBrowser/exportCA/onLog/onIntercept` |
+| [`../src/main/browser.ts`](../src/main/browser.ts) · [`browser-toolbar.ts`](../src/main/browser-toolbar.ts) | Jendela browser: dua view, IPC `ruy:browser:*`, penjagaan navigasi, halaman error, toolbar |
+| [`../src/preload/browser.ts`](../src/preload/browser.ts) | API kecil khusus toolbar (`go/back/forward/reload/stop/focusContent/onState`) |
+| [`../src/shared/browser.ts`](../src/shared/browser.ts) | `normalizeAddress`, `isNavigableUrl` (+ `browser.test.ts`) |
 | [`../src/shared/proxy.ts`](../src/shared/proxy.ts) | `ProxyLogEntry`, `HeldRequest` |
 | [`../src/shared/http.ts`](../src/shared/http.ts) | `hostInScope` (gate proxy) |
 | [`../src/renderer/src/App.tsx`](../src/renderer/src/App.tsx) | Sinkron `settings.scope` → `proxy.setScope` |
@@ -64,7 +69,7 @@ sequenceDiagram
 ## 5. Cara pakai
 
 1. Buka **Proxy** (`/web/proxy`), tambahkan host target di **Authorized scope** (tanpa scope, riwayat tetap kosong). Set port (default 8080), klik **Start**.
-2. Klik **Open Browser** untuk membuka browser terproksi yang otomatis mempercayai CA Interu (http & https host in-scope tertangkap; host lain tetap bisa dibuka, hanya tidak dicatat). Atau arahkan proxy browser eksternal ke `127.0.0.1:8080` dan **Export CA** lalu trust di OS/browser.
+2. Klik **Open Browser** untuk membuka browser terproksi (punya address bar untuk ganti domain, back/forward, reload/stop) yang otomatis mempercayai CA Interu (http & https host in-scope tertangkap; host lain tetap bisa dibuka, hanya tidak dicatat). Atau arahkan proxy browser eksternal ke `127.0.0.1:8080` dan **Export CA** lalu trust di OS/browser.
 3. Nyalakan **Intercept** untuk menahan request; edit raw di textarea bila perlu, lalu **Forward** atau **Drop**.
 4. Lihat **HTTP History**; klik baris untuk inspeksi Request/Response; klik-kanan untuk Send to Repeater/Intruder atau Copy as curl.
 5. Tanpa target nyata riwayat tetap kosong; tidak ada tombol sample/demo (sudah dihapus).
@@ -74,7 +79,9 @@ sequenceDiagram
 - **Scope gate (diperbaiki).** `hostInScope` kini dipanggil di `connect` dan `handleRequest`. Out-of-scope **tetap diteruskan** (bukan diblokir), hanya tidak didekripsi/dicatat/di-intercept. Semantik gate (IP via CIDR, port di entri diabaikan untuk hostname, dll.) di [011](011_scope-gate.md).
 - Perubahan scope berlaku untuk koneksi baru; tunnel CONNECT yang sudah terbentuk (MITM atau buta) tidak dievaluasi ulang.
 - Riwayat Proxy hanya di state halaman (maks 500 entri), hilang saat pindah halaman/restart; temuan Rule Engine tetap tersimpan di `findings.ts`.
-- Tombol "Demo (offline)", "Load sample", dan `BrowserSim.tsx` sudah dihapus. Satu-satunya browser adalah **Open Browser** (`ruy:proxy:openBrowser`, BrowserWindow terpisah yang melewati proxy).
+- Tombol "Demo (offline)", "Load sample", dan `BrowserSim.tsx` sudah dihapus. Satu-satunya browser adalah **Open Browser** (`ruy:proxy:openBrowser`, jendela terpisah yang melewati proxy).
+- Browser ini Chromium milik Electron, bukan Google Chrome: **tanpa tab**, bookmark/riwayat, DevTools, ekstensi, sync, DRM, atau halaman `chrome://`. Alur yang butuh pop-up (mis. OAuth) tidak berjalan karena pop-up dimuat di view yang sama.
+- Host di luar scope tetap bisa dibuka (di-tunnel tanpa dekripsi dan diverifikasi sertifikat aslinya), hanya tidak dicatat.
 - Proxy mendengar hanya di `127.0.0.1`. Body non-teks di history diringkas (`[N bytes ... omitted]`), raw dipotong `CAP = 50000` byte.
 - Tipe `ProxyLogEntry.kind` dideklarasikan `'http' | 'https-tunnel'`, tetapi `proxy.ts` meng-emit `kind: scheme` bernilai `'http'`/`'https'` — mismatch tipe minor (tidak mempengaruhi runtime).
 - Error upstream dibalas `502`; request yang di-drop dibalas `502 Dropped by Interu`.
@@ -86,7 +93,8 @@ sequenceDiagram
 - [x] `Set-Cookie` satu baris per cookie di log proxy dan `sendHttp`.
 - [x] Respons tertangkap diumpankan ke Rule Engine (`analyzeHttpResponse` → `addFindings`).
 - [ ] Verifikasi `startProxy` listen di `127.0.0.1:8080` dan `isRunning()` benar.
-- [ ] Uji Open Browser: http dan https tertangkap, sertifikat MITM dipercaya.
+- [x] Address bar, back/forward, skema terlarang, `target=_blank`, dan pencatatan di HTTP History diuji e2e (`testcase/e2e/browser.e2e.ts`).
+- [ ] Uji Open Browser untuk https: sertifikat MITM dipercaya.
 - [ ] Uji Intercept: hold → edit raw → Forward meneruskan versi tereedit; Drop balas 502.
 - [ ] Uji Export CA menulis `Interu-Root-CA.crt` ke Downloads.
 - [ ] Konfirmasi klik-kanan history mengoper ke Repeater/Intruder dan Copy as curl benar.

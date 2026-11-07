@@ -62,6 +62,8 @@ flowchart TD
 | File | Fungsi utama |
 |---|---|
 | [`../src/main/index.ts`](../src/main/index.ts) | `webPreferences`, `setWindowOpenHandler`, single-instance lock, `setCertificateVerifyProc`. |
+| [`../src/main/browser.ts`](../src/main/browser.ts) | Jendela browser terproksi: view sandbox, cek pengirim IPC, allow-list http/https untuk address bar, `will-navigate`, `will-redirect`, pop-up. |
+| [`../src/preload/browser.ts`](../src/preload/browser.ts) | Preload minimal toolbar browser (hanya niat navigasi; main yang memutuskan). |
 | [`../src/renderer/index.html`](../src/renderer/index.html) | Meta CSP. |
 | [`../src/preload/index.ts`](../src/preload/index.ts) | Expose `window.ruy` (`http`, `proxy`, `scan`) via `contextBridge` (guard `process.contextIsolated`). |
 | [`../src/main/http.ts`](../src/main/http.ts) | `rejectUnauthorized:false` (sender). |
@@ -84,6 +86,7 @@ diterima — ini fitur alat pentest, bukan bug.
   kini hanya `cb(0)` bila cert di-issue `Interu Root CA`; selain itu `cb(-3)`
   (verifikasi default Chromium). Jadi cert asli host yang di-tunnel tetap
   divalidasi normal, bukan dipercaya buta.
+- Browser terproksi memakai pola yang sama: dua `WebContentsView` dengan `sandbox:true`, `contextIsolation:true`, `nodeIntegration:false`; toolbar punya CSP sendiri (`default-src 'none'`) dan setiap IPC `ruy:browser:*` ditolak bila bukan dari view toolbar. Skema selain http/https tidak pernah dimuat (address bar, redirect, maupun navigasi oleh halaman).
 - `sandbox:true` aktif — catatan: stdout Electron (GUI subsystem di Windows) tak
   ter-capture oleh smoke harness, jadi verifikasi `window.ruy` paling pasti lewat
   uji klik satu fitur Live di UI.

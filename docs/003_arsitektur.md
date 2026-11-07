@@ -56,7 +56,8 @@ Kode bersama di `../src/shared/` dipakai ketiga root build karena bebas framewor
 | `ruy:proxy:scope` | renderer→main | `handle` | `setScope` | Set scope proxy (array string; non-array → `[]`). |
 | `ruy:proxy:resolve` | renderer→main | `handle` | `resolveIntercept` | Forward/drop request tertahan. |
 | `ruy:proxy:exportCA` | renderer→main | `handle` | `exportCA` (`../src/main/ca.ts`) | Export root CA ke folder Downloads. |
-| `ruy:proxy:openBrowser` | renderer→main | `handle` | inline di `index.ts` | Buka `BrowserWindow` terproksi, auto-trust cert. |
+| `ruy:proxy:openBrowser` | renderer→main | `handle` | inline di `index.ts` | Siapkan session terproksi (auto-trust CA Interu, tanpa bypass loopback) lalu buka jendela browser (`main/browser.ts`). |
+| `ruy:browser:go\|back\|forward\|reload\|stop\|focusContent` | toolbar→main | `handle`/`on` | `main/browser.ts` | Navigasi browser terproksi; hanya diterima dari view toolbar. Balasan: event `ruy:browser:state`. |
 | `ruy:proxy:log` | main→renderer | `webContents.send` (via `emit`) | `proxy.ts` `handleRequest` | Stream log transaksi — **hanya host in-scope**. |
 | `ruy:proxy:intercept` | main→renderer | `webContents.send` (via `emitToRenderer`) | `proxy.ts` `handleRequest` | Kirim request tertahan (hanya in-scope); main juga `show()/focus()` window. |
 

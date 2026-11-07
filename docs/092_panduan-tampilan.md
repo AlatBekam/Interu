@@ -126,6 +126,7 @@ Tes e2e memakai selector berikut; jangan ganti namanya tanpa memperbarui tes.
 
 ## 6. Batasan / temuan
 
+- Toolbar jendela browser terproksi (`src/main/browser-toolbar.ts`) berada di luar UI React dan membawa salinan token gelap sendiri; ubah di sana juga bila token berubah. `consistency.test.ts` tidak memindai file itu.
 - Alias variabel lama masih ada di `global.css` selama masih ada gaya inline lama; hapus bila sudah tidak terpakai.
 - `consistency.test.ts` membaca teks sumber; ia tidak menangkap warna yang dibangun dinamis di JS (hindari pola itu).
 - Audit e2e butuh build produksi dan jendela Interu lain harus ditutup; ia tidak berjalan di `npm test`.
