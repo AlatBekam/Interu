@@ -6,6 +6,7 @@ import { sendHttp } from './http'
 import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunning, getPort } from './proxy'
 import { exportCA, deleteCA, caFingerprint, CA_COMMON_NAME } from './ca'
 import { runScan, cancelScan } from './scan'
+import { openProxiedBrowser, registerBrowserIpc } from './browser'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
 import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, MAX_ATTEMPTS } from '../shared/scan'
@@ -34,8 +35,7 @@ function emitToRenderer(channel: string, data: unknown): void {
 process.on('uncaughtException', (err) => console.error('[interu] uncaughtException:', err?.message || err))
 process.on('unhandledRejection', (reason) => console.error('[interu] unhandledRejection:', reason))
 
-// Single reusable embedded browser window for the proxy.
-let proxiedBrowser: BrowserWindow | null = null
+// Port the proxied browser session is currently configured for (see ruy:proxy:openBrowser).
 let proxiedSessionPort = -1
 
 const isDev = !app.isPackaged
@@ -216,9 +216,10 @@ if (!gotLock) {
   ipcMain.handle('ruy:proxy:caInfo', () => {
     try { return { ok: true, name: CA_COMMON_NAME, fingerprint: caFingerprint() } } catch (e) { return { ok: false, error: (e as Error).message } }
   })
+  registerBrowserIpc()
   // Open a real browser window routed through the proxy (Burp-style). This
   // embedded session trusts the MITM certs automatically, so https is captured.
-  // A single reusable window avoids stacking broken windows.
+  // The window itself (address bar, back/forward/reload) lives in ./browser.
   ipcMain.handle('ruy:proxy:openBrowser', async (_e, startUrl?: string) => {
     try {
       if (!isRunning()) return { ok: false, error: 'Start the proxy first' }
@@ -245,34 +246,7 @@ if (!gotLock) {
         proxiedSessionPort = port
       }
 
-      if (proxiedBrowser && !proxiedBrowser.isDestroyed()) {
-        if (proxiedBrowser.isMinimized()) proxiedBrowser.restore()
-        proxiedBrowser.focus()
-        proxiedBrowser.loadURL(url).catch(() => {})
-        return { ok: true }
-      }
-
-      const bw = new BrowserWindow({
-        width: 1120,
-        height: 780,
-        title: 'Interu Browser — proxied',
-        backgroundColor: '#ffffff',
-        autoHideMenuBar: true,
-        webPreferences: { session: ses }
-      })
-      proxiedBrowser = bw
-      bw.setMenuBarVisibility(false)
-      bw.on('closed', () => { if (proxiedBrowser === bw) proxiedBrowser = null })
-      bw.webContents.on('did-fail-load', (_ev, code, desc, failedUrl, isMainFrame) => {
-        if (!isMainFrame || code === -3) return // -3 = aborted (e.g. redirect), ignore
-        const html = `<!doctype html><meta charset="utf-8"><body style="font-family:Segoe UI,system-ui;background:#0b0e14;color:#d7deea;margin:0;padding:48px;line-height:1.6">
-          <h2 style="color:#f3f6fb;margin:0 0 8px">Gagal memuat halaman</h2>
-          <p style="color:#d6594f;font-family:monospace">${desc} (${code})</p>
-          <p style="color:#8d99ad;font-family:monospace;word-break:break-all">${failedUrl}</p>
-          <p style="color:#8d99ad">Pastikan proxy masih jalan dan URL target benar.</p></body>`
-        bw.webContents.loadURL('data:text/html;charset=utf-8,' + encodeURIComponent(html)).catch(() => {})
-      })
-      bw.loadURL(url).catch(() => {})
+      openProxiedBrowser(ses, url)
       return { ok: true }
     } catch (e) {
       return { ok: false, error: (e as Error).message }
