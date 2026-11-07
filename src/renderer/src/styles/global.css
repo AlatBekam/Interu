@@ -183,6 +183,7 @@ a { color: var(--accent); text-decoration: none; }
   grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   overflow: hidden;
 }
+:where(.grid:has(> .stat)) + * { margin-top: var(--space-3); }
 .stat { background: var(--surface); padding: 10px 14px; }
 .stat .s-ico { display: none; }
 .stat .s-label { font-size: 11px; color: var(--fg-3); }

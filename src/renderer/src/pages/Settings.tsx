@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import TopBar from '../components/TopBar'
 import { Panel, Disclaimer } from '../components/ui'
 import { IconTrash, IconCheck, IconCpu } from '../components/icons'
-import { useSettings, resetDemoEnvironment } from '../store/store'
+import { useSettings, resetLocalData } from '../store/store'
 
 function Row({ title, desc, children }: { title: string; desc: string; children: React.ReactNode }) {
   return (
@@ -25,7 +25,7 @@ export default function Settings() {
   const platform = typeof window !== 'undefined' && window.ruy ? window.ruy.platform : '—'
 
   const doReset = () => {
-    resetDemoEnvironment()
+    resetLocalData()
     // Reload so every module re-reads pristine defaults.
     window.location.reload()
   }
@@ -47,7 +47,7 @@ export default function Settings() {
                 style={{ width: 200 }}
               />
             </Row>
-            <Row title="Color theme" desc="Switch between the Dark Kingdom and Silver Daylight themes (also in the top-right).">
+            <Row title="Color theme" desc="Switch between the dark and light theme (also in the top-right).">
               <div className="theme-toggle">
                 <button className={settings.theme === 'light' ? 'on' : ''} onClick={() => patch({ theme: 'light' })}>Light</button>
                 <button className={settings.theme === 'dark' ? 'on' : ''} onClick={() => patch({ theme: 'dark' })}>Dark</button>

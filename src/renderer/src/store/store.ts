@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 // Local persistence. Demo records and settings are stored in the renderer's
 // localStorage so they survive application restarts. There is NO database
 // server and NO network call — this is purely local to the app. Settings
-// include a "persistence" switch and a full "reset demo environment" action,
+// include a "persistence" switch and a full "reset local data" action,
 // so the app always works even if the user turns persistence off or resets.
 // =========================================================================
 
@@ -99,8 +99,8 @@ export function useSettings(): [Settings, (patch: Partial<Settings>) => void] {
   return [settings, patch]
 }
 
-/** Remove every RUY key, restoring the pristine demo environment. */
-export function resetDemoEnvironment(): void {
+/** Remove every RUY key, restoring the default state. */
+export function resetLocalData(): void {
   try {
     const keys: string[] = []
     for (let i = 0; i < window.localStorage.length; i++) {

@@ -187,8 +187,8 @@ export default function Proxy() {
           {logs.length === 0 ? (
             <div className="empty">
               {running
-                ? `Proxy live at 127.0.0.1:${port}. Set your browser proxy here and browse an http:// target to capture traffic — or click “Load sample”.`
-                : 'Start the proxy and route traffic through it, or click “Load sample” for offline demo data.'}
+                ? `Proxy live at 127.0.0.1:${port}. Set your browser proxy here and browse an http:// target to capture traffic.`
+                : 'Start the proxy and route traffic through it. Captured requests appear here.'}
             </div>
           ) : (
             <div className="table-wrap">
