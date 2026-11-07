@@ -231,7 +231,9 @@ if (!gotLock) {
       // Configure the session's proxy only when it changed, to avoid disrupting
       // an already-open window on repeated opens.
       if (proxiedSessionPort !== port) {
-        await ses.setProxy({ proxyRules: `127.0.0.1:${port}` })
+        // '<-loopback>' removes Chromium's implicit bypass of localhost/127.0.0.1, otherwise a
+        // local target (the usual lab setup) would never reach the proxy and nothing is captured.
+        await ses.setProxy({ proxyRules: `127.0.0.1:${port}`, proxyBypassRules: '<-loopback>' })
         // Trust ONLY certificates minted by the Interu root CA (i.e. the per-host
         // certs our MITM proxy presents for in-scope hosts). Anything else —
         // including the real certs of out-of-scope hosts that are blind-tunnelled
