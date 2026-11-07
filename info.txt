@@ -12,15 +12,16 @@ berbentuk aplikasi DESKTOP WINDOWS (Electron + React + TypeScript).
 Satu aplikasi menggabungkan:
   - Web Security Suite gaya Burp Suite (Proxy, Repeater, Intruder, Crawler,
     Active Scan, dll)
-  - Modul Operations (Scanner, Vulnerabilities, Threat Monitor, Firewall)
-  - Reporting
+  - Modul Operations (Network Scanner, Vulnerabilities, Exposure Monitor)
+  - Rule Engine (Detection)
 Dilengkapi SCOPE / AUTHORIZATION (legal-by-design): fitur "Live" hanya boleh
 menyerang host yang didaftarkan ke Scope (yang kita punya izinnya).
 
-Identitas visual: "Dark Kingdom" (hitam obsidian + perak + navy) + mode Light.
+Identitas visual: industrial, datar (flat), padat; satu warna aksen, tema Dark + Light
+(warna lewat token peran, lihat docs/092_panduan-tampilan.md).
 
 PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
-(lab sendiri / server berizin). Ada juga mode Simulation untuk latihan aman.
+(lab sendiri / server berizin). Tidak ada mode simulasi: semua halaman LIVE.
 
 
 2. STATUS KESELURUHAN
@@ -37,8 +38,8 @@ PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
                                DSL (tanpa eval), extractor, interpolasi, baseline
                                soft-404, korelasi Suspected->Confirmed, bukti
                                lengkap, + ADVISOR ATTACK/DEFENSE per temuan  (BARU)
-  Operations lain            : MASIH MOCK (Dashboard, Threat Monitor, Firewall)
-  Analysis / Reports         : MASIH MOCK -> perlu di-realkan
+  Exposure Monitor           : REAL — hanya temuan & aktivitas nyata (landing page)
+  Halaman palsu              : DIHAPUS (Dashboard, Firewall Rules, Reports)
 
 
 3. STACK & CARA MENJALANKAN
@@ -83,18 +84,19 @@ Struktur penting:
     advice.ts      -> advisor Attack/Defense per temuan                    (BARU)
   src/renderer/src/
     pages/web/     -> Web Security Suite (Target, Crawler, ActiveScan, Proxy,
-                      Repeater, Intruder, Decoder, Comparer, Sequencer, BrowserSim)
-    pages/         -> Dashboard, NetworkScanner (REAL), RuleEngine (BARU),
-                      Vulnerabilities, ThreatMonitor, Firewall, Reports, Settings
+                      Repeater, Intruder, Decoder, Comparer, Sequencer)
+    pages/         -> NetworkScanner (REAL), RuleEngine, Vulnerabilities,
+                      ThreatMonitor (Exposure Monitor), Settings
     components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
                       CopyButton, Crest, icons, ui
-    data/          -> mock.ts, burp.ts (data simulasi)
+    data/          -> burp.ts (hanya PAYLOAD_SETS Intruder)
+    lib/           -> severity.ts (Severity, SEVERITY_ORDER, severityPill)
     store/         -> store.ts (settings+persist), transfer.ts (send-to bus),
                       findings.ts (store temuan Rule Engine)               (BARU)
     lib/http.ts    -> parse raw request, curl, sendLive
 
 
-4. STATUS PER-MODUL (jujur: REAL vs MOCK)
+4. STATUS PER-MODUL (semua LIVE)
 --------------------------------------------------------------------------------
 == WEB SECURITY SUITE (SELESAI / REAL) ==
   [DONE] Proxy        : Forward proxy ASLI + HTTPS MITM (dekripsi TLS).
@@ -105,13 +107,13 @@ Struktur penting:
                         - Klik kanan baris: Send to Repeater/Intruder, Copy URL,
                           Copy request, Copy response, Copy as curl, Inspect
                         - Inspector request/response bisa diseleksi + tombol Copy
-  [DONE] Repeater     : Live (kirim HTTP asli) + Simulation
-  [DONE] Intruder     : Live (serang payload asli) + Simulation
-  [DONE] Target/Site  : Live content discovery (fuzzing path asli) + sim map
+  [DONE] Repeater     : kirim HTTP asli (awal: GET / ke localhost:3000)
+  [DONE] Intruder     : serang payload asli (template POST /api/login)
+  [DONE] Target/Site  : Live content discovery (fuzzing path asli)
                         + klik kanan: Send to Repeater/Intruder
   [DONE] Decoder      : URL/Base64/Hex/HTML/ASCII encode-decode (offline, REAL)
-  [DONE] Comparer     : Diff dua response (LCS, offline, REAL)
-  [DONE] Sequencer    : Analisa entropi token (hitungan REAL, token masih sampel)
+  [DONE] Comparer     : Diff dua pane (LCS, offline, REAL; mulai dengan pane kosong)
+  [DONE] Sequencer    : Analisa entropi token yang di-paste operator (satu per baris)
   [DONE] Crawler      : autopilot BFS crawler (scope-gated) — petakan page,
                         link, form, endpoint inline fetch(); passive per page
                         (auto-detect hanya pada 2xx non-binary -> anti-FP)   (BARU)
@@ -120,22 +122,21 @@ Struktur penting:
                         IDOR / access-control / CSRF -> Suspected (tak auto)  (BARU)
   [DONE] Scope gate   : semua Live digerbang host berizin
 
-== OPERATIONS (SEBAGIAN REAL) ==
+== OPERATIONS (REAL) ==
   [DONE] Network Scanner  : TCP connect scan ASLI (Node net), scope-gated.
                             - Target IP / CIDR / range / list, parse otomatis
                             - Profile Quick/Standard/Deep (deep = banner/versi)
                             - open/closed/filtered nyata, progress streaming,
-                              bisa di-Stop (cancel); + mode Simulation (mock lama)
+                              bisa di-Stop (cancel); hanya Live (bridge hilang
+                              -> "Scanner bridge unavailable", Run Scan nonaktif)
                             - hasil otomatis difeed ke Rule Engine
-  [DONE] Vulnerabilities  : toggle Live (temuan Rule Engine, Confirmed/Suspected
-                            + bukti + CVE) / Demo catalog (mock lama tetap ada)
-  [MOCK] Dashboard        : statistik & grafik dari data palsu
-  [MOCK] Threat Monitor   : feed event simulasi (boleh tetap demo)
-  [MOCK] Firewall Rules   : editor rule lokal (tak ngaruh ke firewall asli)
+  [DONE] Vulnerabilities  : temuan Rule Engine (Confirmed/Suspected + bukti + CVE),
+                            hanya tampilan Live
+  [DONE] Exposure Monitor : feed temuan & aktivitas nyata (bukan IDS)
 
-== ANALYSIS (MASIH MOCK) ==
-  [MOCK] Reports          : rangkuman dari data palsu, export .txt/.json
-                            -> TODO: laporan dari temuan ASLI + PDF + Bahasa Indo
+(Dashboard, Firewall Rules, dan Reports dihapus karena 100% data palsu.
+ Ide laporan dari temuan asli & ekspor firewall tercatat sebagai halaman BARU
+ di roadmap.)
 
 == DETECTION (NUCLEI-GRADE) ==
   [DONE] Rule Engine      : engine ala-Nuclei, template sebagai DATA (408 template:
@@ -190,13 +191,13 @@ PRIORITAS 2 — OPERATIONS JADI REAL
   [x] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
         deteksi port/service/banner
   [x] Vulnerabilities: tampil dari temuan Rule Engine (Confirmed/Suspected)
-        + toggle demo catalog
-  [ ] (Opsional) Threat Monitor: baca log lokal asli; kalau tidak, biarkan demo
-  [ ] (Opsional) Firewall: ekspor rule / integrasi Windows Firewall (hati-hati)
+
+  [ ] (Opsional) Exposure Monitor: baca log lokal asli (telemetri host)
+  [ ] (Opsional, halaman baru) Ekspor rule / integrasi Windows Firewall (hati-hati)
 
 PRIORITAS 3 — ANALYSIS (nilai jual besar)
   [ ] ATTACK PATH GRAPH: visual node recon->vuln->akses (dari temuan Confirmed)
-  [ ] Auto-report: laporan profesional Bahasa Indonesia + export PDF
+  [ ] Auto-report (halaman baru): laporan dari temuan Confirmed asli, Bahasa Indonesia + export PDF
   [ ] Pemetaan MITRE ATT&CK di tiap temuan (metadata, murah, kelihatan pro)
 
 CROSS-CUTTING
@@ -209,7 +210,7 @@ CATATAN STRATEGI (buat lomba):
     target -> scan/proxy -> Rule Engine nemu & buktikan -> Attack Path Graph ->
     laporan otomatis. Itu "momen wow" yang bikin juri melongo.
   - Tekankan: mandiri/buatan Indonesia, legal-by-design, bisa jadi alat latihan
-    Tentara Siber (mode Simulation).
+    Tentara Siber (semua halaman LIVE, scope-gated).
 
 
 6. CATATAN PENTING
@@ -218,13 +219,14 @@ CATATAN STRATEGI (buat lomba):
     Antivirus kadang curiga (wajar untuk tool proxy/MITM) -> whitelist.
   - Proxy dengerin di 127.0.0.1 saja. Saat Start/Open Browser, Windows Firewall
     bisa minta izin -> Allow.
-  - Mode LIVE (nembak target asli) WAJIB isi Scope dulu. Tanpa itu ditolak.
+  - Semua modul LIVE (nembak target asli) WAJIB isi Scope dulu. Tanpa itu ditolak.
   - Open Browser: kalau Intercept ON, halaman "nahan" nunggu di-Forward
     (app otomatis maju minta Forward). Kalau mau browsing santai, matikan
     Intercept dulu.
   - HTTPS di browser eksternal butuh "Export CA" lalu di-trust di OS/browser.
     Open Browser bawaan Interu sudah auto-trust (langsung kebaca).
-  - Semua data di modul MOCK = demo, bukan aktivitas sistem beneran.
+  - Tidak ada data demo/mock. Settings -> Local data -> Reset local data menghapus
+    data lokal (scope, temuan, pengaturan).
 
 7. TIM
 --------------------------------------------------------------------------------
@@ -232,6 +234,5 @@ CATATAN STRATEGI (buat lomba):
   Produk: INTERU — Cyber Operations
   Versi: 1.0.0 (tahap: Web Suite + Network Scanner REAL, Rule Engine NUCLEI-GRADE
          408 template + advisor Attack/Defense, + Crawler & Active Scan autopilot
-         (SQLi/XSS/IDOR/access/CSRF, FP-safe); Dashboard/Threat Monitor/Firewall/
-         Reports masih dikembangkan)
+         (SQLi/XSS/IDOR/access/CSRF, FP-safe); halaman mock dihapus, UI industrial)
 ================================================================================

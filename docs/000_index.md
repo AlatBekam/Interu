@@ -6,10 +6,10 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 
 ## Cara membaca
 
-- **Nomor = urutan pengerjaan.** Bacalah dari atas ke bawah: fondasi → fitur yang sudah nyata → fitur yang masih simulasi.
+- **Nomor = urutan pengerjaan.** Bacalah dari atas ke bawah: fondasi → Web Security Suite → Operations → Detection → penutup.
 - **`x0_…` = pengantar kelompok.** Isinya gambaran kelompok, hubungan antar-fitur, dan urutan kerja.
 - **`x1_…`, `x2_…`, dst. = penjelasan lengkap tiap fitur.** Setiap dokumen memakai 7 bagian yang sama: Status · Tujuan · Cara kerja · File terkait · Cara pakai · Batasan/temuan · Checklist pengerjaan.
-- **Status:** ✅ NYATA (benar-benar mengirim/memproses data) · 🟡 SEBAGIAN · ⚪ SIMULASI (data contoh).
+- **Status:** ✅ NYATA (benar-benar mengirim/memproses data) · 🟡 SEBAGIAN (fungsi nyata, tetapi ada batasan yang dicatat). Tidak ada lagi halaman simulasi: mode simulasi dan halaman data palsu sudah dihapus.
 
 ## Daftar isi & status
 
@@ -36,25 +36,22 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 |---|---|---|
 | [020 Pengantar Web Security Suite](020_web-security-suite.md) | — | Alur Proxy → Repeater/Intruder |
 | [021 Proxy / MITM](021_proxy-mitm.md) | ✅ | Dekripsi HTTPS hanya untuk host dalam scope; host lain diteruskan tanpa disadap |
-| [022 Repeater](022_repeater.md) | ✅ | Mode live + simulasi |
+| [022 Repeater](022_repeater.md) | ✅ | Live saja; request awal `GET /` ke `localhost:3000` |
 | [023 Intruder](023_intruder.md) | ✅ | Satu mode (setara Sniper), hanya penanda `§…§` pertama yang diganti |
-| [024 Target / Discovery](024_target-discovery.md) | ✅ | Wordlist berisi 20 path |
+| [024 Target / Discovery](024_target-discovery.md) | ✅ | Live saja; wordlist berisi 20 path |
 | [025 Decoder](025_decoder.md) | ✅ | Offline |
-| [026 Comparer](026_comparer.md) | ✅ | Diff LCS, offline |
-| [027 Sequencer](027_sequencer.md) | 🟡 | Perhitungannya nyata, tokennya dibuat lokal |
+| [026 Comparer](026_comparer.md) | ✅ | Diff LCS, offline; dua pane mulai kosong |
+| [027 Sequencer](027_sequencer.md) | ✅ | Menganalisa token yang di-paste operator (`src/shared/tokens.ts`) |
 
 ### 03 — Operations & Analysis
 
 | Dokumen | Status | Catatan utama |
 |---|---|---|
 | [030 Pengantar Operations](030_operations.md) | — | Mana yang sudah nyata, strategi untuk sisanya |
-| [031 Dashboard](031_dashboard.md) | 🟡 | Panel Recent Activity nyata; kartu host masih dari `mock.ts` |
-| [032 Network Scanner](032_network-scanner.md) | ✅ | TCP connect scan nyata, scope-gated; mode simulasi tetap ada |
-| [033 Vulnerabilities](033_vulnerabilities.md) | 🟡 | Live = temuan Rule Engine (nyata); Demo = katalog statis |
+| [032 Network Scanner](032_network-scanner.md) | ✅ | TCP connect scan nyata, scope-gated; hanya Live |
+| [033 Vulnerabilities](033_vulnerabilities.md) | ✅ | Temuan Rule Engine (nyata); tanpa katalog demo |
 | [034 Exposure Monitor](034_threat-monitor.md) | ✅ | Temuan & aktivitas nyata (dulu Threat Monitor) |
-| [035 Firewall](035_firewall.md) | ⚪ | Tidak mengubah firewall OS |
-| [036 Reports](036_reports.md) | 🟡 | Export file nyata, isinya masih data contoh |
-| [037 Settings](037_settings.md) | 🟡 | Preferensi nyata |
+| [037 Settings](037_settings.md) | ✅ | Preferensi nyata; "Reset local data" |
 
 ### 04 — Detection
 
@@ -68,6 +65,7 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 | Dokumen | Isi |
 |---|---|
 | [090 Roadmap](090_roadmap.md) | Semua checklist digabung menjadi satu rencana berurutan |
+| [092 Panduan Tampilan](092_panduan-tampilan.md) | Konvensi UI: token warna, bentuk, tata letak, aksesibilitas, selector e2e, guard test |
 
 ## Alur pengerjaan
 
@@ -79,9 +77,6 @@ flowchart TD
     B --> C["✔ 032 Network Scanner nyata"]
     C --> D["✔ 041 Rule Engine + 033 Vulnerabilities Live"]
     B --> E["034 Exposure Monitor dari temuan & aktivitas"]
-    D --> F["031 Dashboard dari findings nyata"]
-    E --> F
-    D --> G["036 Reports dari findings + PDF"]
-    F --> H["090 Lintas fitur<br/>audit log, CI"]
-    G --> H
+    D --> H["090 Roadmap<br/>halaman baru: laporan dari findings, audit log, CI"]
+    E --> H
 ```

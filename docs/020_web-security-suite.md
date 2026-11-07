@@ -9,19 +9,19 @@
 Menyediakan alat pentest web interaktif di dalam satu aplikasi desktop Electron, dengan dua prinsip utama:
 
 1. **Legal-by-design** — semua request *live* dan semua tangkapan proxy melewati **gerbang scope** (`hostInScope`, [`../src/shared/http.ts`](../src/shared/http.ts); detail [011](011_scope-gate.md)). Scope kosong = tidak ada target yang diizinkan dan riwayat Proxy kosong.
-2. **Sim vs Live** — tiap modul yang berpotensi mengirim trafik punya mode **Simulation** (data buatan, tidak ada paket keluar) dan **Live** (request nyata lewat proses main).
+2. **Semua modul live dan scope-gated** — tidak ada mode simulasi dan tidak ada data contoh. Modul yang mengirim trafik (Proxy, Repeater, Intruder, Target) memakai jalur nyata lewat proses main; **scope** adalah pintunya (host di luar scope ditolak).
 
 ## Daftar fitur
 
 | # | Modul | Dokumen | Route | Status |
 |---|-------|---------|-------|--------|
 | 021 | Proxy / MITM | [021_proxy-mitm.md](021_proxy-mitm.md) | `/web/proxy` | ✅ NYATA |
-| 022 | Repeater | [022_repeater.md](022_repeater.md) | `/web/repeater` | 🟡 SEBAGIAN |
-| 023 | Intruder | [023_intruder.md](023_intruder.md) | `/web/intruder` | 🟡 SEBAGIAN |
-| 024 | Target / Discovery | [024_target-discovery.md](024_target-discovery.md) | `/web/target` | 🟡 SEBAGIAN |
+| 022 | Repeater | [022_repeater.md](022_repeater.md) | `/web/repeater` | ✅ NYATA |
+| 023 | Intruder | [023_intruder.md](023_intruder.md) | `/web/intruder` | ✅ NYATA |
+| 024 | Target / Discovery | [024_target-discovery.md](024_target-discovery.md) | `/web/target` | ✅ NYATA |
 | 025 | Decoder | [025_decoder.md](025_decoder.md) | `/web/decoder` | ✅ NYATA |
 | 026 | Comparer | [026_comparer.md](026_comparer.md) | `/web/comparer` | ✅ NYATA |
-| 027 | Sequencer | [027_sequencer.md](027_sequencer.md) | `/web/sequencer` | 🟡 SEBAGIAN |
+| 027 | Sequencer | [027_sequencer.md](027_sequencer.md) | `/web/sequencer` | ✅ NYATA |
 
 Rute terdaftar di [`../src/renderer/src/App.tsx`](../src/renderer/src/App.tsx); menu di [`../src/renderer/src/components/Sidebar.tsx`](../src/renderer/src/components/Sidebar.tsx) grup "Web Security Suite".
 
@@ -64,15 +64,15 @@ flowchart TD
 
 > **Catatan:** gerbang scope berlaku untuk `ruy:http` (Repeater/Intruder/Target Live) **dan** proxy MITM: host out-of-scope diteruskan tanpa dekripsi/log (CONNECT = tunnel buta) — lihat [021](021_proxy-mitm.md). Respons proxy in-scope juga dianalisis pasif oleh Rule Engine ([041](041_rule-engine.md)).
 
-## Status: Live vs Sim
+## Status: semua live
 
-| Modul | Mode tersedia | Yang benar-benar terjadi |
-|-------|---------------|--------------------------|
-| Proxy | Live + sample offline | MITM proxy nyata untuk host in-scope; "Load sample"/"Demo" = data offline |
-| Target | Sim + Live | Sim: `SITE_MAP` buatan. Live: discovery wordlist nyata |
-| Repeater | Sim + Live | Sim: respon canned. Live: `sendHttp` nyata |
-| Intruder | Sim + Live | Sim: baris difabrikasi. Live: request per payload nyata |
-| Sequencer | Sim only | Token dibuat lokal (`sampleTokens`); matematika entropi nyata |
+| Modul | Mode | Yang benar-benar terjadi |
+|-------|------|--------------------------|
+| Proxy | Live | MITM proxy nyata untuk host in-scope; **Open Browser** = `BrowserWindow` terproksi |
+| Target | Live | Discovery wordlist nyata (GET per path) |
+| Repeater | Live | `sendHttp` nyata; request awal `GET /` ke `localhost:3000` |
+| Intruder | Live | Request nyata per payload; template `POST /api/login` ke `localhost:3000` |
+| Sequencer | Offline nyata | Menganalisa token yang di-paste operator (`src/shared/tokens.ts`) |
 | Decoder | Offline nyata | Transform URL/Base64/Hex/HTML/ASCII beneran |
 | Comparer | Offline nyata | LCS line-diff beneran |
 
@@ -98,7 +98,7 @@ flowchart TD
 | [`../src/shared/rules.ts`](../src/shared/rules.ts) | `analyzeHttpResponse` (analisis pasif respons proxy) |
 | [`../src/renderer/src/lib/http.ts`](../src/renderer/src/lib/http.ts) | `parseRawRequest`, `toCurl`, `sendLive` |
 | [`../src/renderer/src/store/transfer.ts`](../src/renderer/src/store/transfer.ts) | Transfer bus Send-to-Repeater/Intruder |
-| [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | Data simulasi (history, payloads, token) |
+| [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | `PAYLOAD_SETS` (daftar payload Intruder) |
 
 ---
 ← [013 Hardening Electron](013_hardening-electron.md) · [Index](000_index.md) · [next: 021 Proxy / MITM](021_proxy-mitm.md) →

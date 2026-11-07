@@ -4,7 +4,7 @@
 
 ## 1. Status
 
-🟡 **SEBAGIAN** — mode **Simulation** (baris hasil difabrikasi lokal) dan mode **Live** (satu request nyata per payload, digerbangi scope).
+✅ **NYATA** — live saja: satu request nyata per payload, digerbangi scope. Tidak ada mode simulasi.
 
 ## 2. Tujuan fitur
 
@@ -16,17 +16,15 @@ Menguji daftar payload secara otomatis pada satu titik injeksi di dalam template
 
 **Payload set** ([`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts), `PAYLOAD_SETS`): `Common usernames` (8), `SQLi probes` (6), `Directory fuzz` (8), `HTTP methods` (7).
 
-- **Simulation (`startSim`)**: `setInterval` menambah baris tiap 200ms. Heuristik "anomalous" = regex `/OR|UNION|DROP|'|--|admin|\.env|\.git/i` pada payload → status & length direkayasa (mis. mengandung `admin` → 200, lainnya → 500; length membengkak). Tidak ada trafik.
-- **Live (`startLive`)**: probe `template.replace(/§[^§]*§/, 'x')` di-cek `hostInScope`; bila gagal berhenti dengan catatan ⛔. Lalu untuk tiap payload: `filled = template.replace(/§[^§]*§/, p…)` (tanda kutip di-escape), `parseRawRequest(filled, target)`, `sendLive(req, scope)`. `baseLen` = ukuran respon OK pertama; **outlier** = respon OK dengan `status >= 500` **atau** `|size - baseLen| > max(40, baseLen*0.25)`.
+- **Template awal**: `POST /api/login` ke `localhost:3000` (konstanta `TEMPLATE` di `Intruder.tsx`).
+- **Serangan (`startLive`)**: probe `template.replace(/§[^§]*§/, 'x')` di-cek `hostInScope`; bila gagal berhenti dengan `Note` bertipe `block`. Lalu untuk tiap payload: `filled = template.replace(/§[^§]*§/, p…)` (tanda kutip di-escape), `parseRawRequest(filled, target)`, `sendLive(req, scope)`. `baseLen` = ukuran respon OK pertama; **outlier** = respon OK dengan `status >= 500` **atau** `|size - baseLen| > max(40, baseLen*0.25)`.
 
 > **Attack type yang benar-benar diimplementasikan:** hanya **satu mode** (satu titik injeksi, satu daftar payload berurutan — setara "Sniper"). Tidak ada Battering ram / Pitchfork / Cluster bomb.
 
 ```mermaid
 flowchart TD
   T["Template dengan §...§"] --> M["positions = match(/§[^§]*§/g)"]
-  M --> MODE{"mode"}
-  MODE -->|"Simulation"| SIM["startSim: heuristik regex -> baris rekayasa"]
-  MODE -->|"Live"| G{"hostInScope (probe)?"}
+  M --> G{"hostInScope (probe)?"}
   G -->|"tolak"| N["catatan scope"]
   G -->|"lolos"| L["loop payload: replace penanda-1 -> sendLive"]
   L --> O["tandai outlier: status>=500 atau selisih size > max(40, baseLen*0.25)"]
@@ -36,36 +34,35 @@ flowchart TD
 
 | File | Fungsi utama |
 |------|--------------|
-| [`../src/renderer/src/pages/web/Intruder.tsx`](../src/renderer/src/pages/web/Intruder.tsx) | `startSim`, `startLive`, `start`, `stop`, `positions`, `useTransfer` |
-| [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | `PAYLOAD_SETS`, `TARGET_HOST` |
+| [`../src/renderer/src/pages/web/Intruder.tsx`](../src/renderer/src/pages/web/Intruder.tsx) | `startLive`, `stop`, `positions`, `useTransfer`, `TEMPLATE` |
+| [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | `PAYLOAD_SETS` |
 | [`../src/renderer/src/lib/http.ts`](../src/renderer/src/lib/http.ts) | `parseRawRequest`, `sendLive` |
 | [`../src/shared/http.ts`](../src/shared/http.ts) | `hostInScope` |
 | [`../src/renderer/src/store/transfer.ts`](../src/renderer/src/store/transfer.ts) | `useTransfer('intruder', …)` |
-| [`../src/renderer/src/components/ScopeBar.tsx`](../src/renderer/src/components/ScopeBar.tsx) | Editor scope (mode Live) |
+| [`../src/renderer/src/components/ScopeBar.tsx`](../src/renderer/src/components/ScopeBar.tsx) | Editor scope |
 
 ## 5. Cara pakai
 
 1. Buka **Intruder** (`/web/intruder`) — atau Send to Intruder dari Proxy/Target.
 2. Bungkus titik injeksi dengan `§…§` pada template (default `{"username": "§admin§", …}`).
 3. Pilih **Payload set** (angka di kurung = jumlah payload).
-4. Pilih **Simulation** atau **Live** (Live: isi target + tambahkan ke scope).
+4. Isi target dan tambahkan host-nya ke scope (semua request nyata).
 5. Klik **Start attack**; pantau progress bar dan kolom **Note** (`outlier`). Klik **Stop** untuk menghentikan.
 
 ## 6. Batasan / temuan
 
 - **Hanya penanda pertama** yang disubstitusi (regex tanpa `/g`). Beberapa `§…§` tidak akan diisi semua.
 - Hitungan `positions` memakai `/g` sehingga bisa menampilkan >1 padahal hanya 1 yang dipakai saat serangan.
-- Mode Live berjalan sekuensial (await per payload); tidak ada konkuransi/throttle.
+- Serangan berjalan sekuensial (await per payload); tidak ada konkuransi/throttle.
 - Heuristik outlier sederhana (status/ukuran), bukan analisis konten mendalam.
 
 ## 7. Checklist pengerjaan
 
 - [ ] Verifikasi deteksi penanda `§…§` dan tampilan jumlah `positions`.
-- [ ] Uji Simulation: baris muncul bertahap, payload "anomalous" tersorot.
-- [ ] Uji Live tanpa scope → ditolak lewat probe `hostInScope`.
-- [ ] Uji Live dengan scope → request per payload terkirim, `baseLen` & outlier benar.
+- [ ] Uji tanpa scope → ditolak lewat probe `hostInScope`.
+- [ ] Uji dengan scope → request per payload terkirim, `baseLen` & outlier benar.
 - [ ] **Perbaiki/putuskan:** apakah substitusi harus `/g` (multi-penanda) atau dibatasi satu (dokumentasikan).
-- [ ] Konfirmasi tombol Stop menghentikan loop (sim: `clearInterval`; live: `stopFlag`).
+- [ ] Konfirmasi tombol Stop menghentikan loop (`stopFlag`).
 
 ---
 ← [022 Repeater](022_repeater.md) · [Index](000_index.md) · [next: 024 Target / Discovery](024_target-discovery.md) →

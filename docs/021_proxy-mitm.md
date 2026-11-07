@@ -4,7 +4,7 @@
 
 ## 1. Status
 
-✅ **NYATA** — proxy forward intercept sungguhan dengan MITM HTTPS, **scope-gated**: hanya host in-scope yang didekripsi, dicatat, dan bisa di-intercept. Ada juga data sample/demo offline sebagai pelengkap.
+✅ **NYATA** — proxy forward intercept sungguhan dengan MITM HTTPS, **scope-gated**: hanya host in-scope yang didekripsi, dicatat, dan bisa di-intercept. Tidak ada data sample/demo: riwayat hanya berisi trafik nyata.
 
 ## 2. Tujuan fitur
 
@@ -26,7 +26,7 @@ Menangkap trafik HTTP dan (via MITM) HTTPS ke host di **Authorized scope** yang 
 
 **Browser terproksi (`ruy:proxy:openBrowser`):** membuka `BrowserWindow` baru dengan `session.fromPartition('interu-proxied')`, memasang `setProxy({ proxyRules: '127.0.0.1:<port>' })` dan `setCertificateVerifyProc((_req, cb) => cb(0))` (mempercayai sertifikat MITM otomatis). Satu window dipakai ulang (`proxiedBrowser`). `ruy:proxy:exportCA` menulis `Interu-Root-CA.crt` ke folder Downloads untuk browser eksternal.
 
-**Frontend ([`../src/renderer/src/pages/web/Proxy.tsx`](../src/renderer/src/pages/web/Proxy.tsx)):** menampilkan `ScopeBar` dan disclaimer bahwa hanya host in-scope yang didekripsi/ditangkap. Berlangganan `onLog` (tiap entri dengan `response` diumpankan ke `analyzeHttpResponse` → `addFindings`, lihat [041](041_rule-engine.md)) dan `onIntercept`, tombol Start/Stop, toggle Intercept, Open Browser, Export CA, "Demo (offline)" (render `BrowserSim`), "Load sample" (dari `HTTP_HISTORY`). Klik-kanan baris history → Send to Repeater/Intruder (`setTransfer`, mode `live`), Copy URL, Copy as curl (`toCurl`).
+**Frontend ([`../src/renderer/src/pages/web/Proxy.tsx`](../src/renderer/src/pages/web/Proxy.tsx)):** menampilkan `ScopeBar` dan `Note` (komponen `ui.tsx`) bahwa hanya host in-scope yang didekripsi/ditangkap. Berlangganan `onLog` (tiap entri dengan `response` diumpankan ke `analyzeHttpResponse` → `addFindings`, lihat [041](041_rule-engine.md)) dan `onIntercept`, tombol Start/Stop, toggle Intercept, Open Browser, Export CA. Klik-kanan baris history → Send to Repeater/Intruder (`setTransfer`), Copy URL, Copy as curl (`toCurl`).
 
 ```mermaid
 sequenceDiagram
@@ -60,7 +60,6 @@ sequenceDiagram
 | [`../src/renderer/src/App.tsx`](../src/renderer/src/App.tsx) | Sinkron `settings.scope` → `proxy.setScope` |
 | [`../src/renderer/src/components/ScopeBar.tsx`](../src/renderer/src/components/ScopeBar.tsx) | Editor scope di halaman Proxy |
 | [`../src/renderer/src/pages/web/Proxy.tsx`](../src/renderer/src/pages/web/Proxy.tsx) | UI: scope, history, intercept, browser, export CA, umpan Rule Engine |
-| [`../src/renderer/src/pages/web/BrowserSim.tsx`](../src/renderer/src/pages/web/BrowserSim.tsx) | Browser simulasi offline tertanam (Demo) |
 
 ## 5. Cara pakai
 
@@ -68,14 +67,14 @@ sequenceDiagram
 2. Klik **Open Browser** untuk membuka browser terproksi yang otomatis mempercayai CA Interu (http & https host in-scope tertangkap; host lain tetap bisa dibuka, hanya tidak dicatat). Atau arahkan proxy browser eksternal ke `127.0.0.1:8080` dan **Export CA** lalu trust di OS/browser.
 3. Nyalakan **Intercept** untuk menahan request; edit raw di textarea bila perlu, lalu **Forward** atau **Drop**.
 4. Lihat **HTTP History**; klik baris untuk inspeksi Request/Response; klik-kanan untuk Send to Repeater/Intruder atau Copy as curl.
-5. Tanpa target nyata: klik **Load sample** atau **Demo (offline)** untuk data contoh.
+5. Tanpa target nyata riwayat tetap kosong; tidak ada tombol sample/demo (sudah dihapus).
 
 ## 6. Batasan / temuan
 
 - **Scope gate (diperbaiki).** `hostInScope` kini dipanggil di `connect` dan `handleRequest`. Out-of-scope **tetap diteruskan** (bukan diblokir), hanya tidak didekripsi/dicatat/di-intercept. Semantik gate (IP via CIDR, port di entri diabaikan untuk hostname, dll.) di [011](011_scope-gate.md).
 - Perubahan scope berlaku untuk koneksi baru; tunnel CONNECT yang sudah terbentuk (MITM atau buta) tidak dievaluasi ulang.
 - Riwayat Proxy hanya di state halaman (maks 500 entri), hilang saat pindah halaman/restart; temuan Rule Engine tetap tersimpan di `findings.ts`.
-- `BrowserSim` (Demo offline) **tidak** didaftarkan sebagai route di `App.tsx`; ia hanya dirender di dalam `Proxy.tsx` saat tombol Demo ditekan. Browser nyata memakai `ruy:proxy:openBrowser` (BrowserWindow terpisah), bukan `BrowserSim`.
+- Tombol "Demo (offline)", "Load sample", dan `BrowserSim.tsx` sudah dihapus. Satu-satunya browser adalah **Open Browser** (`ruy:proxy:openBrowser`, BrowserWindow terpisah yang melewati proxy).
 - Proxy mendengar hanya di `127.0.0.1`. Body non-teks di history diringkas (`[N bytes ... omitted]`), raw dipotong `CAP = 50000` byte.
 - Tipe `ProxyLogEntry.kind` dideklarasikan `'http' | 'https-tunnel'`, tetapi `proxy.ts` meng-emit `kind: scheme` bernilai `'http'`/`'https'` — mismatch tipe minor (tidak mempengaruhi runtime).
 - Error upstream dibalas `502`; request yang di-drop dibalas `502 Dropped by Interu`.
@@ -90,7 +89,7 @@ sequenceDiagram
 - [ ] Uji Open Browser: http dan https tertangkap, sertifikat MITM dipercaya.
 - [ ] Uji Intercept: hold → edit raw → Forward meneruskan versi tereedit; Drop balas 502.
 - [ ] Uji Export CA menulis `Interu-Root-CA.crt` ke Downloads.
-- [ ] Konfirmasi klik-kanan history mengoper ke Repeater/Intruder (mode live) dan Copy as curl benar.
+- [ ] Konfirmasi klik-kanan history mengoper ke Repeater/Intruder dan Copy as curl benar.
 - [ ] Uji `RUY_PROXY_TEST` dengan `RUY_PROXY_SCOPE` kosong (tanpa `RUY_PROXY_LOG`) dan `=example.com` (ada log + MITM).
 - [ ] Perbaiki tipe `ProxyLogEntry.kind` (`'https-tunnel'` vs nilai runtime `'https'`).
 - [ ] Opsi blokir trafik out-of-scope (bukan hanya pass-through).

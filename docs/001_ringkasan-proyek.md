@@ -13,10 +13,8 @@ Satu aplikasi menyatukan:
 
 - **Web Security Suite** gaya Burp Suite (Proxy, Repeater, Intruder, Target,
   Decoder, Comparer, Sequencer).
-- **Operations** (Dashboard, Network Scanner, Vulnerabilities, Exposure Monitor,
-  Firewall Rules).
+- **Operations** (Network Scanner, Vulnerabilities, Exposure Monitor).
 - **Detection** (Rule Engine gaya Nuclei, route `/detection`).
-- **Analysis / Reporting**.
 
 Identitas kerja produk: *legal-by-design* — fitur yang mengirim atau menangkap
 trafik nyata dibatasi oleh **Scope / Authorization** (hanya host/IP/CIDR yang
@@ -31,7 +29,7 @@ untuk `ruy:http`, `ruy:scan:tcp`, dan proxy (lihat [011](011_scope-gate.md)).
 - Menegakkan **batas otorisasi** secara teknis: request/scan "live" ditolak jika
   host target tidak ada di Scope, dan proxy hanya mendekripsi/mencatat host in-scope
   (lihat [011 — Scope Gate](011_scope-gate.md)).
-- Menyediakan **mode Simulation** untuk latihan aman memakai data contoh.
+- Menjadikan **setiap halaman live-only**: tidak ada mode simulasi dan tidak ada data contoh/demo.
 
 ## Kategori Hackathon
 
@@ -44,7 +42,7 @@ Produk versi `1.0.0`.
 |---|---|---|---|
 | Fondasi keamanan | 01x | Campur | Scope gate, Root CA & sertifikat, hardening Electron |
 | Web Security Suite | 02x | ✅ Nyata | Proxy MITM, Repeater, Intruder, Target, Decoder, Comparer, Sequencer |
-| Operations | 03x | Campur | **Nyata:** Network Scanner (TCP connect, [032](032_network-scanner.md)), Vulnerabilities mode Live. **Simulasi:** Dashboard, Threat Monitor, Firewall, Reports, Settings |
+| Operations | 03x | ✅ Nyata | Network Scanner (TCP connect, [032](032_network-scanner.md)), Vulnerabilities (temuan Rule Engine), Exposure Monitor, Settings. Halaman data palsu (Dashboard, Firewall Rules, Reports) sudah dihapus |
 | Detection | 04x | ✅ Nyata | Rule Engine (template gaya Nuclei, [041](041_rule-engine.md)); temuan dari scanner + respons proxy |
 
 **Catatan.** Versi README lama menyebut Proxy, Repeater, Intruder, dan Target

@@ -73,7 +73,7 @@ Kode bersama di `../src/shared/` dipakai ketiga root build karena bebas framewor
   `useSyncExternalStore`.
 - `usePersistentState(key, initial)` — `useState` yang ditulis ke localStorage
   (hormati toggle `persistence`).
-- `resetDemoEnvironment()` — hapus semua key `ruy.v1.*`.
+- `resetLocalData()` — hapus semua key `ruy.v1.*` (tombol "Reset local data" di Settings). Key lama yang sudah tidak dipakai (`scanner.mode`, `vulns.view`, `vulns.status`, `firewall.rules`) cukup diabaikan bila masih ada.
 - Store lain: `findings.ts` (temuan Rule Engine, key `ruy.v1.findings`, maks 1000,
   dedupe per `key`; ditulis Scanner + Proxy, dibaca Rule Engine + Vulnerabilities)
   dan `transfer.ts` (kirim request ke Repeater/Intruder).
@@ -85,12 +85,14 @@ Kode bersama di `../src/shared/` dipakai ketiga root build karena bebas framewor
 HashRouter dipakai sengaja karena bundle dimuat via `file://` (lihat `main.tsx`).
 
 Kelompok = label grup sidebar (`../src/renderer/src/components/Sidebar.tsx`):
-Overview, Web Security Suite, Operations, Detection, Analysis, System.
+Web Security Suite, Operations, Detection, System.
 
 | Path | Komponen | Kelompok sidebar |
 |---|---|---|
-| `/` | `Dashboard` | Overview |
+| `/` | `Navigate → /threats` | — (landing page = Exposure Monitor) |
 | `/web/target` | `Target` | Web Security Suite |
+| `/web/crawler` | `Crawler` | Web Security Suite |
+| `/web/activescan` | `ActiveScan` | Web Security Suite |
 | `/web/proxy` | `Proxy` | Web Security Suite |
 | `/web/repeater` | `Repeater` | Web Security Suite |
 | `/web/intruder` | `Intruder` | Web Security Suite |
@@ -100,17 +102,15 @@ Overview, Web Security Suite, Operations, Detection, Analysis, System.
 | `/scanner` | `NetworkScanner` | Operations |
 | `/vulnerabilities` | `Vulnerabilities` | Operations |
 | `/threats` | `ThreatMonitor` | Operations |
-| `/firewall` | `Firewall` | Operations |
 | `/detection` | `RuleEngine` | Detection |
-| `/reports` | `Reports` | Analysis |
 | `/settings` | `Settings` | System |
 | `*` | `Navigate → /` | fallback |
 
 ## Theming
 
 Tema diterapkan ke `document.documentElement.dataset.theme` (`dark` / `light`)
-oleh `useApplyTheme`. Dark = "Dark Kingdom" (default), Light = "Silver Daylight".
-CSS global di `../src/renderer/src/styles/global.css`.
+oleh `useApplyTheme`. Dark = default, Light = alternatif; warna didefinisikan sebagai token peran
+di `../src/renderer/src/styles/global.css` (lihat [092 — Panduan Tampilan](092_panduan-tampilan.md)).
 
 ## Diagram komponen
 

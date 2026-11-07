@@ -8,7 +8,7 @@
 
 ## 2. Tujuan fitur
 
-Membandingkan dua teks/respon baris-per-baris untuk menyorot perbedaan — mis. membandingkan respon 200 vs 403 pada kasus kontrol akses (IDOR/BOLA). Sudah dimuati dua respon simulasi (order id 1001 = 200 vs 1002 = 403).
+Membandingkan dua teks/respon baris-per-baris untuk menyorot perbedaan — mis. membandingkan respon 200 vs 403 pada kasus kontrol akses (IDOR/BOLA). Kedua pane mulai **kosong**; operator menempelkan isinya sendiri.
 
 ## 3. Cara kerja
 
@@ -18,19 +18,18 @@ Membandingkan dua teks/respon baris-per-baris untuk menyorot perbedaan — mis. 
 - Telusur: jika sama → `same`; else pilih `del` (dari A) atau `add` (dari B) berdasarkan nilai dp.
 - `diff` dan `stats` (add/del/same) dihitung dengan `useMemo` atas `left.split('\n')` dan `right.split('\n')`.
 
-Input awal: `LEFT = rawResponse(HTTP_HISTORY[5])` (/api/orders?id=1001, 200), `RIGHT = rawResponse(HTTP_HISTORY[6])` (/api/orders?id=1002, 403).
+Input awal: `left = ''` dan `right = ''` (tidak ada contoh yang dimuat).
 
 ## 4. File terkait
 
 | File | Fungsi utama |
 |------|--------------|
 | [`../src/renderer/src/pages/web/Comparer.tsx`](../src/renderer/src/pages/web/Comparer.tsx) | `lineDiff`, `stats`, komponen `Comparer` |
-| [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | `rawResponse`, `HTTP_HISTORY` (sumber contoh) |
 
 ## 5. Cara pakai
 
 1. Buka **Comparer** (`/web/comparer`).
-2. Edit **Item A** dan **Item B** (sudah terisi contoh 200 vs 403).
+2. Tempel teks/respon ke **Item A** dan **Item B** (keduanya kosong di awal).
 3. Klik **Compare**.
 4. Baca ringkasan (added / removed / unchanged) dan daftar perbedaan baris (hijau `+`, merah `-`).
 
@@ -45,7 +44,7 @@ Input awal: `LEFT = rawResponse(HTTP_HISTORY[5])` (/api/orders?id=1001, 200), `R
 
 - [ ] Verifikasi `lineDiff` menghasilkan LCS benar pada contoh kecil.
 - [ ] Uji statistik add/del/same cocok dengan hasil visual.
-- [ ] Uji contoh default (200 vs 403) menampilkan perbedaan akses yang jelas.
+- [ ] Uji dua respon yang ditempel (mis. 200 vs 403) menampilkan perbedaan akses yang jelas.
 - [ ] Uji teks identik → 0 added, 0 removed.
 
 ---

@@ -4,11 +4,11 @@
 
 
 A standalone **Windows desktop** cybersecurity *workstation prototype*. It presents a
-polished security-operations interface — a full **Burp-style Web Security Suite** plus a
-dashboard, network scanner, vulnerability assessment, threat monitor, firewall policy
-editor, reporting and settings. It ships with **two themes** and a **Light/Dark toggle in
-the top-right**: the default **"Dark Kingdom"** (obsidian black, cold white & silver type,
-midnight / royal-navy accents) and **"Silver Daylight"** (light).
+flat, industrial security-operations interface — a full **Burp-style Web Security Suite** plus a
+network scanner, vulnerability assessment, exposure monitor, rule engine and settings.
+Every page is **live-only** (no simulation mode, no demo data). It ships with **two themes** and a **Light/Dark toggle in
+the top-right**: the default dark theme and a light theme, both defined by role tokens
+(see [docs/092_panduan-tampilan.md](docs/092_panduan-tampilan.md)).
 
 > **Development status (~70%).** The **Web Security Suite is real and functional**
 > (intercepting HTTPS-MITM proxy, live Repeater / Intruder / Target, offline
@@ -25,13 +25,13 @@ midnight / royal-navy accents) and **"Silver Daylight"** (light).
 > scope-gated, passive analysis per page) and an **Active Scan** engine with FP-safe oracles
 > (error-based **SQLi** and reflected **XSS** → *Confirmed*; **IDOR / access-control / CSRF**
 > → *Suspected*) — enter a target IP/URL and it maps and tests automatically.
-> Still mock / simulated UI: Dashboard (host cards), Firewall, and Reports.
+> The former mock pages (Dashboard, Firewall Rules, Reports) were removed; `/` now opens
+> the Exposure Monitor.
 
 > ⚠️ **Authorized use only — legal by design.** Every "Live" action is
 > **authorization-gated by Scope**: real requests only reach hosts you add to the Scope
 > list (empty by default → nothing allowed). Use it only against systems you own or are
-> **authorized to test** (your own lab / permitted servers). A **Simulation** mode is
-> provided for safe offline practice. There is **no backend, no database server, no cloud
+> **authorized to test** (your own lab / permitted servers). There is **no backend, no database server, no cloud
 > service, and no external API** — the app runs fully local.
 
 ---
@@ -62,14 +62,14 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 | Module | Status |
 |---|---|
 | **Proxy** | **REAL intercepting proxy with HTTPS MITM.** Start on `127.0.0.1:<port>`; **http and decrypted https of in-scope hosts** are captured in full (out-of-scope traffic is passed through untouched; CONNECT is blind-tunnelled) with intercept **Forward/Drop/edit**. **Open Browser** launches a real browser routed through the proxy that trusts the Interu CA automatically (Burp-style). **Export CA** writes the root CA for external browsers. TLS is terminated with per-host certs minted from a local CA (`src/main/ca.ts`). |
-| **Repeater** | **Live** mode sends real HTTP requests to a scoped target and shows the real response (status/time/length); Simulation mode for offline demo. |
-| **Intruder** | **Live** mode fires real requests per payload (payload at `§…§`), real status/length/time + outlier flagging; plus Simulation mode. |
-| **Target / Site Map** | **Live content discovery** (real path fuzzing against a scoped target) building a real map; plus the simulated map. |
+| **Repeater** | Sends real HTTP requests to a scoped target and shows the real response (status/time/length). Starts with `GET /` to `localhost:3000`. |
+| **Intruder** | Fires real requests per payload (payload at `§…§`), real status/length/time + outlier flagging. Template: `POST /api/login` to `localhost:3000`. |
+| **Target / Site Map** | **Live content discovery** (real path fuzzing against a scoped target) building a real map. |
 | **Crawler** | **Autopilot BFS web crawler** (scope-gated). Enter a target → it discovers pages, links, forms and inline `fetch()` endpoints (follows `.js` for endpoint discovery, skips static assets), with bounded concurrency + depth/max-page limits. Runs **passive** `analyzeHttpResponse` per page (auto-detect only on 2xx non-binary responses — anti-FP) and feeds findings to Vulnerabilities / Exposure Monitor. Right-click rows → Send to Repeater/Intruder. |
 | **Active Scan** | **Autopilot web-vulnerability scanner** (scope-gated) with **false-positive-safe oracles**. Enter a target → shallow crawl → inject probes into each parameter/form. **Error-based SQLi** (DB error attributable to an injected quote, gone when balanced) and **reflected XSS** (unique `<x-interu-token>` reflected verbatim/unencoded) → **Confirmed**; **IDOR** (numeric-id neighbour), **access-control** (sensitive path 200) and **CSRF** (state-changing POST form without token) → **Suspected** only, never auto-confirmed. Findings flow to the store with full evidence. |
 | **Decoder** | **Fully working, offline** URL / Base64 / Hex / HTML-entity / ASCII encode & decode, output→input chaining. |
-| **Comparer** | **Real, offline** LCS line-diff between two responses. |
-| **Sequencer** | **Real Shannon-entropy** analysis (quality score + per-position bars). |
+| **Comparer** | **Real, offline** LCS line-diff between two panes (both start empty). |
+| **Sequencer** | **Real Shannon-entropy** analysis of tokens you paste (one per line): quality score + per-position bars (`src/shared/tokens.ts`). |
 
 > Real traffic is handled in the Electron main process (`src/main/http.ts`,
 > `src/main/proxy.ts`, `src/main/scan.ts`) and gated by the operator scope
@@ -79,11 +79,11 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 
 | Module | Status |
 |---|---|
-| **Network Scanner** | **Real TCP connect scan** (Node `net`, scope-gated): target as IP / CIDR / range / list, Quick / Standard / Deep profiles (deep grabs banners/versions), real open/closed/filtered with streamed progress and cancel; plus a Simulation mode. Results feed the Rule Engine. |
+| **Network Scanner** | **Real TCP connect scan** (Node `net`, scope-gated): target as IP / CIDR / range / list, Quick / Standard / Deep profiles (deep grabs banners/versions), real open/closed/filtered with streamed progress and cancel. Live only: if the desktop bridge is missing it shows "Scanner bridge unavailable" and Run Scan is disabled. Results feed the Rule Engine. |
 | **Rule Engine** (Detection) | **Nuclei-grade detection engine — 408 data-driven templates.** Matchers: status / word / regex / time / port / service / **dsl** (a safe, no-`eval` expression evaluator), combined and/or with negative; **extractors** pull structured data (versions, tokens, usernames); request paths support `{{BaseURL}}`-style **interpolation**. Passive over scanner results + captured proxy responses → *Suspected / Confirmed*; **333 scope-gated, read-only active HTTP probes** (e.g. `/.git/config`, `/.env`, exposures, actuators, panels) prove findings → *Confirmed*. A **soft-404 baseline** suppresses false positives, variant families **correlate** (confirmed supersedes suspected), and each finding stores full request/response **evidence**. Every confirmed finding gets an **Attack/Defense advisor**: patching steps + copy-ready config, and a `verify`/`operator`/`info` attack recipe (Send-to-Repeater/Intruder, Re-test-fix). |
-| **Vulnerabilities** | Live findings from the Rule Engine (Confirmed/Suspected + evidence + CVE), with a Demo-catalog toggle. |
+| **Vulnerabilities** | Live findings from the Rule Engine (Confirmed/Suspected + evidence + CVE). Live view only. |
 
-**Still simulated (UI / mock):** Dashboard host cards, Firewall Rules, Reports, Settings. The Exposure Monitor (formerly Threat Monitor) shows only real findings and activity.
+The Exposure Monitor (formerly Threat Monitor, the landing page) shows only real findings and activity. Nothing in the app is simulated.
 
 > Decoder, Comparer and Sequencer run entirely offline. Proxy, Repeater, Intruder,
 > Target, the Network Scanner and the Rule Engine's active checks send **real traffic**
@@ -92,7 +92,8 @@ to the **Scope** list (empty by default → nothing allowed). Legal-by-design.
 ### Theme
 
 A **Light/Dark** switch sits in the top-right of every screen (and in Settings). The
-choice is persisted locally. Dark = "Dark Kingdom" (default), Light = "Silver Daylight".
+choice is persisted locally. Dark is the default. See
+[docs/092_panduan-tampilan.md](docs/092_panduan-tampilan.md) for the UI conventions.
 
 ---
 
@@ -154,14 +155,13 @@ Interu/
          ├─ styles/global.css  # global styling
          ├─ components/        # Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
          │                     #   CopyButton, Crest, icons, ui
-         ├─ pages/             # Dashboard, NetworkScanner, RuleEngine,
-         │  │                  #   Vulnerabilities, ThreatMonitor, Firewall,
-         │  │                  #   Reports, Settings
+         ├─ pages/             # NetworkScanner, RuleEngine, Vulnerabilities,
+         │  │                  #   ThreatMonitor (Exposure Monitor), Settings
          │  └─ web/            # Web Security Suite: Target, Crawler, ActiveScan,
-         │                     #   Proxy, BrowserSim, Repeater, Intruder,
+         │                     #   Proxy, Repeater, Intruder,
          │                     #   Sequencer, Decoder, Comparer
-         ├─ data/mock.ts       # simulated data for the ops modules
-         ├─ data/burp.ts       # simulated HTTP history / payloads / tokens
+         ├─ data/burp.ts       # Intruder PAYLOAD_SETS
+         ├─ lib/severity.ts    # Severity, SEVERITY_ORDER, severityPill
          ├─ lib/http.ts        # parse raw request, curl, sendLive
          └─ store/             # store.ts (settings+persist), transfer.ts (send-to
                                #   bus), findings.ts (Rule Engine findings store)
@@ -177,7 +177,7 @@ Interu/
 | `npm run icons` | Regenerate `build/icon.ico` / `.png` from the crest SVG. |
 | `npm run dev` | Launch the app with Vite HMR (**development** — uses a dev server). |
 | `npm run typecheck` | Type-check both the Node side and the web side. |
-| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL, advisor, crawler and web-vuln oracles (160 tests). |
+| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL, advisor, crawler and web-vuln oracles (218 tests). |
 | `npm run build` | Production build → `out/` (main, preload, renderer). No dev server. |
 | `npm run smoke` | Launch the production bundle in Electron and confirm the UI loads (prints `RUY_SMOKE_RESULT: RENDER_OK`), then exit. |
 | `npm run dist` | `build` **+** package Windows installer **and** portable exe → `release/`. |
@@ -261,11 +261,12 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 
 ## 7. Data & persistence
 
-- Demo records and preferences are stored **locally** in the renderer's `localStorage`
+- Local records and preferences are stored in the renderer's `localStorage`
   (namespaced `ruy.v1.*`). No database server is used.
-- Persisted items: scanner target/profile, vulnerability status changes, custom firewall
-  rules, and settings (operator name, persistence toggle, live-feed, reduce-motion).
-- **Settings → Reset demo environment** clears all stored data and restores defaults.
+- Persisted items: scanner target/profile, Sequencer tokens, scope, findings, and settings
+  (operator name, persistence toggle, live-feed, reduce-motion). Stored keys that no longer
+  exist (`scanner.mode`, `vulns.view`, `vulns.status`, `firewall.rules`) are ignored.
+- **Settings → Local data → Reset local data** clears all stored data and restores defaults.
 - The app is fully functional even with persistence turned **off** (it falls back to
   in-memory defaults), and in private/blocked-storage situations (all storage access is
   wrapped in try/catch).
@@ -289,7 +290,7 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 ## 9. Verification performed for this build
 
 - `npm run typecheck` — passes clean (Node side + web side).
-- `npm test` — **160 tests pass** (vitest, 3 skipped): scope gate, rule matchers/extractors/
+- `npm test` — **218 tests pass** (vitest, 3 skipped): scope gate, rule matchers/extractors/
   baseline/correlation, the DSL evaluator, the Attack/Defense advisor, the BFS crawler, and
   the FP-safe SQLi/XSS/IDOR/access/CSRF oracles.
 - `npm run build` — `out/main`, `out/preload`, `out/renderer` produced.
@@ -298,7 +299,7 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
   server** and no localhost dependency.
 - `npm run dist` — produced the Setup installer (~79 MB) and the Portable exe (~79 MB) in
   `release/`.
-- The running window was screenshotted to confirm the Dark Kingdom UI renders.
+- The running window was screenshotted to confirm the UI renders.
 
 Built and verified on: Windows 11 (x64), Node 24.22.0, Electron 33.4.11,
 electron-builder 25.1.8.

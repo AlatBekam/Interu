@@ -8,7 +8,7 @@ Kelompok **Detection** adalah lapisan yang mengubah data mentah dari modul nyata
 
 - Satu mesin deteksi bergaya Nuclei: template = data, bukan kode bercabang.
 - Memisahkan **inferensi** (port terbuka, banner → CVE, pesan error) dari **bukti** (header teramati, probe aktif yang berhasil).
-- Menjadi sumber tunggal temuan untuk Vulnerabilities, lalu Reports dan Dashboard.
+- Menjadi sumber tunggal temuan untuk Vulnerabilities, dan Exposure Monitor; halaman laporan dari temuan Confirmed adalah ide baru ([090](090_roadmap.md)).
 
 ## Daftar fitur
 
@@ -20,7 +20,7 @@ Terkait (dokumen kelompok lain):
 
 - [032 Network Scanner](032_network-scanner.md) — pemasok sinyal port/banner.
 - [021 Proxy / MITM](021_proxy-mitm.md) — pemasok respons HTTP (hanya in-scope).
-- [033 Vulnerabilities](033_vulnerabilities.md) — pembaca temuan (tampilan Live).
+- [033 Vulnerabilities](033_vulnerabilities.md) — pembaca temuan.
 - [011 Scope Gate](011_scope-gate.md) — penjaga semua trafik nyata.
 
 ## Hubungan antar-fitur
@@ -34,9 +34,8 @@ flowchart LR
   PROXY["021 Proxy"] -- "analyzeHttpResponse" --> RE
   ACT["Probe aktif (ruy:http)"] -- "matchActive" --> RE
   RE --> STORE["findings store (ruy.v1.findings)"]
-  STORE --> VULN["033 Vulnerabilities (Live)"]
-  STORE -. "belum" .-> REP["036 Reports"]
-  STORE -. "belum" .-> DASH["031 Dashboard"]
+  STORE --> VULN["033 Vulnerabilities"]
+  STORE --> MON["034 Exposure Monitor"]
 ```
 
 ## Tabel status
@@ -49,12 +48,11 @@ flowchart LR
 | Probe aktif | ✅ | 5 probe, scope-gated lewat `ruy:http` |
 | Store temuan | ✅ | localStorage, de-dup per key, maks 1000 |
 | Upgrade Suspected → Confirmed | ⚪ | Belum ada |
-| Dipakai Reports / Dashboard | ⚪ | Belum — keduanya masih `mock.ts` |
+| Laporan dari temuan | ⚪ | Belum ada halaman laporan (ide baru di [090](090_roadmap.md)) |
 
 ## Urutan kerja
 
 1. ✅ Rule Engine + store temuan + halaman `/detection`.
 2. ✅ Hubungkan Scanner, Proxy, dan Vulnerabilities.
 3. ⏭ Upgrade Suspected → Confirmed + baseline soft-404 (lihat checklist [041](041_rule-engine.md)).
-4. ⏭ Reports membaca store temuan (lihat [036](036_reports.md)).
-5. ⏭ Dashboard mengagregasi store temuan (lihat [031](031_dashboard.md)).
+4. ⏭ Halaman laporan baru yang membaca store temuan (lihat [090](090_roadmap.md)).

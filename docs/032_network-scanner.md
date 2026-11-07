@@ -1,10 +1,10 @@
 # 032 — Network Scanner
 
-← [031 — Dashboard (Security Overview)](031_dashboard.md) · [Index](000_index.md) · [033 — Vulnerability Assessment](033_vulnerabilities.md) →
+← [030 — Operations (Pengantar)](030_operations.md) · [Index](000_index.md) · [033 — Vulnerability Assessment](033_vulnerabilities.md) →
 
 ## Status
 
-✅ **NYATA** (dengan fallback simulasi) — Mode **Live** melakukan **TCP connect scan** sungguhan lewat modul Node `net` di main process, dijaga **scope gate**. Mode **Simulation** (animasi `MOCK_HOSTS`) tetap ada untuk demo tanpa jaringan dan otomatis dipakai bila bridge `window.ruy.scan` tidak tersedia.
+✅ **NYATA** (live saja) — melakukan **TCP connect scan** sungguhan lewat modul Node `net` di main process, dijaga **scope gate**. Bila bridge `window.ruy.scan` tidak tersedia (bukan aplikasi desktop), halaman menampilkan `Note` error "Scanner bridge unavailable" dan tombol **Run Scan** dinonaktifkan. Tidak ada mode simulasi; key `scanner.mode` tidak dipakai lagi.
 
 ## Tujuan fitur
 
@@ -71,14 +71,13 @@ Batas: `MAX_IPS` = 4096 IP per target.
 | [../src/shared/scan.ts](../src/shared/scan.ts) | Tipe `ScanEvent`/`ScanResult`, `expandTargets`, `profilePorts`, `ipInScope`, `targetsInScope`, `MAX_IPS`, `MAX_ATTEMPTS` |
 | [../src/main/index.ts](../src/main/index.ts) | Handler `ruy:scan:tcp` (scope gate, clamp timeout, concurrency 256) & `ruy:scan:cancel` |
 | [../src/preload/index.ts](../src/preload/index.ts) | `window.ruy.scan.run / cancel / onProgress` |
-| [../src/renderer/src/pages/NetworkScanner.tsx](../src/renderer/src/pages/NetworkScanner.tsx) | Toggle Live/Simulation, `startLive`, `startSim`, `runRef`, umpan ke Rule Engine |
-| [../src/renderer/src/components/ScopeBar.tsx](../src/renderer/src/components/ScopeBar.tsx) | Editor Authorized scope (tampil di mode Live) |
-| [../src/renderer/src/data/mock.ts](../src/renderer/src/data/mock.ts) | `MOCK_HOSTS` untuk mode Simulation |
+| [../src/renderer/src/pages/NetworkScanner.tsx](../src/renderer/src/pages/NetworkScanner.tsx) | `startLive`, `hasBridge`, `runRef`, umpan ke Rule Engine |
+| [../src/renderer/src/components/ScopeBar.tsx](../src/renderer/src/components/ScopeBar.tsx) | Editor Authorized scope |
 | [../src/shared/scope.test.ts](../src/shared/scope.test.ts) | Tes `expandTargets`, `ipInScope`, `hostInScope` |
 
 ## Cara pakai
 
-1. Buka **Network Scanner** (`/scanner`), pilih Mode **Live** (tersimpan sebagai `scanner.mode`).
+1. Buka **Network Scanner** (`/scanner`), (halaman selalu Live).
 2. Di ScopeBar, tambahkan IP/CIDR yang kamu punya izinnya (mis. `127.0.0.1` atau `10.20.0.0/24`).
 3. Isi Target (IP / CIDR / range) dan pilih Profile; label menampilkan jumlah port.
 4. Klik **Run Scan**. Pantau konsol dan progress bar.
@@ -101,9 +100,9 @@ Batas: `MAX_IPS` = 4096 IP per target.
 - [x] Parse target IP/CIDR/range/daftar; profil quick (103) / standard & deep (705).
 - [x] Koneksi paralel (256) dengan timeout per port; status open/closed/filtered nyata.
 - [x] Banner grab (profil `deep`) → umpan ke Rule Engine.
-- [x] Progres nyata via event `ruy:scan:progress`; fallback Simulation tetap ada.
+- [x] Progres nyata via event `ruy:scan:progress`.
 - [x] Stop menyimpan hasil parsial; scan dibatalkan saat meninggalkan halaman.
 - [ ] Tambah audit log tiap scan (target, waktu, operator).
-- [ ] Simpan riwayat hasil scan agar Dashboard/Reports bisa memakainya.
+- [ ] Simpan riwayat hasil scan agar halaman lain (mis. laporan, lihat [090](090_roadmap.md)) bisa memakainya.
 - [ ] (Opsional) Timeout adaptif untuk target besar yang banyak filtered.
 - [ ] (Opsional) Resolusi hostname → IP (dengan scope gate pada IP hasil resolusi).

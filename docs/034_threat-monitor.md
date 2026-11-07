@@ -1,6 +1,6 @@
 # 034 — Exposure Monitor (dulu Threat Monitor)
 
-← [033 — Vulnerability Assessment](033_vulnerabilities.md) · [Index](000_index.md) · [035 — Firewall Rules](035_firewall.md) →
+← [033 — Vulnerability Assessment](033_vulnerabilities.md) · [Index](000_index.md) · [037 — Settings](037_settings.md) →
 
 ## Status
 
@@ -25,14 +25,14 @@ Logika murni ada di `src/shared/activity.ts` (antrian prioritas, eksposur per ho
 
 Level event: `critical`/`high` → crit, `medium` → warn, `low`/`info` → info. Temuan ber-KEV selalu crit, dan temuan yang sudah resolved bernilai ok.
 
-Panel "Recent Activity" di Dashboard membaca sumber yang sama (6 event terakhir).
+Halaman ini adalah **landing page** aplikasi: route `/` mengarahkan (`Navigate`) ke `/threats`.
 
 ## Batasan / temuan
 
 - Bukan IDS. Tidak melihat serangan terhadap komputer atau jaringanmu. Telemetri host (Windows Event Log, log firewall, IDS seperti Suricata) **tidak termasuk** dan merupakan fitur terpisah.
 - Aktivitas hilang saat aplikasi ditutup. Ini disengaja: tidak ada yang disimpan.
 - Temuan produk KEV (dari fingerprint banner/header) tidak dihitung sebagai "actively exploited"; lihat [041](041_rule-engine.md).
-- Firewall Rules dan kartu host di Dashboard masih memakai data mock (lihat [035](035_firewall.md)).
+- Dashboard, Firewall Rules, dan Reports sudah dihapus; tidak ada lagi halaman yang memakai data mock.
 
 ## File terkait
 
@@ -41,9 +41,8 @@ Panel "Recent Activity" di Dashboard membaca sumber yang sama (6 event terakhir)
 | [../src/shared/activity.ts](../src/shared/activity.ts) | Logika murni: `eventFromFinding`, `priorityQueue`, `exposureByTarget`, `summarize`, `timeLabel` |
 | [../src/renderer/src/store/activity.ts](../src/renderer/src/store/activity.ts) | Store aktivitas dalam memori (200 event): `pushActivity`, `noteScopeBlock`, `useActivity` |
 | [../src/renderer/src/pages/ThreatMonitor.tsx](../src/renderer/src/pages/ThreatMonitor.tsx) | Halaman "Exposure Monitor" (route `/threats`) |
-| [../src/renderer/src/pages/Dashboard.tsx](../src/renderer/src/pages/Dashboard.tsx) | Panel "Recent Activity" |
 | [../src/renderer/src/lib/http.ts](../src/renderer/src/lib/http.ts) | `inScopeOrNote` dan pencatatan penolakan di `sendLive` |
-| [../testcase/e2e/monitor.e2e.ts](../testcase/e2e/monitor.e2e.ts) | GUI e2e: kosong di awal, temuan nyata, dashboard, penolakan scope |
+| [../testcase/e2e/monitor.e2e.ts](../testcase/e2e/monitor.e2e.ts) | GUI e2e: kosong di awal, temuan nyata, tanpa halaman palsu, penolakan scope |
 
 ## Cara pakai
 
@@ -57,7 +56,7 @@ Panel "Recent Activity" di Dashboard membaca sumber yang sama (6 event terakhir)
 - [x] Store dalam memori dengan batas 200 event.
 - [x] Sumber nyata: temuan, scan, scope, proxy intercept.
 - [x] Generator palsu dan setting `liveFeed` dihapus.
-- [x] Dashboard memakai aktivitas nyata.
+- [x] Halaman palsu (Dashboard) dihapus; Exposure Monitor menjadi landing page.
 - [x] GUI e2e (`monitor.e2e.ts`).
 - [ ] Sensor host (Windows Event Log / IDS): di luar cakupan.
 

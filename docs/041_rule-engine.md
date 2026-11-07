@@ -80,7 +80,7 @@ Template boleh punya `group`. `correlate(findings)` menggabungkan temuan yang be
 
 ### Bukti request/response
 
-Temuan aktif menyimpan `request` (baris request yang dikirim) dan `response` (mentah, dipotong ~8 KB) untuk Reports; temuan pasif menyimpan `response`; plus `matchedAt`, `extracted`, `cwe`, `cvss`, `reference`, `mitre`. Tabel Findings bisa di-klik untuk membuka baris detail.
+Temuan aktif menyimpan `request` (baris request yang dikirim) dan `response` (mentah, dipotong ~8 KB) untuk laporan di masa depan; temuan pasif menyimpan `response`; plus `matchedAt`, `extracted`, `cwe`, `cvss`, `reference`, `mitre`. Tabel Findings bisa di-klik untuk membuka baris detail.
 
 ### Kunci temuan (de-dup)
 
@@ -246,7 +246,7 @@ Selain template, mesin mengenali **produk** dari banner scan dan header/meta res
 - [x] Interpolasi variabel `{{BaseURL}}`/`{{Hostname}}`/dll di request aktif.
 - [x] Baseline soft-404 sebelum probe aktif (+ guard host mati).
 - [x] Korelasi `group`: confirmed menggeser suspected → `superseded`.
-- [x] Simpan bukti request/response + `matchedAt` per temuan (untuk Reports).
+- [x] Simpan bukti request/response + `matchedAt` per temuan (untuk laporan di masa depan).
 - [x] Baris detail temuan di UI (extracted, request, response, CWE/CVSS/ATT&CK).
 - [x] Perbarui komentar kepala `rules.ts` agar sesuai (port = suspected).
 - [ ] Hubungkan pasangan suspected (scanner) → confirmed (aktif) via `group` nyata.
