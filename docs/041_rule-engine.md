@@ -1,6 +1,6 @@
 # 041 — Rule Engine
 
-← [040 — Detection (Pengantar Kelompok)](040_detection.md) · [Index](000_index.md) · [090 — Roadmap](090_roadmap.md) →
+← [040 — Detection (Pengantar Kelompok)](040_detection.md) · [Index](000_index.md) · [042 — Scan Terautentikasi](042_scan-terautentikasi.md) →
 
 ## Status
 
