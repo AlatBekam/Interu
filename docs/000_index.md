@@ -42,6 +42,8 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 | [025 Decoder](025_decoder.md) | ✅ | Offline |
 | [026 Comparer](026_comparer.md) | ✅ | Diff LCS, offline; dua pane mulai kosong |
 | [027 Sequencer](027_sequencer.md) | ✅ | Menganalisa token yang di-paste operator (`src/shared/tokens.ts`) |
+| [028 Crawler](028_crawler.md) | ✅ | Crawl rekursif GET in-scope + deteksi pasif; opsi depth/halaman/konkurensi; mendukung scan terautentikasi |
+| [029 Active Scan](029_active-scan.md) | ✅ | Probe SQLi/XSS berbasis oracle (Confirmed) + IDOR/Access/CSRF (Suspected); scope-gated |
 
 ### 03 — Operations & Analysis
 

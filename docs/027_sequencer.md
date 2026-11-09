@@ -1,6 +1,6 @@
 # 027 — Sequencer
 
-← [026 — Comparer](026_comparer.md) · [Index](000_index.md) · [030 — Operations & Analysis (Pengantar Kelompok)](030_operations.md) →
+← [026 — Comparer](026_comparer.md) · [Index](000_index.md) · [028 — Crawler](028_crawler.md) →
 
 ## 1. Status
 
@@ -46,4 +46,4 @@ Menilai keacakan (randomness) token sesi/CSRF dengan entropi Shannon — seperti
 - [ ] (Lanjut) isi token otomatis dari hasil tangkapan Proxy.
 
 ---
-← [026 Comparer](026_comparer.md) · [Index](000_index.md) · [next: 030 Operations](030_operations.md) →
+← [026 Comparer](026_comparer.md) · [Index](000_index.md) · [next: 028 Crawler](028_crawler.md) →

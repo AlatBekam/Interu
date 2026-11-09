@@ -42,17 +42,18 @@ flowchart LR
 
 | Aspek | Status | Keterangan |
 | --- | --- | --- |
-| Template & matcher | ✅ | 27 template, 6 tipe matcher (`time`/`service` belum dipakai) |
+| Template & matcher | ✅ | 408 template (28 port/banner, 47 HTTP pasif, 333 HTTP aktif), 7 tipe matcher termasuk `dsl` (`time`/`service` ada di engine tetapi belum dipakai template) |
 | Umpan dari Scanner | ✅ | Otomatis setelah scan Live, termasuk hasil parsial |
 | Umpan dari Proxy | ✅ | Setiap respons in-scope |
-| Probe aktif | ✅ | 5 probe, scope-gated lewat `ruy:http` |
+| Probe aktif | ✅ | 333 template aktif, scope-gated lewat `ruy:http`, dengan baseline soft-404 |
+| Scan terautentikasi | ✅ | Cookie Interu Browser atau header manual, lihat [042](042_scan-terautentikasi.md) |
 | Store temuan | ✅ | localStorage, de-dup per key, maks 1000 |
-| Upgrade Suspected → Confirmed | ⚪ | Belum ada |
+| Upgrade Suspected → Confirmed | 🟡 | Korelasi `group`: confirmed menggeser suspected (`superseded`). Pasangan otomatis suspected-port → confirmed-aktif belum ada |
 | Laporan dari temuan | ⚪ | Belum ada halaman laporan (ide baru di [090](090_roadmap.md)) |
 
 ## Urutan kerja
 
 1. ✅ Rule Engine + store temuan + halaman `/detection`.
 2. ✅ Hubungkan Scanner, Proxy, dan Vulnerabilities.
-3. ⏭ Upgrade Suspected → Confirmed + baseline soft-404 (lihat checklist [041](041_rule-engine.md)).
+3. ✅ Baseline soft-404 dan korelasi `group` (lihat [041](041_rule-engine.md)); ⏭ pasangan otomatis suspected-port → confirmed-aktif.
 4. ⏭ Halaman laporan baru yang membaca store temuan (lihat [090](090_roadmap.md)).

@@ -2,7 +2,7 @@
 
 ← [013 — Hardening Electron](013_hardening-electron.md) · [Index](000_index.md) · [021 — Proxy / MITM](021_proxy-mitm.md) →
 
-> Kelompok fitur bergaya **Burp Suite** di dalam Interu ("Interu — Cyber Operations", brand lama **RUY**). Berisi tujuh modul: Target, Proxy, Repeater, Intruder, Sequencer, Decoder, Comparer. Semua berada di `src/renderer/src/pages/web/` dengan backend di proses `main` (`src/main/proxy.ts`, `src/main/http.ts`, `src/main/index.ts`).
+> Kelompok fitur bergaya **Burp Suite** di dalam Interu ("Interu — Cyber Operations", brand lama **RUY**). Berisi sembilan modul: Target, Proxy, Repeater, Intruder, Sequencer, Decoder, Comparer, Crawler, Active Scan. Semua berada di `src/renderer/src/pages/web/` dengan backend di proses `main` (`src/main/proxy.ts`, `src/main/http.ts`, `src/main/index.ts`).
 
 ## Tujuan
 
@@ -22,6 +22,8 @@ Menyediakan alat pentest web interaktif di dalam satu aplikasi desktop Electron,
 | 025 | Decoder | [025_decoder.md](025_decoder.md) | `/web/decoder` | ✅ NYATA |
 | 026 | Comparer | [026_comparer.md](026_comparer.md) | `/web/comparer` | ✅ NYATA |
 | 027 | Sequencer | [027_sequencer.md](027_sequencer.md) | `/web/sequencer` | ✅ NYATA |
+| 028 | Crawler | [028_crawler.md](028_crawler.md) | `/web/crawler` | ✅ NYATA |
+| 029 | Active Scan | [029_active-scan.md](029_active-scan.md) | `/web/activescan` | ✅ NYATA |
 
 Rute terdaftar di [`../src/renderer/src/App.tsx`](../src/renderer/src/App.tsx); menu di [`../src/renderer/src/components/Sidebar.tsx`](../src/renderer/src/components/Sidebar.tsx) grup "Web Security Suite".
 
@@ -75,6 +77,8 @@ flowchart TD
 | Sequencer | Offline nyata | Menganalisa token yang di-paste operator (`src/shared/tokens.ts`) |
 | Decoder | Offline nyata | Transform URL/Base64/Hex/HTML/ASCII beneran |
 | Comparer | Offline nyata | LCS line-diff beneran |
+| Crawler | Live | Crawl GET rekursif in-scope + deteksi pasif Rule Engine ([028](028_crawler.md)) |
+| Active Scan | Live | Crawl + probe SQLi/XSS berbasis oracle, kandidat IDOR/Access/CSRF ([029](029_active-scan.md)) |
 
 ## Urutan pengerjaan (disarankan)
 
@@ -83,7 +87,8 @@ flowchart TD
 3. **022 Repeater** & **023 Intruder** — konsumen transfer bus.
 4. **024 Target** — site map + content discovery.
 5. **025 Decoder**, **026 Comparer**, **027 Sequencer** — utilitas pendukung.
-6. Lanjut ke [030 Operations](030_operations.md).
+6. **028 Crawler** & **029 Active Scan** — otomasi crawl dan pemindaian aktif.
+7. Lanjut ke [030 Operations](030_operations.md).
 
 ## File terkait (ringkas)
 
@@ -97,6 +102,7 @@ flowchart TD
 | [`../src/shared/proxy.ts`](../src/shared/proxy.ts) | Tipe `ProxyLogEntry`, `HeldRequest` |
 | [`../src/shared/rules.ts`](../src/shared/rules.ts) | `analyzeHttpResponse` (analisis pasif respons proxy) |
 | [`../src/renderer/src/lib/http.ts`](../src/renderer/src/lib/http.ts) | `parseRawRequest`, `toCurl`, `sendLive` |
+| [`../src/shared/crawl.ts`](../src/shared/crawl.ts) · [`../src/shared/webvuln.ts`](../src/shared/webvuln.ts) | Logika Crawler dan oracle Active Scan |
 | [`../src/renderer/src/store/transfer.ts`](../src/renderer/src/store/transfer.ts) | Transfer bus Send-to-Repeater/Intruder |
 | [`../src/renderer/src/data/burp.ts`](../src/renderer/src/data/burp.ts) | `PAYLOAD_SETS` (daftar payload Intruder) |
 

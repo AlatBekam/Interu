@@ -101,7 +101,8 @@ Struktur penting:
 == WEB SECURITY SUITE (SELESAI / REAL) ==
   [DONE] Proxy        : Forward proxy ASLI + HTTPS MITM (dekripsi TLS).
                         - Start di 127.0.0.1:8080, Intercept Forward/Drop/Edit
-                        - Open Browser (browser asli lewat proxy, auto-trust CA)
+                        - Open Browser (jendela browser bawaan lewat proxy, auto-trust CA;
+                          ada address bar, back/forward, reload/stop; tanpa tab)
                         - Export CA (buat browser eksternal)
                         - HTTP History live + Inspector
                         - Klik kanan baris: Send to Repeater/Intruder, Copy URL,
@@ -120,6 +121,11 @@ Struktur penting:
   [DONE] Active Scan  : autopilot scanner vuln (scope-gated), oracle FP-safe:
                         SQLi error-based + reflected XSS -> Confirmed;
                         IDOR / access-control / CSRF -> Suspected (tak auto)  (BARU)
+  [DONE] Scan terautentikasi : scan di balik login. Sumber kredensial: cookie sesi
+                        Interu Browser ATAU header manual (Authorization, dst).
+                        Hanya terkirim ke host in-scope; URL logout/delete dilewati;
+                        scan berhenti saat sesi habis (401 / redirect ke login);
+                        nilai cookie/token disamarkan di evidence       (BARU)
   [DONE] Scope gate   : semua Live digerbang host berizin
 
 == OPERATIONS (REAL) ==
@@ -161,7 +167,7 @@ Struktur penting:
                               * Attack = verify (baca-saja, nol FP) / operator (payload
                                 disiapkan, Send to Repeater/Intruder) / info (PoC lokal)
                             - Halaman Detection: library template + active checks
-                            - Diuji: 160 tes (vitest) rules/dsl/advice/crawl/
+                            - Diuji: 262 tes (vitest) rules/dsl/advice/crawl/
                               webvuln/scope
                             -> TODO: oracle boolean/time/OOB, template eksternal
                                YAML/JSON, Attack Path Graph
@@ -185,7 +191,7 @@ PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")  [NUCLEI-GRADE]
   [x] ADVISOR ATTACK/DEFENSE per temuan (patching + PoC verify/operator/info)
   [x] Crawler autopilot (BFS) + Active Scan: SQLi error-based & reflected XSS
         -> Confirmed; IDOR/access/CSRF -> Suspected (oracle FP-safe)
-  [x] Tes unit (vitest) rules, DSL, advisor, crawler, webvuln, scope (160 tes)
+  [x] Tes unit (vitest) rules, DSL, advisor, crawler, webvuln, scope, auth, browser (262 tes)
 
 PRIORITAS 2 — OPERATIONS JADI REAL
   [x] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,

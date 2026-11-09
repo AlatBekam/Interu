@@ -48,7 +48,7 @@ Urutan ini mengikuti dependensi data: scanner menghasilkan aset, Rule Engine men
 | # | Tugas | Status | Dokumen |
 |---|---|---|---|
 | 1 | TCP connect scan via `ruy:scan:tcp` (scope-gated), parsing CIDR, banner grab | ✔ | [032](032_network-scanner.md) |
-| 2 | Rule Engine: 27 template, Suspected/Confirmed, probe aktif scope-gated | ✔ | [041](041_rule-engine.md) |
+| 2 | Rule Engine: 408 template, Suspected/Confirmed, probe aktif scope-gated | ✔ | [041](041_rule-engine.md) |
 | 3 | Vulnerabilities dari store findings (live saja) | ✔ | [033](033_vulnerabilities.md) |
 | 4 | Rule Engine: naikkan Suspected → Confirmed saat terbukti, baseline soft-404, extractor, template eksternal | | [041](041_rule-engine.md) |
 | 5 | Vulnerabilities: status kerja per temuan, filter Confidence, bukti lengkap | | [033](033_vulnerabilities.md) |
@@ -58,6 +58,10 @@ Urutan ini mengikuti dependensi data: scanner menghasilkan aset, Rule Engine men
 | 9 | **Halaman baru:** ekspor rule Windows Firewall ke format netsh dulu, apply ke sistem belakangan (dengan konfirmasi + hak admin) | | — |
 | 10 | Settings: editor scope, export/import pengaturan | | [037](037_settings.md) |
 | 11 | UI industrial dengan token peran, guard test, dan audit e2e | ✔ | [092](092_panduan-tampilan.md) |
+| 12 | Browser Interu dengan address bar, back/forward, reload/stop (tanpa tab) | ✔ | [021](021_proxy-mitm.md) |
+| 13 | Scan terautentikasi: cookie Interu Browser atau header manual, lewati logout, berhenti saat sesi habis | ✔ | [042](042_scan-terautentikasi.md) |
+| 14 | Crawler dan Active Scan terdokumentasi | ✔ | [028](028_crawler.md), [029](029_active-scan.md) |
+| 15 | Intruder berhenti otomatis saat sesi login habis; ikut mengikuti redirect untuk alur login | | [042](042_scan-terautentikasi.md) |
 
 ## Fase 4 — Lintas fitur
 

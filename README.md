@@ -178,7 +178,7 @@ Interu/
 | `npm run icons` | Regenerate `build/icon.ico` / `.png` from the crest SVG. |
 | `npm run dev` | Launch the app with Vite HMR (**development** — uses a dev server). |
 | `npm run typecheck` | Type-check both the Node side and the web side. |
-| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL, advisor, crawler and web-vuln oracles (218 tests). |
+| `npm test` | Run the unit test suite (vitest) — scope, rules, DSL, advisor, crawler and web-vuln oracles (262 tests). |
 | `npm run build` | Production build → `out/` (main, preload, renderer). No dev server. |
 | `npm run smoke` | Launch the production bundle in Electron and confirm the UI loads (prints `RUY_SMOKE_RESULT: RENDER_OK`), then exit. |
 | `npm run dist` | `build` **+** package Windows installer **and** portable exe → `release/`. |
@@ -291,7 +291,7 @@ The finished artifacts land in `release/` — see §5 for which file is which. T
 ## 9. Verification performed for this build
 
 - `npm run typecheck` — passes clean (Node side + web side).
-- `npm test` — **218 tests pass** (vitest, 3 skipped): scope gate, rule matchers/extractors/
+- `npm test` — **262 tests pass** (vitest, 3 skipped): scope gate, rule matchers/extractors/
   baseline/correlation, the DSL evaluator, the Attack/Defense advisor, the BFS crawler, and
   the FP-safe SQLi/XSS/IDOR/access/CSRF oracles.
 - `npm run build` — `out/main`, `out/preload`, `out/renderer` produced.
