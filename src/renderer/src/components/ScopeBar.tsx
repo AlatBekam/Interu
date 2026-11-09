@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { IconPlus, IconX, IconLock } from './icons'
 import { useSettings } from '../store/store'
+import AuthBar from './AuthBar'
 
 // Authorization scope editor. Live requests are only permitted to hosts listed
 // here — "legal-by-design". Shared across live modules via the settings store.
-export default function ScopeBar() {
+export default function ScopeBar({ withAuth = false }: { withAuth?: boolean }) {
   const [settings, patch] = useSettings()
   const [val, setVal] = useState('')
 
@@ -19,6 +20,7 @@ export default function ScopeBar() {
   const remove = (h: string) => patch({ scope: settings.scope.filter((x) => x !== h) })
 
   return (
+    <>
     <div className="intercept-bar">
       <IconLock size={16} />
       <strong>Authorized scope</strong>
@@ -44,5 +46,7 @@ export default function ScopeBar() {
       />
       <button className="btn btn-sm" onClick={add}><IconPlus size={14} />Add</button>
     </div>
+    {withAuth && <AuthBar />}
+    </>
   )
 }

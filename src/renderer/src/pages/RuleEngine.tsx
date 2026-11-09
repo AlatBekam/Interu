@@ -12,7 +12,7 @@ import { severityPill, Severity } from '../lib/severity'
 import { useSettings } from '../store/store'
 import { useFindings, addFindings, clearFindings, removeFinding } from '../store/findings'
 import { setTransfer } from '../store/transfer'
-import { rawFromParts, inScopeOrNote } from '../lib/http'
+import { rawFromParts, inScopeOrNote, noteAuthLost } from '../lib/http'
 import { noteScopeBlock } from '../store/activity'
 import { getAdvice } from '../../../shared/advice'
 import { KEV_COUNT, KEV_CATALOG_VERSION } from '../../../shared/kev'
@@ -113,6 +113,12 @@ export default function RuleEngine() {
     try {
       const baseRes = await window.ruy.http.send({ method: 'GET', url: vars.BaseURL + baseProbe, headers: {}, timeoutMs: 8000 }, settings.scope)
       if (baseRes.blocked) { noteScopeBlock(vars.BaseURL + baseProbe, 'rule-engine'); setLog((l) => [...l, `  ! blocked by scope`]); setRunning(false); return }
+      if (baseRes.authLost) {
+        noteAuthLost(vars.BaseURL)
+        setLog((l) => [...l, '  ! login session expired — dibatalkan'])
+        setNote({ kind: 'error', text: 'Sesi login habis. Login ulang di Interu Browser lalu tekan Refresh.' })
+        setRunning(false); return
+      }
       if (!baseRes.ok) {
         setLog((l) => [...l, `  ! host tidak bisa dihubungi (${baseRes.error || 'unknown'}) — dibatalkan`])
         setNote({ kind: 'error', text: `Host ${host} tidak merespons. Pastikan target hidup & URL benar.` })
@@ -141,6 +147,7 @@ export default function RuleEngine() {
         if (req) {
           try {
             const res = await http.send(req, settings.scope)
+            if (res.authLost) { blocked = true; noteAuthLost(req.url); setLog((l) => [...l, '  ! login session expired — stopped']); return }
             if (res.blocked) { blocked = true; noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, `  ! blocked by scope — stopped`]); return }
             const finding = matchActive(t, req.url, res, { req, baseline })
             if (finding) {
@@ -181,7 +188,7 @@ export default function RuleEngine() {
           <Stat label="CISA KEV" value={KEV_COUNT} icon={<IconBug />} meta={`snapshot ${KEV_CATALOG_VERSION}`} />
         </div>
 
-        <ScopeBar />
+        <ScopeBar withAuth />
 
         <Panel title="Active verification (oracle)" sub="Scope-gated HTTP probes that prove a finding → Confirmed" className="mt-8">
           <div className="grid grid-3" style={{ alignItems: 'end' }}>

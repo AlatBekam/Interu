@@ -28,6 +28,7 @@ import type { HttpReq, HttpRes } from './http'
 import { evalBool, type DslContext } from './dsl'
 import { kevFor, kevByProduct, type KevInfo } from './kev'
 import { detectProducts, type ProductHit } from './fingerprint'
+import { redactSecrets } from './auth'
 
 export type RuleSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 export type Confidence = 'suspected' | 'confirmed'
@@ -314,7 +315,7 @@ function toFinding(t: Template, target: string, evidence: string, source: Findin
   const extractedBits = extra.extracted
     ? Object.entries(extra.extracted).map(([k, v]) => `${k}=${v.join(', ')}`).join(' · ')
     : ''
-  const fullEvidence = [evidence, extractedBits].filter(Boolean).join(' · ') || t.info.name
+  const fullEvidence = redactSecrets([evidence, extractedBits].filter(Boolean).join(' · ') || t.info.name)
   const kev = kevFor(c.cve)
   return {
     key: `${t.id}|${target}${extra.port != null ? ':' + extra.port : ''}`,

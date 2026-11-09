@@ -86,7 +86,7 @@ export default function Intruder() {
           <input type="text" value={target} onChange={(e) => setTarget(e.target.value)} placeholder="https://target-host:port" className="mono" style={{ flex: 1, minWidth: 240 }} />
         </div>
 
-        <ScopeBar />
+        <ScopeBar withAuth />
         {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="split mt-16">

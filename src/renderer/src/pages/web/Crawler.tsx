@@ -162,6 +162,11 @@ export default function Crawler() {
             addLog('  ! blocked by scope — stopped')
             break
           }
+          if (res.authLost) {
+            blocked = true
+            addLog('  ! login session expired — stopped. Log in again in the Interu Browser, then Refresh.')
+            break
+          }
           const ct = headerValue(res.rawHeaders, 'content-type')
           const type = contentTypeLabel(ct)
           // Parse text-like bodies for links/forms; skip opaque binaries.
@@ -309,7 +314,7 @@ export default function Crawler() {
           </label>
         </div>
 
-        <ScopeBar />
+        <ScopeBar withAuth />
         {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="grid grid-4 mt-16">

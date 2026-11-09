@@ -29,7 +29,7 @@ export default function Repeater() {
 
   const send = async () => {
     setSending(true); setResponse(''); setMeta(null); setNote(null)
-    const req = parseRawRequest(request, target)
+    const req = { ...parseRawRequest(request, target), manual: true }
     if (!inScopeOrNote(req.url, settings.scope, 'repeater')) {
       setNote({ kind: 'block', text: `${new URL(req.url).hostname} belum ada di Authorized scope. Tambahkan dulu di bar di atas.` })
       setSending(false)
@@ -69,7 +69,7 @@ export default function Repeater() {
           )}
         </div>
 
-        <ScopeBar />
+        <ScopeBar withAuth />
         {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="split mt-16">

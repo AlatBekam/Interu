@@ -7,6 +7,7 @@ import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunn
 import { exportCA, deleteCA, caFingerprint, CA_COMMON_NAME } from './ca'
 import { runScan, cancelScan } from './scan'
 import { openProxiedBrowser, registerBrowserIpc } from './browser'
+import { sendAuthed, registerAuthIpc, PROXIED_PARTITION } from './auth'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
 import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, MAX_ATTEMPTS } from '../shared/scan'
@@ -132,8 +133,9 @@ if (!gotLock) {
         error: 'Target host is not in the authorized scope. Add it in Scope first.'
       }
     }
-    return sendHttp(req)
+    return sendAuthed(req, sendHttp)
   })
+  registerAuthIpc()
 
   // --- Real TCP connect scanner, gated by the operator-declared scope ---
   let scanSeq = 1
@@ -227,7 +229,7 @@ if (!gotLock) {
       const url = startUrl && /^https?:\/\//.test(startUrl) ? startUrl : 'http://example.com/'
       // Non-persistent session: a clean browser profile each time the app runs,
       // so stale cache / service workers from a previous run can't blank the page.
-      const ses = session.fromPartition('interu-proxied')
+      const ses = session.fromPartition(PROXIED_PARTITION)
       // Configure the session's proxy only when it changed, to avoid disrupting
       // an already-open window on repeated opens.
       if (proxiedSessionPort !== port) {

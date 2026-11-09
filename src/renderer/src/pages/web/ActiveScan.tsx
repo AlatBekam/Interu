@@ -51,8 +51,11 @@ export default function ActiveScan() {
   const navigate = useNavigate()
   const addLog = (s: string): void => setLog((l) => [...l.slice(-500), s])
 
-  const get = async (url: string): Promise<HttpRes> =>
-    sendLive({ method: 'GET', url, headers: { 'User-Agent': 'Interu/1.0', Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' }, timeoutMs: 12000 }, settings.scope)
+  const get = async (url: string): Promise<HttpRes> => {
+    const res = await sendLive({ method: 'GET', url, headers: { 'User-Agent': 'Interu/1.0', Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' }, timeoutMs: 12000 }, settings.scope)
+    if (res.authLost && !stopRef.current) { stopRef.current = true; addLog('  ! login session expired — stopped. Log in again in the Interu Browser, then Refresh.') }
+    return res
+  }
 
   const launch = async (): Promise<void> => {
     if (!hasHttp || !window.ruy?.http) { setNote({ kind: 'error', text: 'Bridge HTTP tidak tersedia (jalankan sebagai aplikasi desktop).' }); return }
@@ -241,7 +244,7 @@ export default function ActiveScan() {
           <label className="flex gap-6 items-center"><input type="checkbox" checked={doAccess} disabled={running} onChange={(e) => setDoAccess(e.target.checked)} />Access/CSRF</label>
         </div>
 
-        <ScopeBar />
+        <ScopeBar withAuth />
         {note && <Note kind={note.kind}>{note.text}</Note>}
 
         <div className="grid grid-4 mt-16">

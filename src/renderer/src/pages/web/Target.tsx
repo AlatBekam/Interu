@@ -57,6 +57,7 @@ export default function Target() {
       if (stopFlag.current) break
       const path = WORDLIST[i]
       const res = await sendLive({ method: 'GET', url: base + path, headers: { 'User-Agent': 'Interu/1.0' } }, settings.scope)
+      if (res.authLost) { stopFlag.current = true; setNote({ kind: 'error', text: 'Login session expired. Log in again in the Interu Browser, then Refresh.' }); break }
       if (res.ok && res.status !== 404) {
         setHits((h) => [...h, { path, status: res.status ?? 0, length: res.size, ms: res.timingMs, raw: res.raw }])
       }
@@ -83,7 +84,7 @@ export default function Target() {
           )}
         </div>
 
-        <ScopeBar />
+        <ScopeBar withAuth />
         {note && <Note kind={note.kind}>{note.text}</Note>}
 
         {(running || hits.length > 0) && <div className="mb-16 mt-16"><Meter value={progress} tone={progress === 100 ? 'ok' : undefined} /></div>}

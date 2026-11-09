@@ -9,6 +9,8 @@ export interface HttpReq {
   headers: Record<string, string>
   body?: string
   timeoutMs?: number
+  /** A request the operator sends by hand (Repeater): auth is still attached, the logout/session guards are not applied. */
+  manual?: boolean
 }
 
 export interface HttpRes {
@@ -23,6 +25,8 @@ export interface HttpRes {
   error?: string
   /** true when the request was blocked by the authorization scope gate */
   blocked?: boolean
+  /** true when the login session behind the attached credentials has expired; automated scans stop on it */
+  authLost?: boolean
 }
 
 /**

@@ -1,6 +1,6 @@
 import type { HttpReq, HttpRes } from '../../../shared/http'
 import { hostInScope } from '../../../shared/http'
-import { noteScopeBlock } from '../store/activity'
+import { noteScopeBlock, pushActivity } from '../store/activity'
 
 export type { HttpReq, HttpRes }
 
@@ -62,6 +62,17 @@ export function inScopeOrNote(url: string, scope: string[], via: string): boolea
   return ok
 }
 
+let authNoticed = false
+/** Called when credentials change or are refreshed, so the next expiry is reported again. */
+export function resetAuthNotice(): void { authNoticed = false }
+
+/** Report an expired login session once (until credentials are changed or refreshed). */
+export function noteAuthLost(target: string): void {
+  if (authNoticed) return
+  authNoticed = true
+  pushActivity({ ts: new Date().toISOString(), level: 'warn', category: 'scan', message: 'Login session expired: authenticated scan stopped. Log in again in the Interu Browser, then Refresh.', target })
+}
+
 /** Send a real request through the main process, gated by scope. */
 export async function sendLive(req: HttpReq, scope: string[]): Promise<HttpRes> {
   if (!window.ruy?.http) {
@@ -69,5 +80,6 @@ export async function sendLive(req: HttpReq, scope: string[]): Promise<HttpRes> 
   }
   const res = await window.ruy.http.send(req, scope)
   if (res.blocked) noteScopeBlock(req.url, 'http')
+  if (res.authLost) noteAuthLost(req.url)
   return res
 }

@@ -77,6 +77,8 @@ beforeAll(async () => {
   while ((await A.page.locator('.pill-ok').count()) > 0) await A.page.locator('.pill-ok span[title="Remove"]').first().click()
   await A.page.getByPlaceholder('host.example.com / 10.0.0.0/24').fill(HOST)
   await A.page.getByRole('button', { name: 'Add' }).click()
+  // 8080 may be taken (e.g. by WSL's relay), so use a port of our own.
+  await A.page.locator('input[type="number"]').fill('18096')
   await A.page.getByRole('button', { name: 'Start', exact: true }).click()
   await A.page.getByText('Proxy running').waitFor({ state: 'visible', timeout: 15_000 })
 }, 90_000)
