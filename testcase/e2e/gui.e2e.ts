@@ -36,7 +36,7 @@ describe('GUI e2e — Repeater Live against a real target (main build)', () => {
     const page = A.page
     await nav(page, 'Repeater')
     await page.getByPlaceholder('https://target-host:port').fill(TARGET_URL)
-    await page.locator('textarea.code-pane').fill(
+    await page.locator('.split textarea.code-pane').fill(
       `GET / HTTP/1.1\nHost: ${TARGET_HOST}\nUser-Agent: Interu-E2E\nAccept: */*\n\n`
     )
     await clearScope(page) // start from a known-empty scope (no isolation on main)

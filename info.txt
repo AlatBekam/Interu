@@ -121,8 +121,8 @@ Struktur penting:
   [DONE] Active Scan  : autopilot scanner vuln (scope-gated), oracle FP-safe:
                         SQLi error-based + reflected XSS -> Confirmed;
                         IDOR / access-control / CSRF -> Suspected (tak auto)  (BARU)
-  [DONE] Scan terautentikasi : scan di balik login. Sumber kredensial: cookie sesi
-                        Interu Browser ATAU header manual (Authorization, dst).
+  [DONE] Scan terautentikasi : scan di balik login. Kredensial = header yang DITEMPEL operator
+                        (Authorization: Bearer ..., Cookie: ...), hanya di memori main process.
                         Hanya terkirim ke host in-scope; URL logout/delete dilewati;
                         scan berhenti saat sesi habis (401 / redirect ke login);
                         nilai cookie/token disamarkan di evidence       (BARU)

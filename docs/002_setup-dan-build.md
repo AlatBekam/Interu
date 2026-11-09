@@ -71,9 +71,9 @@ npx vitest run --config testcase/e2e/vitest.config.ts testcase/e2e/browser.e2e.t
 | `fingerprint.e2e.ts` | Deep scan: temuan produk KEV tidak dihitung sebagai "actively exploited" |
 | `monitor.e2e.ts` | Exposure Monitor hanya menampilkan aktivitas nyata; tidak ada halaman palsu |
 | `browser.e2e.ts` | Address bar, back/forward, skema terlarang, `target=_blank`, trafik tercatat di HTTP History |
-| `auth-scan.e2e.ts` | Scan terautentikasi: cookie browser, header manual, lewati logout, sesi habis + Refresh |
+| `auth-scan.e2e.ts` | Scan terautentikasi dengan header yang ditempel: Bearer, baris Cookie, header terlarang ditolak, crawler melewati logout/delete, sesi habis + Refresh |
 | `ui-audit.e2e.ts` | Setiap halaman di tema gelap dan terang: tanpa error dan tanpa overflow; menyimpan tangkapan layar |
-| `webgoat.e2e.ts` | **Opsional**, hanya jalan bila `WEBGOAT_URL`, `WEBGOAT_USER`, `WEBGOAT_PASS` diisi; menguji scan terautentikasi ke WebGoat milik sendiri |
+| `webgoat.e2e.ts` | **Opsional**, hanya jalan bila `WEBGOAT_URL`, `WEBGOAT_USER`, `WEBGOAT_PASS` diisi; login HTTP biasa lalu menempel cookie sesi sebagai header, membandingkan crawl tanpa dan dengan login pada WebGoat milik sendiri |
 
 Port 8080 sering dipakai proses lain (mis. relay WSL), jadi spec yang menyalakan proxy memakai port sendiri lewat kolom port di halaman Proxy.
 

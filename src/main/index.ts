@@ -7,7 +7,7 @@ import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunn
 import { exportCA, deleteCA, caFingerprint, CA_COMMON_NAME } from './ca'
 import { runScan, cancelScan } from './scan'
 import { openProxiedBrowser, registerBrowserIpc } from './browser'
-import { sendAuthed, registerAuthIpc, PROXIED_PARTITION } from './auth'
+import { sendAuthed, registerAuthIpc } from './auth'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
 import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, MAX_ATTEMPTS } from '../shared/scan'
@@ -229,7 +229,7 @@ if (!gotLock) {
       const url = startUrl && /^https?:\/\//.test(startUrl) ? startUrl : 'http://example.com/'
       // Non-persistent session: a clean browser profile each time the app runs,
       // so stale cache / service workers from a previous run can't blank the page.
-      const ses = session.fromPartition(PROXIED_PARTITION)
+      const ses = session.fromPartition('interu-proxied')
       // Configure the session's proxy only when it changed, to avoid disrupting
       // an already-open window on repeated opens.
       if (proxiedSessionPort !== port) {

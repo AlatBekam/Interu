@@ -27,7 +27,7 @@ Kode bersama di `../src/shared/` dipakai ketiga root build karena bebas framewor
 | `ruy.platform` | string | — | `process.platform`. |
 | `ruy.versions` | obj | — | Versi electron/chrome/node. |
 | `ruy.http.send(req, scope)` | invoke | `ruy:http` | Kirim HTTP(S) nyata, scope-gated; kredensial scan terautentikasi ditambahkan di main setelah cek scope. |
-| `ruy.auth.set/get/refresh/status` | invoke | `ruy:auth:*` | Kredensial scan terautentikasi (cookie Interu Browser, header manual); nilai tidak pernah kembali ke renderer. |
+| `ruy.auth.set/get/refresh/status` | invoke | `ruy:auth:*` | Header scan terautentikasi yang ditempel operator; nilainya tidak pernah kembali ke renderer. |
 | `ruy.proxy.start(port)` | invoke | `ruy:proxy:start` | Start proxy di port. |
 | `ruy.proxy.stop()` | invoke | `ruy:proxy:stop` | Stop proxy. |
 | `ruy.proxy.status()` | invoke | `ruy:proxy:status` | `{ running }`. |
@@ -47,7 +47,7 @@ Kode bersama di `../src/shared/` dipakai ketiga root build karena bebas framewor
 | Channel | Arah | Mekanisme | Handler / sumber | Fungsi |
 |---|---|---|---|---|
 | `ruy:http` | renderer→main | `ipcMain.handle` | `sendAuthed` → `sendHttp` (`../src/main/auth.ts`, `http.ts`) | Kirim HTTP nyata; **scope-gated** via `hostInScope`, lalu kredensial ditambahkan. |
-| `ruy:auth:set\|get\|refresh\|status` | renderer→main | `ipcMain.handle` | `registerAuthIpc` (`../src/main/auth.ts`) | Simpan/baca konfigurasi kredensial di memori; `status` hanya mengembalikan jumlah cookie dan nama header. |
+| `ruy:auth:set\|get\|refresh\|status` | renderer→main | `ipcMain.handle` | `registerAuthIpc` (`../src/main/auth.ts`) | Simpan/baca header di memori; `status` hanya mengembalikan nama header dan status sesi. |
 | `ruy:proxy:start` | renderer→main | `handle` | `startProxy` (`../src/main/proxy.ts`) | Start proxy (default 8080). |
 | `ruy:proxy:stop` | renderer→main | `handle` | `stopProxy` | Stop proxy, reset session port. |
 | `ruy:proxy:status` | renderer→main | `handle` | `isRunning` | Status jalan/tidak. |

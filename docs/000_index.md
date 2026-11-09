@@ -61,7 +61,7 @@ Dokumentasi teknis **Interu — Cyber Operations** (Kartika Cyber Hackathon 2026
 |---|---|---|
 | [040 Pengantar Detection](040_detection.md) | — | Alur scanner/proxy/probe → Rule Engine → findings |
 | [041 Rule Engine](041_rule-engine.md) | ✅ | 408 template bergaya Nuclei; deteksi produk KEV; verifikasi probe; Suspected vs Confirmed |
-| [042 Scan Terautentikasi](042_scan-terautentikasi.md) | ✅ | Scan di balik login: cookie Interu Browser atau header manual; lewati logout; berhenti saat sesi habis |
+| [042 Scan Terautentikasi](042_scan-terautentikasi.md) | ✅ | Scan di balik login: header/token yang ditempel; lewati logout; berhenti saat sesi habis |
 
 ### 09 — Penutup
 

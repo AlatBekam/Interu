@@ -70,7 +70,7 @@ export function resetAuthNotice(): void { authNoticed = false }
 export function noteAuthLost(target: string): void {
   if (authNoticed) return
   authNoticed = true
-  pushActivity({ ts: new Date().toISOString(), level: 'warn', category: 'scan', message: 'Login session expired: authenticated scan stopped. Log in again in the Interu Browser, then Refresh.', target })
+  pushActivity({ ts: new Date().toISOString(), level: 'warn', category: 'scan', message: 'Login session expired: authenticated scan stopped. Paste a fresh token, then press Refresh.', target })
 }
 
 /** Send a real request through the main process, gated by scope. */

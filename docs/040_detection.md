@@ -46,7 +46,7 @@ flowchart LR
 | Umpan dari Scanner | ✅ | Otomatis setelah scan Live, termasuk hasil parsial |
 | Umpan dari Proxy | ✅ | Setiap respons in-scope |
 | Probe aktif | ✅ | 333 template aktif, scope-gated lewat `ruy:http`, dengan baseline soft-404 |
-| Scan terautentikasi | ✅ | Cookie Interu Browser atau header manual, lihat [042](042_scan-terautentikasi.md) |
+| Scan terautentikasi | ✅ | Header yang ditempel (token/cookie), lihat [042](042_scan-terautentikasi.md) |
 | Store temuan | ✅ | localStorage, de-dup per key, maks 1000 |
 | Upgrade Suspected → Confirmed | 🟡 | Korelasi `group`: confirmed menggeser suspected (`superseded`). Pasangan otomatis suspected-port → confirmed-aktif belum ada |
 | Laporan dari temuan | ⚪ | Belum ada halaman laporan (ide baru di [090](090_roadmap.md)) |

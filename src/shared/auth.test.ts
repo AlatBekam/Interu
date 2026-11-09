@@ -25,27 +25,20 @@ describe('parseAuthHeaders', () => {
 })
 
 describe('mergeAuth', () => {
-  it('adds manual headers and browser cookies when the request has none', () => {
-    const m = mergeAuth({ 'User-Agent': 'u' }, { Authorization: 'Bearer t' }, 'sid=1')
+  it('adds the pasted headers to a request that has none of them', () => {
+    const m = mergeAuth({ 'User-Agent': 'u' }, { Authorization: 'Bearer t', Cookie: 'sid=1' })
     expect(m.applied).toBe(true)
     expect(m.headers).toEqual({ 'User-Agent': 'u', Authorization: 'Bearer t', Cookie: 'sid=1' })
   })
 
   it("never overrides what the request already sets (case-insensitive)", () => {
-    const m = mergeAuth({ cookie: 'mine=1', authorization: 'Basic x' }, { Authorization: 'Bearer t', Cookie: 'manual=1' }, 'sid=1')
+    const m = mergeAuth({ cookie: 'mine=1', authorization: 'Basic x' }, { Authorization: 'Bearer t', Cookie: 'manual=1' })
     expect(m.applied).toBe(false)
     expect(m.headers).toEqual({ cookie: 'mine=1', authorization: 'Basic x' })
   })
 
-  it('a manual Cookie header wins over browser cookies (no double Cookie)', () => {
-    const m = mergeAuth({}, { Cookie: 'manual=1' }, 'sid=1')
-    expect(m.headers).toEqual({ Cookie: 'manual=1' })
-    expect(m.applied).toBe(true)
-  })
-
   it('is a no-op without credentials', () => {
-    const m = mergeAuth({ A: '1' }, {}, '')
-    expect(m).toEqual({ headers: { A: '1' }, applied: false })
+    expect(mergeAuth({ A: '1' }, {})).toEqual({ headers: { A: '1' }, applied: false })
   })
 })
 

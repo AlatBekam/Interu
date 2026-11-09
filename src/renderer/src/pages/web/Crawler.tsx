@@ -164,7 +164,7 @@ export default function Crawler() {
           }
           if (res.authLost) {
             blocked = true
-            addLog('  ! login session expired — stopped. Log in again in the Interu Browser, then Refresh.')
+            addLog('  ! login session expired — stopped. Paste a fresh token, then press Refresh.')
             break
           }
           const ct = headerValue(res.rawHeaders, 'content-type')

@@ -1,11 +1,9 @@
 // Authenticated scanning: pure rules shared by the main process (which attaches the
-// credentials) and the tests. Credentials come from two places the operator controls:
-// cookies of the Interu Browser session, and headers typed in by hand.
+// credentials) and the tests. The only credentials are the headers the operator pastes
+// (an Authorization token, an API key, or a Cookie line copied from their own session).
 
 export interface AuthConfig {
-  /** Attach the cookies of the Interu Browser session (matched to each request URL). */
-  cookies: boolean
-  /** Extra headers, one `Name: value` per line (Authorization, X-Api-Key, Cookie ...). */
+  /** Headers, one `Name: value` per line (Authorization, X-Api-Key, Cookie ...). */
   headers: string
 }
 
@@ -35,8 +33,7 @@ export function parseAuthHeaders(text: string): { headers: Record<string, string
 /** Add credentials to a request without ever overriding a header the request already sets. */
 export function mergeAuth(
   reqHeaders: Record<string, string>,
-  manual: Record<string, string>,
-  cookieHeader: string
+  manual: Record<string, string>
 ): { headers: Record<string, string>; applied: boolean } {
   const headers = { ...reqHeaders }
   const has = (n: string): boolean => Object.keys(headers).some((k) => k.toLowerCase() === n.toLowerCase())
@@ -44,7 +41,6 @@ export function mergeAuth(
   for (const [k, v] of Object.entries(manual)) {
     if (!has(k)) { headers[k] = v; applied = true }
   }
-  if (cookieHeader && !has('cookie')) { headers.Cookie = cookieHeader; applied = true }
   return { headers, applied }
 }
 

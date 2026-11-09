@@ -17,13 +17,12 @@ const api = {
     send: (req: HttpReq, scope: string[]): Promise<HttpRes> =>
       ipcRenderer.invoke('ruy:http', { req, scope })
   },
-  // Credentials for authenticated scanning live in the main process; values never come back here.
+  // Pasted headers for authenticated scanning live in the main process; values never come back here.
   auth: {
     set: (c: AuthConfig): Promise<{ ok: boolean; errors: string[] }> => ipcRenderer.invoke('ruy:auth:set', c),
     get: (): Promise<AuthConfig> => ipcRenderer.invoke('ruy:auth:get'),
     refresh: (): Promise<{ ok: boolean }> => ipcRenderer.invoke('ruy:auth:refresh'),
-    status: (scopeHosts: string[]): Promise<{ lost: boolean; cookies: boolean; headerNames: string[]; cookieCounts: Record<string, number> }> =>
-      ipcRenderer.invoke('ruy:auth:status', scopeHosts)
+    status: (): Promise<{ lost: boolean; headerNames: string[] }> => ipcRenderer.invoke('ruy:auth:status')
   },
   scan: {
     run: (req: ScanRequest, scope: string[], scanId: number): Promise<ScanResult> =>

@@ -53,7 +53,7 @@ export default function ActiveScan() {
 
   const get = async (url: string): Promise<HttpRes> => {
     const res = await sendLive({ method: 'GET', url, headers: { 'User-Agent': 'Interu/1.0', Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' }, timeoutMs: 12000 }, settings.scope)
-    if (res.authLost && !stopRef.current) { stopRef.current = true; addLog('  ! login session expired — stopped. Log in again in the Interu Browser, then Refresh.') }
+    if (res.authLost && !stopRef.current) { stopRef.current = true; addLog('  ! login session expired — stopped. Paste a fresh token, then press Refresh.') }
     return res
   }
 

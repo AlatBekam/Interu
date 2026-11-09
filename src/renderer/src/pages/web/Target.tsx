@@ -57,7 +57,7 @@ export default function Target() {
       if (stopFlag.current) break
       const path = WORDLIST[i]
       const res = await sendLive({ method: 'GET', url: base + path, headers: { 'User-Agent': 'Interu/1.0' } }, settings.scope)
-      if (res.authLost) { stopFlag.current = true; setNote({ kind: 'error', text: 'Login session expired. Log in again in the Interu Browser, then Refresh.' }); break }
+      if (res.authLost) { stopFlag.current = true; setNote({ kind: 'error', text: 'Login session expired. Paste a fresh token, then press Refresh.' }); break }
       if (res.ok && res.status !== 404) {
         setHits((h) => [...h, { path, status: res.status ?? 0, length: res.size, ms: res.timingMs, raw: res.raw }])
       }

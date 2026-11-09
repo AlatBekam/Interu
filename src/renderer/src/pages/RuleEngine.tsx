@@ -116,7 +116,7 @@ export default function RuleEngine() {
       if (baseRes.authLost) {
         noteAuthLost(vars.BaseURL)
         setLog((l) => [...l, '  ! login session expired — dibatalkan'])
-        setNote({ kind: 'error', text: 'Sesi login habis. Login ulang di Interu Browser lalu tekan Refresh.' })
+        setNote({ kind: 'error', text: 'Sesi login habis. Tempel token baru lalu tekan Refresh.' })
         setRunning(false); return
       }
       if (!baseRes.ok) {

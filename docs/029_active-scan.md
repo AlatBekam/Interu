@@ -51,7 +51,7 @@ flowchart TD
 ## 5. Cara pakai
 
 1. Buka **Active Scan** (`/web/activescan`).
-2. Masukkan host target ke **Authorized scope** (hanya target milik sendiri / berizin). Untuk area login, aktifkan cookie Interu Browser di AuthBar dan gunakan akun uji.
+2. Masukkan host target ke **Authorized scope** (hanya target milik sendiri / berizin). Untuk area login, tempel token atau baris `Cookie` di kotak Headers pada AuthBar dan gunakan akun uji.
 3. Isi URL, pilih kelas kerentanan, klik **Launch Scan**; **Stop** menghentikan.
 4. Klik temuan untuk melihat evidence/remediation/respons; verifikasi manual yang Suspected, atau kirim ke Repeater.
 

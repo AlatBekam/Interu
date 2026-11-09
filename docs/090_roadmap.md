@@ -59,7 +59,7 @@ Urutan ini mengikuti dependensi data: scanner menghasilkan aset, Rule Engine men
 | 10 | Settings: editor scope, export/import pengaturan | | [037](037_settings.md) |
 | 11 | UI industrial dengan token peran, guard test, dan audit e2e | ✔ | [092](092_panduan-tampilan.md) |
 | 12 | Browser Interu dengan address bar, back/forward, reload/stop (tanpa tab) | ✔ | [021](021_proxy-mitm.md) |
-| 13 | Scan terautentikasi: cookie Interu Browser atau header manual, lewati logout, berhenti saat sesi habis | ✔ | [042](042_scan-terautentikasi.md) |
+| 13 | Scan terautentikasi dengan header yang ditempel, lewati logout, berhenti saat sesi habis | ✔ | [042](042_scan-terautentikasi.md) |
 | 14 | Crawler dan Active Scan terdokumentasi | ✔ | [028](028_crawler.md), [029](029_active-scan.md) |
 | 15 | Intruder berhenti otomatis saat sesi login habis; ikut mengikuti redirect untuk alur login | | [042](042_scan-terautentikasi.md) |
 
