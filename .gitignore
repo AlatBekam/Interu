@@ -4,6 +4,7 @@ release/
 dist/
 audit/*-profile/
 presentation/preview/
+presentation/preview-juri/
 presentation/~$*.pptx
 audit/docker-public-config/
 *.log

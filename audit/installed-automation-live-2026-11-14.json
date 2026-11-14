@@ -1,0 +1,15 @@
+{
+  "appVersion": "1.4.0",
+  "target": "http://localhost:3000/",
+  "targetKind": "local RUY training lab",
+  "runId": "21b2f577-6cf9-4e5f-98d1-1180a1c9c9d2",
+  "status": "completed",
+  "reason": "Selected checks completed",
+  "requests": 894,
+  "pages": 40,
+  "findings": 175,
+  "transportErrors": 0,
+  "observedVia": "installed Interu 1.4.0 Automation UI",
+  "screenshot": "../presentation/assets/automation-result.png",
+  "interpretation": "Findings include different confidence levels and may overlap; this count is not 175 unique verified vulnerabilities."
+}

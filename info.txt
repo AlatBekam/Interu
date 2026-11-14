@@ -102,6 +102,10 @@ PENGUJIAN YANG SUDAH DILAKUKAN
 - Installer 1.4.0 sudah terpasang; pemeriksaan aplikasi terpasang tersimpan
   di audit\installed-verification.json. Versi aplikasi dan layar Automation
   berhasil diperiksa.
+- Run langsung melalui Automation aplikasi terpasang pada lab RUY lokal
+  selesai: 894 request, 40 halaman, 175 temuan lintas tingkat keyakinan,
+  dan 0 kesalahan transport. Ini bukan 175 kerentanan unik.
+  Bukti: audit\installed-automation-live-2026-11-14.json.
 - Run browser pada 10 target tersimpan di audit\ten-browser-benchmark.json.
   Tidak ada form registrasi yang cocok dalam run tersebut dan jumlah temuan
   inti terkonfirmasi tidak bertambah. Rangkuman ada di
