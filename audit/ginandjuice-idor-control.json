@@ -1,0 +1,11 @@
+{
+  "target": "https://ginandjuice.shop",
+  "method": "unauthenticated GET requests, no login session",
+  "observations": [
+    { "path": "/catalog/product?productId=2", "status": 200, "bytes": 11999 },
+    { "path": "/catalog/product?productId=3", "status": 200, "bytes": 12256 },
+    { "path": "/blog/post?postId=3", "status": 200, "bytes": 13360 },
+    { "path": "/blog/post?postId=4", "status": 200, "bytes": 12237 }
+  ],
+  "interpretation": "Distinct public objects do not establish an authorization boundary or IDOR."
+}

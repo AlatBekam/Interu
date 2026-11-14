@@ -1,0 +1,19 @@
+name: interu-50-lab
+services:
+  vulnerable-web:
+    build: .
+    image: interu-50-lab:local
+    container_name: interu-50-lab
+    ports:
+      - "127.0.0.1:3000:3000"
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    pids_limit: 64
+    mem_limit: 128m
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:3000/health', timeout=2)"]
+      interval: 10s
+      timeout: 3s
+      retries: 3

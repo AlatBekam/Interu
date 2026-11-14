@@ -41,7 +41,7 @@ export function originOf(url: string): string {
 /** Build a `curl` command from a raw request + target (Burp-style "Copy as curl"). */
 export function toCurl(raw: string, base: string): string {
   const req = parseRawRequest(raw, base)
-  const parts = [`curl -k -X ${req.method} '${req.url}'`]
+  const parts = [`curl -X ${req.method} '${req.url}'`]
   for (const [k, v] of Object.entries(req.headers)) {
     if (k.toLowerCase() === 'content-length') continue
     parts.push(`  -H '${k}: ${v}'`)

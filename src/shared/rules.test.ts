@@ -27,6 +27,15 @@ describe('cookie rules', () => {
     expect(found).not.toContain('http-cookie-httponly')
     expect(found).not.toContain('http-cookie-secure')
   })
+  it('ignores infrastructure cookies but still checks an application session', () => {
+    const infrastructure = ids('set-cookie: AWSALB=abc; Path=/\r\nset-cookie: AWSALBCORS=def; Path=/')
+    expect(infrastructure).not.toContain('http-cookie-httponly')
+    expect(infrastructure).not.toContain('http-cookie-secure')
+    expect(infrastructure).not.toContain('http-cookie-samesite')
+    const mixed = ids('set-cookie: AWSALB=abc; Path=/\r\nset-cookie: JSESSIONID=abc; Path=/')
+    expect(mixed).toContain('http-cookie-httponly')
+    expect(mixed).toContain('http-cookie-secure')
+  })
 })
 
 describe('finding targets', () => {
@@ -37,6 +46,14 @@ describe('finding targets', () => {
 })
 
 describe('new passive templates', () => {
+  it('reports password fields in a user-list JSON without storing their values', () => {
+    const e: ProxyLogEntry = { ...entry('content-type: application/json', 'https://shop.test/api/users'),
+      response: 'HTTP/1.1 200 OK\r\ncontent-type: application/json\r\n\r\n{"users":[{"username":"demo","password":"example-secret-value"}]}' }
+    const finding = analyzeHttpResponse(e).find(f => f.templateId === 'http-user-password-fields')
+    expect(finding?.confidence).toBe('confirmed')
+    expect(finding?.evidence).toContain('1 user record')
+    expect(JSON.stringify(finding)).not.toContain('example-secret-value')
+  })
   it('flags a wildcard CORS header', () => {
     expect(ids('access-control-allow-origin: *')).toContain('http-cors-wildcard')
   })
@@ -54,7 +71,8 @@ describe('new passive templates', () => {
     }
     const f = analyzeHttpResponse(e).find((x) => x.templateId === 'http-secret-leak')
     expect(f).toBeTruthy()
-    expect(f?.extracted?.secret).toContain('AKIAIOSFODNN7EXAMPLE')
+    expect(f?.extracted?.secret).toContain('<redacted>')
+    expect(JSON.stringify(f)).not.toContain('AKIAIOSFODNN7EXAMPLE')
   })
   it('extracts the Server version via kval', () => {
     const f = analyzeHttpResponse(entry('server: nginx/1.18.0')).find((x) => x.templateId === 'http-server-version')

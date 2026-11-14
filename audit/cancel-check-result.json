@@ -1,0 +1,5 @@
+{
+  "test": "cancel during banner read on self-created loopback listener",
+  "connections": 2,
+  "result": "still_pending_after_1000ms"
+}

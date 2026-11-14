@@ -1,0 +1,101 @@
+{
+  "target": "https://ginandjuice.shop/",
+  "status": "completed",
+  "reason": "Selected checks completed",
+  "requests": 60,
+  "pages": 30,
+  "errors": 1,
+  "startedAt": "2026-11-14T01:46:51.715Z",
+  "finishedAt": "2026-11-14T01:47:23.212Z",
+  "findings": [
+    {
+      "name": "Missing HTTP Strict-Transport-Security",
+      "templateId": "http-missing-hsts",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: strict-transport-security",
+      "matchedAt": "https://ginandjuice.shop/catalog/product?productId=17",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Content-Security-Policy",
+      "templateId": "http-missing-csp",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: content-security-policy",
+      "matchedAt": "https://ginandjuice.shop/catalog/product?productId=17",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without SameSite attribute",
+      "templateId": "http-cookie-samesite",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: TrackingId=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/catalog",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Content-Type-Options: nosniff",
+      "templateId": "http-missing-xcto",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: x-content-type-options",
+      "matchedAt": "https://ginandjuice.shop/catalog/product?productId=17",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Referrer-Policy",
+      "templateId": "http-missing-referrer-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: referrer-policy",
+      "matchedAt": "https://ginandjuice.shop/catalog/product?productId=17",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Permissions-Policy",
+      "templateId": "http-missing-permissions-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: permissions-policy, feature-policy",
+      "matchedAt": "https://ginandjuice.shop/catalog/product?productId=17",
+      "source": "proxy"
+    }
+  ],
+  "log": [
+    "2026-11-14T01:46:51.724Z Rule-based automation started",
+    "2026-11-14T01:46:52.919Z Crawled 200 https://ginandjuice.shop/",
+    "2026-11-14T01:46:53.333Z Crawled 200 https://ginandjuice.shop/resources/js/react.development.js",
+    "2026-11-14T01:46:54.435Z Crawled 200 https://ginandjuice.shop/resources/js/react-dom.development.js",
+    "2026-11-14T01:46:54.687Z Crawled 200 https://ginandjuice.shop/resources/js/angular_1-7-7.js",
+    "2026-11-14T01:46:55.170Z Crawled 200 https://ginandjuice.shop/catalog",
+    "2026-11-14T01:46:55.666Z Crawled 200 https://ginandjuice.shop/blog",
+    "2026-11-14T01:46:56.240Z Crawled 200 https://ginandjuice.shop/about",
+    "2026-11-14T01:46:56.785Z Request failed: unexpected end of file",
+    "2026-11-14T01:46:56.786Z Crawled ERR https://ginandjuice.shop/my-account",
+    "2026-11-14T01:46:57.195Z Crawled 200 https://ginandjuice.shop/catalog/cart",
+    "2026-11-14T01:46:57.714Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=1",
+    "2026-11-14T01:46:58.218Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=2",
+    "2026-11-14T01:46:58.727Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=3",
+    "2026-11-14T01:46:59.258Z Crawled 200 https://ginandjuice.shop/blog/post?postId=3",
+    "2026-11-14T01:46:59.740Z Crawled 200 https://ginandjuice.shop/blog/post?postId=4",
+    "2026-11-14T01:47:00.251Z Crawled 200 https://ginandjuice.shop/resources/js/subscribeNow.js",
+    "2026-11-14T01:47:00.811Z Crawled 200 https://ginandjuice.shop/resources/footer/js/scanme.js",
+    "2026-11-14T01:47:01.324Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=4",
+    "2026-11-14T01:47:01.786Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=5",
+    "2026-11-14T01:47:02.289Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=6",
+    "2026-11-14T01:47:02.830Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=7",
+    "2026-11-14T01:47:03.353Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=8",
+    "2026-11-14T01:47:03.860Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=9",
+    "2026-11-14T01:47:04.360Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=10",
+    "2026-11-14T01:47:04.865Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=11",
+    "2026-11-14T01:47:05.372Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=12",
+    "2026-11-14T01:47:05.883Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=13",
+    "2026-11-14T01:47:06.397Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=14",
+    "2026-11-14T01:47:06.919Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=15",
+    "2026-11-14T01:47:07.413Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=16",
+    "2026-11-14T01:47:07.923Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=17",
+    "2026-11-14T01:47:23.212Z completed: Selected checks completed; 60 requests, 6 findings"
+  ]
+}

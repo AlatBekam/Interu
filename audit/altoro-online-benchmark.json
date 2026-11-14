@@ -1,0 +1,158 @@
+{
+  "target": "http://demo.testfire.net/",
+  "status": "completed",
+  "reason": "Selected checks completed",
+  "requests": 56,
+  "pages": 35,
+  "errors": 0,
+  "startedAt": "2026-11-14T01:46:51.716Z",
+  "finishedAt": "2026-11-14T01:47:20.168Z",
+  "findings": [
+    {
+      "name": "Unencoded reflection (XSS candidate)",
+      "templateId": "webvuln-xss-reflected",
+      "severity": "high",
+      "confidence": "suspected",
+      "evidence": "Parameter \"query\" reflected the injected tag <x-interu-mwfqwmqj1> verbatim (unencoded) in an HTML response.",
+      "matchedAt": "http://demo.testfire.net/search.jsp?query=1",
+      "source": "active"
+    },
+    {
+      "name": "Apache Tomcat detected: 6 CVE in CISA KEV (version not verified)",
+      "templateId": "kev-product-tomcat",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "server: Apache-Coyote/1.1",
+      "source": "proxy"
+    },
+    {
+      "name": "State-changing form without anti-CSRF token",
+      "templateId": "webvuln-csrf-missing",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "A POST form (action http://demo.testfire.net/doLogin) performs a state-changing action but carries no anti-CSRF token field.",
+      "matchedAt": "http://demo.testfire.net/login.jsp",
+      "source": "active"
+    },
+    {
+      "name": "State-changing form without anti-CSRF token",
+      "templateId": "webvuln-csrf-missing",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "A POST form (action http://demo.testfire.net/sendFeedback) performs a state-changing action but carries no anti-CSRF token field.",
+      "matchedAt": "http://demo.testfire.net/feedback.jsp",
+      "source": "active"
+    },
+    {
+      "name": "Missing Content-Security-Policy",
+      "templateId": "http-missing-csp",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: content-security-policy",
+      "matchedAt": "http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Frame-Options (clickjacking)",
+      "templateId": "http-missing-xfo",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: x-frame-options, frame-ancestors",
+      "matchedAt": "http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without SameSite attribute",
+      "templateId": "http-cookie-samesite",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: JSESSIONID=<redacted>; Pat",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Server version disclosure",
+      "templateId": "http-server-version",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: server: Apache-Coyote/1.1 · server=Apache-Coyote/1.1",
+      "matchedAt": "http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Content-Type-Options: nosniff",
+      "templateId": "http-missing-xcto",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: x-content-type-options",
+      "matchedAt": "http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Referrer-Policy",
+      "templateId": "http-missing-referrer-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: referrer-policy",
+      "matchedAt": "http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Permissions-Policy",
+      "templateId": "http-missing-permissions-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: permissions-policy, feature-policy",
+      "matchedAt": "http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "source": "proxy"
+    },
+    {
+      "name": "Technology fingerprint: Java/Servlet (JSESSIONID)",
+      "templateId": "hdr-java",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: JSESSIONID=",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    }
+  ],
+  "log": [
+    "2026-11-14T01:46:51.724Z Rule-based automation started",
+    "2026-11-14T01:46:52.395Z Crawled 200 http://demo.testfire.net/",
+    "2026-11-14T01:46:52.793Z Crawled 200 http://demo.testfire.net/search.jsp",
+    "2026-11-14T01:46:53.137Z Crawled 200 http://demo.testfire.net/index.jsp",
+    "2026-11-14T01:46:53.641Z Crawled 200 http://demo.testfire.net/login.jsp",
+    "2026-11-14T01:46:54.151Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_contact.htm",
+    "2026-11-14T01:46:54.672Z Crawled 200 http://demo.testfire.net/feedback.jsp",
+    "2026-11-14T01:46:55.202Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal.htm",
+    "2026-11-14T01:46:55.687Z Crawled 200 http://demo.testfire.net/index.jsp?content=business.htm",
+    "2026-11-14T01:46:56.235Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside.htm",
+    "2026-11-14T01:46:56.730Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_deposit.htm",
+    "2026-11-14T01:46:57.219Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_checking.htm",
+    "2026-11-14T01:46:57.731Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_loans.htm",
+    "2026-11-14T01:46:58.241Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_cards.htm",
+    "2026-11-14T01:46:58.756Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_investments.htm",
+    "2026-11-14T01:46:59.269Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_other.htm",
+    "2026-11-14T01:46:59.765Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_deposit.htm",
+    "2026-11-14T01:47:00.283Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_lending.htm",
+    "2026-11-14T01:47:00.811Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_cards.htm",
+    "2026-11-14T01:47:01.325Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_insurance.htm",
+    "2026-11-14T01:47:01.808Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_retirement.htm",
+    "2026-11-14T01:47:02.319Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_other.htm",
+    "2026-11-14T01:47:02.828Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_about.htm",
+    "2026-11-14T01:47:03.340Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_investor.htm",
+    "2026-11-14T01:47:03.871Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_press.htm",
+    "2026-11-14T01:47:04.362Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_careers.htm",
+    "2026-11-14T01:47:04.875Z Crawled 200 http://demo.testfire.net/subscribe.jsp",
+    "2026-11-14T01:47:05.378Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_savings.htm",
+    "2026-11-14T01:47:05.891Z Crawled 200 http://demo.testfire.net/index.jsp?content=privacy.htm",
+    "2026-11-14T01:47:06.396Z Crawled 404 http://demo.testfire.net/default.jsp?content=security.htm",
+    "2026-11-14T01:47:06.918Z Crawled 200 http://demo.testfire.net/survey_questions.jsp",
+    "2026-11-14T01:47:07.422Z Crawled 200 http://demo.testfire.net/index.jsp?content=security.htm",
+    "2026-11-14T01:47:07.931Z Crawled 200 http://demo.testfire.net/status_check.jsp",
+    "2026-11-14T01:47:08.441Z Crawled 200 http://demo.testfire.net/swagger/index.html",
+    "2026-11-14T01:47:09.469Z Crawled 200 http://demo.testfire.net/index.jsp",
+    "2026-11-14T01:47:09.978Z Crawled 200 http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+    "2026-11-14T01:47:20.168Z completed: Selected checks completed; 56 requests, 12 findings"
+  ]
+}

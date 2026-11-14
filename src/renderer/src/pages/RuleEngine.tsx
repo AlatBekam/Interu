@@ -32,7 +32,7 @@ const hasHttp = typeof window !== 'undefined' && !!window.ruy?.http
 export default function RuleEngine() {
   const [settings] = useSettings()
   const findings = useFindings()
-  const [target, setTarget] = useState('http://127.0.0.1/')
+  const [target, setTarget] = useState('http://localhost:3000/')
   const [running, setRunning] = useState(false)
   const [progress, setProgress] = useState(0)
   const [log, setLog] = useState<string[]>([])
@@ -68,6 +68,10 @@ export default function RuleEngine() {
     try {
       const res = await window.ruy.http.send(req, settings.scope)
       if (res.blocked) { noteScopeBlock(req.url, 'rule-engine'); setLog((l) => [...l, '  ! blocked by scope']); return }
+      if (!res.ok || res.authLost || res.truncated || !res.status || (res.status >= 300 && res.status !== 404 && res.status !== 410)) {
+        setLog((l) => [...l, `  ! inconclusive — ${res.error || 'authentication, incomplete response or unexpected status'}; finding retained`])
+        return
+      }
       const still = matchActive(t, req.url, res, { req })
       if (still) setLog((l) => [...l, `  ✗ still present — ${still.evidence}`])
       else { removeFinding(f.key); setOpen(null); setLog((l) => [...l, '  + resolved — removed from findings']) }

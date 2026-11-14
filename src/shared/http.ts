@@ -27,6 +27,8 @@ export interface HttpRes {
   blocked?: boolean
   /** true when the login session behind the attached credentials has expired; automated scans stop on it */
   authLost?: boolean
+  /** Evidence hit a size limit; never use this as proof that an issue is fixed. */
+  truncated?: boolean
 }
 
 /**

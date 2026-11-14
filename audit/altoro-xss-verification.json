@@ -1,0 +1,8 @@
+{
+  "target": "http://demo.testfire.net/search.jsp",
+  "status": 200,
+  "payload": "<svg onload=\"window.__interuXssProof=1\">",
+  "reflected": true,
+  "executedInReplayedResponse": true,
+  "method": "browser parses exact server response; external requests blocked; no data change"
+}

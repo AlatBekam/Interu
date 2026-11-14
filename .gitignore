@@ -2,6 +2,10 @@ node_modules/
 out/
 release/
 dist/
+audit/*-profile/
+presentation/preview/
+presentation/~$*.pptx
+audit/docker-public-config/
 *.log
 .DS_Store
 # Generated icon raster/ico (regenerated via `npm run icons`)

@@ -1,0 +1,89 @@
+{
+  "target": "https://ginandjuice.shop/",
+  "status": "completed",
+  "reason": "Selected checks completed",
+  "requests": 735,
+  "pages": 1,
+  "errors": 0,
+  "startedAt": "2026-11-14T01:31:10.075Z",
+  "finishedAt": "2026-11-14T01:35:31.851Z",
+  "findings": [
+    {
+      "name": "Cookie without Secure flag (HTTPS)",
+      "templateId": "http-cookie-secure",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: AWSALB=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing HTTP Strict-Transport-Security",
+      "templateId": "http-missing-hsts",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: strict-transport-security",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Content-Security-Policy",
+      "templateId": "http-missing-csp",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: content-security-policy",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without HttpOnly flag",
+      "templateId": "http-cookie-httponly",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: AWSALB=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without SameSite attribute",
+      "templateId": "http-cookie-samesite",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: AWSALB=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Content-Type-Options: nosniff",
+      "templateId": "http-missing-xcto",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: x-content-type-options",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Referrer-Policy",
+      "templateId": "http-missing-referrer-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: referrer-policy",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Permissions-Policy",
+      "templateId": "http-missing-permissions-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: permissions-policy, feature-policy",
+      "matchedAt": "https://ginandjuice.shop/",
+      "source": "proxy"
+    }
+  ],
+  "log": [
+    "2026-11-14T01:31:10.078Z Rule-based automation started",
+    "2026-11-14T01:31:11.040Z Crawled 200 https://ginandjuice.shop/",
+    "2026-11-14T01:35:31.856Z completed: Selected checks completed; 735 requests, 8 findings"
+  ]
+}

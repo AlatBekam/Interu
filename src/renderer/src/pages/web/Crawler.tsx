@@ -170,7 +170,7 @@ export default function Crawler() {
           const ct = headerValue(res.rawHeaders, 'content-type')
           const type = contentTypeLabel(ct)
           // Parse text-like bodies for links/forms; skip opaque binaries.
-          const parseable = ['html', 'xml', 'js', 'json', 'text'].includes(type)
+          const parseable = ['html', 'xml', 'js', 'json', 'text', 'yaml'].includes(type)
           const body = res.body || ''
           const node = controller.record(item, {
             status: res.ok ? res.status ?? '-' : 'ERR',

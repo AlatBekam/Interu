@@ -65,6 +65,12 @@ export default function Settings() {
                 <span className="track" />
               </label>
             </Row>
+            <Row title="Allow invalid target TLS certificates" desc="Off by default. Enable only for an authorized lab with self-signed certificates; HTTP and proxy traffic will skip upstream certificate validation.">
+              <label className="switch">
+                <input type="checkbox" checked={settings.allowInvalidTls === true} onChange={(e) => patch({ allowInvalidTls: e.target.checked })} />
+                <span className="track" />
+              </label>
+            </Row>
             {saved && <div className="pill pill-ok mt-16"><IconCheck size={12} />Preferences saved</div>}
           </Panel>
 
@@ -93,7 +99,7 @@ export default function Settings() {
                   <tbody>
                     <tr><td className="muted small">Application</td><td>Interu — Cyber Operations</td></tr>
                     <tr><td className="muted small">Team</td><td>RUY Cybersecurity Team</td></tr>
-                    <tr><td className="muted small">Version</td><td className="mono">1.0.0</td></tr>
+                    <tr><td className="muted small">Version</td><td className="mono">1.4.0</td></tr>
                     <tr><td className="muted small">Runtime</td><td className="mono">Electron {versions.electron}</td></tr>
                     <tr><td className="muted small">Chromium</td><td className="mono">{versions.chrome}</td></tr>
                     <tr><td className="muted small">Node</td><td className="mono">{versions.node}</td></tr>

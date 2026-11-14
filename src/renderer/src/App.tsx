@@ -15,6 +15,8 @@ import Sequencer from './pages/web/Sequencer'
 import Target from './pages/web/Target'
 import Crawler from './pages/web/Crawler'
 import ActiveScan from './pages/web/ActiveScan'
+import Automation from './pages/Automation'
+import { addFindings } from './store/findings'
 import { useSettings, useApplyTheme, useBodyMotionFlag } from './store/store'
 
 export default function App() {
@@ -23,12 +25,17 @@ export default function App() {
   useBodyMotionFlag(settings.reduceMotion)
   // The proxy only captures in-scope hosts; keep it in sync from any page.
   React.useEffect(() => { void window.ruy?.proxy.setScope(settings.scope || []) }, [settings.scope])
+  React.useEffect(() => { void window.ruy?.tls.setPolicy(settings.allowInvalidTls === true) }, [settings.allowInvalidTls])
+  React.useEffect(() => window.ruy?.automation?.onProgress((run) => {
+    if (run.status !== 'running' && run.findings.length) addFindings(run.findings)
+  }), [])
 
   return (
     <div className="app-shell">
       <Sidebar />
       <main className="main">
         <Routes>
+          <Route path="/automation" element={<Automation />} />
           <Route path="/" element={<Navigate to="/threats" replace />} />
           {/* Web Security Suite (Burp-style) */}
           <Route path="/web/target" element={<Target />} />

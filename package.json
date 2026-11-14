@@ -1,7 +1,7 @@
 {
   "name": "ruy-cybersecurity-platform",
-  "version": "1.0.0",
-  "description": "RUY Cybersecurity Platform - a standalone Windows desktop security workstation prototype (UI-only, local, no backend).",
+  "version": "1.4.0",
+  "description": "Interu - a local Windows desktop security testing workstation with a bounded rule engine and automation.",
   "author": "RUY",
   "license": "MIT",
   "private": true,

@@ -3,6 +3,11 @@ import type { Finding } from '../../../shared/rules'
 import { sortFindings, correlate } from '../../../shared/rules'
 import { eventFromFinding } from '../../../shared/activity'
 import { pushActivity } from './activity'
+import { redactSecrets } from '../../../shared/auth'
+
+function sanitized(f: Finding): Finding {
+  return JSON.parse(redactSecrets(JSON.stringify(f))) as Finding
+}
 
 // =========================================================================
 // Shared Rule-Engine findings store. The Network Scanner and Proxy WRITE
@@ -32,7 +37,9 @@ function load(): Finding[] {
     const raw = window.localStorage.getItem(KEY)
     if (!raw) return []
     const arr = JSON.parse(raw) as Finding[]
-    return Array.isArray(arr) ? arr : []
+    const clean = Array.isArray(arr) ? arr.map(sanitized) : []
+    window.localStorage.setItem(KEY, JSON.stringify(clean))
+    return clean
   } catch {
     return []
   }
@@ -60,7 +67,8 @@ export function addFindings(incoming: Finding[]): number {
   if (!incoming || incoming.length === 0) return 0
   const byKey = new Map(state.map((f) => [f.key, f]))
   let added = 0
-  for (const f of incoming) {
+  for (const item of incoming) {
+    const f = sanitized(item)
     if (!byKey.has(f.key)) {
       added++
       pushActivity(eventFromFinding(f))

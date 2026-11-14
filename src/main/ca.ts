@@ -16,6 +16,19 @@ import { join } from 'node:path'
 
 export const CA_COMMON_NAME = 'Interu Root CA'
 
+/** Verify the actual signature, lifetime and exact SAN; issuer text is not trust. */
+export function verifyInteruCertificate(pem: string, hostname: string): boolean {
+  try {
+    const leaf = forge.pki.certificateFromPem(pem)
+    const ca = getCA().caCert
+    if (!ca.verify(leaf)) return false
+    const now = new Date()
+    if (now < leaf.validity.notBefore || now > leaf.validity.notAfter) return false
+    const san = leaf.getExtension('subjectAltName') as { altNames?: { type: number; value?: string; ip?: string }[] } | null
+    return !!san?.altNames?.some(n => (n.type === 2 ? n.value : n.type === 7 ? n.ip : '')?.toLowerCase() === hostname.toLowerCase())
+  } catch { return false }
+}
+
 export interface CaBundle {
   caCert: forge.pki.Certificate
   caKey: forge.pki.rsa.PrivateKey

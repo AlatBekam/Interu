@@ -1,0 +1,1253 @@
+[
+  {
+    "name": "PortSwigger Gin and Juice Shop",
+    "url": "https://ginandjuice.shop/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 73,
+    "pages": 25,
+    "errors": 1,
+    "startedAt": "2026-11-14T02:03:13.073Z",
+    "finishedAt": "2026-11-14T02:03:50.581Z",
+    "findings": [
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: strict-transport-security",
+        "matchedAt": "https://ginandjuice.shop/blog/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "https://ginandjuice.shop/blog/",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: TrackingId=<redacted>",
+        "matchedAt": "https://ginandjuice.shop/catalog?category=Gin",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "https://ginandjuice.shop/blog/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "https://ginandjuice.shop/blog/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "https://ginandjuice.shop/blog/",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:03:13.075Z Rule-based automation started",
+      "2026-11-14T02:03:13.428Z Crawled 200 https://ginandjuice.shop/",
+      "2026-11-14T02:03:13.815Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=1",
+      "2026-11-14T02:03:14.397Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=2",
+      "2026-11-14T02:03:14.819Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=3",
+      "2026-11-14T02:03:15.342Z Crawled 200 https://ginandjuice.shop/blog/post?postId=3",
+      "2026-11-14T02:03:15.841Z Crawled 200 https://ginandjuice.shop/blog/post?postId=4",
+      "2026-11-14T02:03:16.349Z Crawled 200 https://ginandjuice.shop/catalog",
+      "2026-11-14T02:03:16.858Z Crawled 200 https://ginandjuice.shop/blog",
+      "2026-11-14T02:03:17.360Z Crawled 200 https://ginandjuice.shop/about",
+      "2026-11-14T02:03:17.950Z Request failed: unexpected end of file",
+      "2026-11-14T02:03:17.951Z Crawled ERR https://ginandjuice.shop/my-account",
+      "2026-11-14T02:03:18.456Z Crawled 200 https://ginandjuice.shop/catalog/cart",
+      "2026-11-14T02:03:19.247Z Crawled 200 https://ginandjuice.shop/resources/js/react.development.js",
+      "2026-11-14T02:03:20.192Z Crawled 200 https://ginandjuice.shop/resources/js/react-dom.development.js",
+      "2026-11-14T02:03:20.459Z Crawled 200 https://ginandjuice.shop/resources/js/angular_1-7-7.js",
+      "2026-11-14T02:03:20.899Z Crawled 200 https://ginandjuice.shop/resources/js/subscribeNow.js",
+      "2026-11-14T02:03:21.426Z Crawled 200 https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "2026-11-14T02:03:21.932Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=4",
+      "2026-11-14T02:03:22.448Z Crawled 200 https://ginandjuice.shop/catalog?category=Accessories",
+      "2026-11-14T02:03:22.949Z Crawled 200 https://ginandjuice.shop/catalog?category=Accompaniments",
+      "2026-11-14T02:03:23.464Z Crawled 200 https://ginandjuice.shop/catalog?category=Books",
+      "2026-11-14T02:03:23.980Z Crawled 200 https://ginandjuice.shop/catalog?category=Gin",
+      "2026-11-14T02:03:24.487Z Crawled 200 https://ginandjuice.shop/blog/post?postId=6",
+      "2026-11-14T02:03:24.999Z Crawled 200 https://ginandjuice.shop/blog/post?postId=2",
+      "2026-11-14T02:03:25.499Z Crawled 405 https://ginandjuice.shop/catalog/product/stock",
+      "2026-11-14T02:03:26.015Z Crawled 200 https://ginandjuice.shop/blog/",
+      "2026-11-14T02:03:50.581Z completed: Selected checks completed; 73 requests, 6 findings"
+    ]
+  },
+  {
+    "name": "HCL Altoro Mutual",
+    "url": "http://demo.testfire.net/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 49,
+    "pages": 22,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:03:51.058Z",
+    "finishedAt": "2026-11-14T02:04:18.982Z",
+    "findings": [
+      {
+        "name": "Unencoded reflection (XSS candidate)",
+        "templateId": "webvuln-xss-reflected",
+        "severity": "high",
+        "confidence": "suspected",
+        "evidence": "Parameter \"query\" reflected the injected tag <x-interu-mwfrieot9> verbatim (unencoded) in an HTML response.",
+        "matchedAt": "http://demo.testfire.net/search.jsp?query=1",
+        "source": "active"
+      },
+      {
+        "name": "Apache Tomcat detected: 6 CVE in CISA KEV (version not verified)",
+        "templateId": "kev-product-tomcat",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "server: Apache-Coyote/1.1",
+        "source": "proxy"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action http://demo.testfire.net/doLogin) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "http://demo.testfire.net/login.jsp",
+        "source": "active"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action http://demo.testfire.net/sendFeedback) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "http://demo.testfire.net/feedback.jsp",
+        "source": "active"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: JSESSIONID=<redacted>; Pat",
+        "matchedAt": "http://demo.testfire.net/index.jsp",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: Apache-Coyote/1.1 · server=Apache-Coyote/1.1",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Technology fingerprint: Java/Servlet (JSESSIONID)",
+        "templateId": "hdr-java",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: JSESSIONID=",
+        "matchedAt": "http://demo.testfire.net/index.jsp",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:03:51.059Z Rule-based automation started",
+      "2026-11-14T02:03:51.293Z Crawled 200 http://demo.testfire.net/",
+      "2026-11-14T02:03:51.800Z Crawled 200 http://demo.testfire.net/search.jsp",
+      "2026-11-14T02:03:52.307Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_contact.htm",
+      "2026-11-14T02:03:52.825Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal.htm",
+      "2026-11-14T02:03:53.334Z Crawled 200 http://demo.testfire.net/index.jsp?content=business.htm",
+      "2026-11-14T02:03:53.846Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside.htm",
+      "2026-11-14T02:03:54.347Z Crawled 404 http://demo.testfire.net/default.jsp?content=security.htm",
+      "2026-11-14T02:03:54.863Z Crawled 200 http://demo.testfire.net/index.jsp",
+      "2026-11-14T02:03:55.377Z Crawled 200 http://demo.testfire.net/login.jsp",
+      "2026-11-14T02:03:55.889Z Crawled 200 http://demo.testfire.net/feedback.jsp",
+      "2026-11-14T02:03:56.408Z Crawled 200 http://demo.testfire.net/subscribe.jsp",
+      "2026-11-14T02:03:56.938Z Crawled 200 http://demo.testfire.net/survey_questions.jsp",
+      "2026-11-14T02:03:57.424Z Crawled 200 http://demo.testfire.net/status_check.jsp",
+      "2026-11-14T02:03:57.930Z Crawled 200 http://demo.testfire.net/swagger/index.html",
+      "2026-11-14T02:03:58.443Z Crawled 200 http://demo.testfire.net/disclaimer.htm?url=http://www.netscape.com",
+      "2026-11-14T02:03:58.960Z Crawled 200 http://demo.testfire.net/disclaimer.htm?url=http://www.microsoft.com",
+      "2026-11-14T02:03:59.474Z Crawled 200 http://demo.testfire.net/survey_questions.jsp?step=a",
+      "2026-11-14T02:04:00.486Z Crawled 200 http://demo.testfire.net/index.jsp",
+      "2026-11-14T02:04:00.978Z Crawled 405 http://demo.testfire.net/sendFeedback",
+      "2026-11-14T02:04:01.495Z Crawled 405 http://demo.testfire.net/doSubscribe",
+      "2026-11-14T02:04:03.219Z Crawled 200 http://demo.testfire.net/swagger/swagger-ui-bundle.js",
+      "2026-11-14T02:04:05.981Z Crawled 200 http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+      "2026-11-14T02:04:18.982Z completed: Selected checks completed; 49 requests, 12 findings"
+    ]
+  },
+  {
+    "name": "Google Firing Range",
+    "url": "https://public-firing-range.appspot.com/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 55,
+    "pages": 25,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:04:19.423Z",
+    "finishedAt": "2026-11-14T02:04:47.833Z",
+    "findings": [
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: strict-transport-security",
+        "matchedAt": "https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:04:19.423Z Rule-based automation started",
+      "2026-11-14T02:04:19.717Z Crawled 200 https://public-firing-range.appspot.com/",
+      "2026-11-14T02:04:20.208Z Crawled 200 https://public-firing-range.appspot.com/address/index.html",
+      "2026-11-14T02:04:20.722Z Crawled 200 https://public-firing-range.appspot.com/angular/index.html",
+      "2026-11-14T02:04:21.321Z Crawled 200 https://public-firing-range.appspot.com/badscriptimport/index.html",
+      "2026-11-14T02:04:21.745Z Crawled 200 https://public-firing-range.appspot.com/clickjacking/index.html",
+      "2026-11-14T02:04:22.282Z Crawled 200 https://public-firing-range.appspot.com/cors/index.html",
+      "2026-11-14T02:04:22.767Z Crawled 200 https://public-firing-range.appspot.com/dom/index.html",
+      "2026-11-14T02:04:23.304Z Crawled 200 https://public-firing-range.appspot.com/escape/index.html",
+      "2026-11-14T02:04:23.807Z Crawled 200 https://public-firing-range.appspot.com/flashinjection/index.html",
+      "2026-11-14T02:04:24.304Z Crawled 200 https://public-firing-range.appspot.com/leakedcookie/index.html",
+      "2026-11-14T02:04:24.857Z Crawled 200 https://public-firing-range.appspot.com/mixedcontent/index.html",
+      "2026-11-14T02:04:25.350Z Crawled 200 https://public-firing-range.appspot.com/redirect/index.html",
+      "2026-11-14T02:04:25.865Z Crawled 200 https://public-firing-range.appspot.com/reflected/index.html",
+      "2026-11-14T02:04:26.339Z Crawled 200 https://public-firing-range.appspot.com/remoteinclude/index.html",
+      "2026-11-14T02:04:26.863Z Crawled 200 https://public-firing-range.appspot.com/reverseclickjacking/",
+      "2026-11-14T02:04:27.358Z Crawled 200 https://public-firing-range.appspot.com/stricttransportsecurity/index.html",
+      "2026-11-14T02:04:27.900Z Crawled 200 https://public-firing-range.appspot.com/tags/index.html",
+      "2026-11-14T02:04:28.391Z Crawled 200 https://public-firing-range.appspot.com/urldom/index.html",
+      "2026-11-14T02:04:28.917Z Crawled 200 https://public-firing-range.appspot.com/vulnerablelibraries/index.html",
+      "2026-11-14T02:04:29.411Z Crawled 200 https://public-firing-range.appspot.com/insecurethirdpartyscripts/index.html",
+      "2026-11-14T02:04:29.917Z Crawled 200 https://public-firing-range.appspot.com/urldom/location/search/area.href?//example.org",
+      "2026-11-14T02:04:30.431Z Crawled 200 https://public-firing-range.appspot.com/urldom/location/search/svg.a?//example.org",
+      "2026-11-14T02:04:31.693Z Crawled 200 https://public-firing-range.appspot.com/urldom/location/search/button.formaction?//example.org",
+      "2026-11-14T02:04:32.023Z Crawled 200 https://public-firing-range.appspot.com/urldom/location/search/location.assign?//example.org",
+      "2026-11-14T02:04:32.488Z Crawled 200 https://public-firing-range.appspot.com/urldom/location/search/frame.src?//example.org",
+      "2026-11-14T02:04:47.833Z completed: Selected checks completed; 55 requests, 6 findings"
+    ]
+  },
+  {
+    "name": "Pentest Ground DVWA",
+    "url": "https://pentest-ground.com:4280/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 103,
+    "pages": 25,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:04:48.678Z",
+    "finishedAt": "2026-11-14T02:05:40.946Z",
+    "findings": [
+      {
+        "name": "SQL Injection (error-based, MySQL)",
+        "templateId": "webvuln-sqli-error",
+        "severity": "critical",
+        "confidence": "confirmed",
+        "evidence": "Parameter \"username\" injected with a single quote produced a MySQL SQL error absent from the baseline; balancing the quote cleared it (confirmed).",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/brute/?username=1&password=1&Login=1",
+        "source": "active"
+      },
+      {
+        "name": "SQL Injection (error-based, MySQL)",
+        "templateId": "webvuln-sqli-error",
+        "severity": "critical",
+        "confidence": "confirmed",
+        "evidence": "Parameter \"id\" injected with a single quote produced a MySQL SQL error absent from the baseline; balancing the quote cleared it (confirmed).",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/sqli/?id=1&Submit=1",
+        "source": "active"
+      },
+      {
+        "name": "SQL Injection (error-based, MySQL)",
+        "templateId": "webvuln-sqli-error",
+        "severity": "critical",
+        "confidence": "confirmed",
+        "evidence": "Parameter \"id\" injected with a single quote produced a MySQL SQL error absent from the baseline; balancing the quote cleared it (confirmed).",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/sqli_blind/?id=1&Submit=1",
+        "source": "active"
+      },
+      {
+        "name": "Local file disclosure through path parameter",
+        "templateId": "webvuln-lfi",
+        "severity": "high",
+        "confidence": "confirmed",
+        "evidence": "Parameter \"page\": A local passwd-file signature appeared only after the path probe.",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "active"
+      },
+      {
+        "name": "Unencoded reflection (XSS candidate)",
+        "templateId": "webvuln-xss-reflected",
+        "severity": "high",
+        "confidence": "suspected",
+        "evidence": "Parameter \"name\" reflected the injected tag <x-interu-mwfrkdliu> verbatim (unencoded) in an HTML response.",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/xss_r/?name=1",
+        "source": "active"
+      },
+      {
+        "name": "Cookie without Secure flag (HTTPS)",
+        "templateId": "http-cookie-secure",
+        "severity": "medium",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: security=<redacted>; path=/",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "PHP detected: 4 CVE in CISA KEV (version not verified)",
+        "templateId": "kev-product-php",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "x-powered-by: PHP/8.5.12",
+        "source": "proxy"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action https://pentest-ground.com:4280/vulnerabilities/captcha/) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/captcha/",
+        "source": "active"
+      },
+      {
+        "name": "Stack trace / debug output in response",
+        "templateId": "http-stacktrace",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "matched: <b>Fatal error</b>:",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/xss_s/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: strict-transport-security",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without HttpOnly flag",
+        "templateId": "http-cookie-httponly",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: security=<redacted>; path=/",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: security=<redacted>; path=/",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Technology disclosure via X-Powered-By",
+        "templateId": "http-powered-by",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: x-powered-by · powered-by=PHP/8.5.12",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      },
+      {
+        "name": "Technology fingerprint: PHP (PHPSESSID)",
+        "templateId": "hdr-php",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: PHPSESSID=",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:04:48.678Z Rule-based automation started",
+      "2026-11-14T02:04:48.878Z Crawled 200 https://pentest-ground.com:4280/",
+      "2026-11-14T02:04:49.376Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/fi/?page=include.php",
+      "2026-11-14T02:04:49.910Z Crawled 200 https://pentest-ground.com:4280/instructions.php",
+      "2026-11-14T02:04:50.396Z Crawled 200 https://pentest-ground.com:4280/setup.php",
+      "2026-11-14T02:04:50.911Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/brute/",
+      "2026-11-14T02:04:51.421Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/exec/",
+      "2026-11-14T02:04:51.932Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/csrf/",
+      "2026-11-14T02:04:52.438Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/upload/",
+      "2026-11-14T02:04:52.948Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/captcha/",
+      "2026-11-14T02:04:53.462Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/sqli/",
+      "2026-11-14T02:04:53.981Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/sqli_blind/",
+      "2026-11-14T02:04:54.481Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/weak_id/",
+      "2026-11-14T02:04:54.993Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/xss_d/",
+      "2026-11-14T02:04:55.512Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/xss_r/",
+      "2026-11-14T02:04:56.012Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/xss_s/",
+      "2026-11-14T02:04:56.520Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/csp/",
+      "2026-11-14T02:04:57.033Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/javascript/",
+      "2026-11-14T02:04:57.528Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/open_redirect/",
+      "2026-11-14T02:04:58.083Z Crawled 200 https://pentest-ground.com:4280/security.php",
+      "2026-11-14T02:04:58.751Z Crawled 200 https://pentest-ground.com:4280/phpinfo.php",
+      "2026-11-14T02:04:59.054Z Crawled 200 https://pentest-ground.com:4280/about.php",
+      "2026-11-14T02:04:59.054Z Skipped state-changing path: https://pentest-ground.com:4280/logout.php",
+      "2026-11-14T02:04:59.054Z Crawled ERR https://pentest-ground.com:4280/logout.php",
+      "2026-11-14T02:04:59.562Z Crawled 200 https://pentest-ground.com:4280/dvwa/js/dvwaPage.js",
+      "2026-11-14T02:05:00.079Z Crawled 200 https://pentest-ground.com:4280/dvwa/js/add_event_listeners.js",
+      "2026-11-14T02:05:00.594Z Crawled 200 https://pentest-ground.com:4280/vulnerabilities/fi/?page=file1.php",
+      "2026-11-14T02:05:40.946Z completed: Selected checks completed; 103 requests, 20 findings"
+    ]
+  },
+  {
+    "name": "Pentest Ground DVGA",
+    "url": "https://pentest-ground.com:5013/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 19,
+    "pages": 19,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:05:41.665Z",
+    "finishedAt": "2026-11-14T02:05:52.042Z",
+    "findings": [
+      {
+        "name": "Cookie without Secure flag (HTTPS)",
+        "templateId": "http-cookie-secure",
+        "severity": "medium",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: env=<redacted>; Path=/",
+        "matchedAt": "https://pentest-ground.com:5013/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: strict-transport-security",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without HttpOnly flag",
+        "templateId": "http-cookie-httponly",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: env=<redacted>; Path=/",
+        "matchedAt": "https://pentest-ground.com:5013/",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: env=<redacted>; Path=/",
+        "matchedAt": "https://pentest-ground.com:5013/",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:05:41.665Z Rule-based automation started",
+      "2026-11-14T02:05:41.874Z Crawled 200 https://pentest-ground.com:5013/",
+      "2026-11-14T02:05:42.377Z Crawled 200 https://pentest-ground.com:5013/my_pastes",
+      "2026-11-14T02:05:42.882Z Crawled 200 https://pentest-ground.com:5013/public_pastes",
+      "2026-11-14T02:05:43.572Z Crawled 200 https://pentest-ground.com:5013/create_paste",
+      "2026-11-14T02:05:43.898Z Crawled 200 https://pentest-ground.com:5013/import_paste",
+      "2026-11-14T02:05:44.422Z Crawled 200 https://pentest-ground.com:5013/upload_paste",
+      "2026-11-14T02:05:44.936Z Crawled 200 https://pentest-ground.com:5013/difficulty/easy",
+      "2026-11-14T02:05:45.452Z Crawled 200 https://pentest-ground.com:5013/difficulty/hard",
+      "2026-11-14T02:05:45.961Z Crawled 200 https://pentest-ground.com:5013/audit",
+      "2026-11-14T02:05:46.857Z Crawled 200 https://pentest-ground.com:5013/solutions",
+      "2026-11-14T02:05:47.057Z Crawled 200 https://pentest-ground.com:5013/about",
+      "2026-11-14T02:05:48.661Z Crawled 200 https://pentest-ground.com:5013/start_over",
+      "2026-11-14T02:05:49.284Z Crawled 200 https://pentest-ground.com:5013/static/jquery/jquery.min.js",
+      "2026-11-14T02:05:49.529Z Crawled 200 https://pentest-ground.com:5013/static/bootstrap/js/bootstrap.bundle.min.js",
+      "2026-11-14T02:05:50.000Z Crawled 200 https://pentest-ground.com:5013/static/jquery/graphql.js",
+      "2026-11-14T02:05:50.507Z Crawled 404 https://pentest-ground.com:5013/$%7Burl%7D",
+      "2026-11-14T02:05:51.010Z Crawled 400 https://pentest-ground.com:5013/graphql",
+      "2026-11-14T02:05:51.524Z Crawled 404 https://pentest-ground.com:5013/xss.html",
+      "2026-11-14T02:05:52.041Z Crawled 404 https://pentest-ground.com:5013/HTML_Injection.html",
+      "2026-11-14T02:05:52.042Z completed: Selected checks completed; 19 requests, 10 findings"
+    ]
+  },
+  {
+    "name": "Pentest Ground RestFlaw",
+    "url": "https://pentest-ground.com:9000/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 3,
+    "pages": 3,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:05:52.678Z",
+    "finishedAt": "2026-11-14T02:05:53.896Z",
+    "findings": [
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: strict-transport-security",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "https://pentest-ground.com:9000/help",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:05:52.678Z Rule-based automation started",
+      "2026-11-14T02:05:52.876Z Crawled 200 https://pentest-ground.com:9000/",
+      "2026-11-14T02:05:53.433Z Crawled 200 https://pentest-ground.com:9000/openapi.yaml",
+      "2026-11-14T02:05:53.896Z Crawled 200 https://pentest-ground.com:9000/help",
+      "2026-11-14T02:05:53.896Z completed: Selected checks completed; 3 requests, 7 findings"
+    ]
+  },
+  {
+    "name": "Pentest Ground GuardianLeaks",
+    "url": "https://pentest-ground.com:81/",
+    "kind": "online",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 14,
+    "pages": 14,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:05:54.706Z",
+    "finishedAt": "2026-11-14T02:06:01.625Z",
+    "findings": [
+      {
+        "name": "Cookie without Secure flag (HTTPS)",
+        "templateId": "http-cookie-secure",
+        "severity": "medium",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: SessionID=<redacted>; Path=/",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "source": "proxy"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action https://pentest-ground.com:81/login) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "https://pentest-ground.com:81/login",
+        "source": "active"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action https://pentest-ground.com:81/create) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "https://pentest-ground.com:81/create",
+        "source": "active"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action https://pentest-ground.com:81/1/edit) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "https://pentest-ground.com:81/1/edit",
+        "source": "active"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action https://pentest-ground.com:81/2/edit) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "active"
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: strict-transport-security",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without HttpOnly flag",
+        "templateId": "http-cookie-httponly",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: SessionID=<redacted>; Path=/",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "source": "proxy"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: set-cookie: SessionID=<redacted>; Path=/",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "source": "proxy"
+      },
+      {
+        "name": "CORS wildcard observed (verify data exposure)",
+        "templateId": "http-cors-wildcard",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: access-control-allow-origin: *",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:05:54.706Z Rule-based automation started",
+      "2026-11-14T02:05:54.913Z Crawled 200 https://pentest-ground.com:81/",
+      "2026-11-14T02:05:55.415Z Crawled 200 https://pentest-ground.com:81/search",
+      "2026-11-14T02:05:55.928Z Crawled 200 https://pentest-ground.com:81/about",
+      "2026-11-14T02:05:56.438Z Crawled 200 https://pentest-ground.com:81/services",
+      "2026-11-14T02:05:56.945Z Crawled 200 https://pentest-ground.com:81/blog",
+      "2026-11-14T02:05:57.450Z Crawled 200 https://pentest-ground.com:81/contact",
+      "2026-11-14T02:05:57.968Z Crawled 200 https://pentest-ground.com:81/login",
+      "2026-11-14T02:05:58.479Z Crawled 200 https://pentest-ground.com:81/create",
+      "2026-11-14T02:05:59.383Z Crawled 200 https://pentest-ground.com:81/static/js/jquery-3.4.1.min.js",
+      "2026-11-14T02:05:59.582Z Crawled 200 https://pentest-ground.com:81/static/js/bootstrap.js",
+      "2026-11-14T02:06:00.087Z Crawled 200 https://pentest-ground.com:81/post/1",
+      "2026-11-14T02:06:00.613Z Crawled 200 https://pentest-ground.com:81/1/edit",
+      "2026-11-14T02:06:01.124Z Crawled 200 https://pentest-ground.com:81/post/2",
+      "2026-11-14T02:06:01.625Z Crawled 200 https://pentest-ground.com:81/2/edit",
+      "2026-11-14T02:06:01.625Z completed: Selected checks completed; 14 requests, 15 findings"
+    ]
+  },
+  {
+    "name": "OWASP Juice Shop Docker",
+    "url": "http://127.0.0.1:3001/",
+    "kind": "selfhost",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 52,
+    "pages": 35,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:06:01.939Z",
+    "finishedAt": "2026-11-14T02:06:08.215Z",
+    "findings": [
+      {
+        "name": "SQL Injection (error-based, SQLite)",
+        "templateId": "webvuln-sqli-error",
+        "severity": "critical",
+        "confidence": "confirmed",
+        "evidence": "Parameter \"q\" injected with a single quote produced a SQLite SQL error absent from the baseline; balancing the quote cleared it (confirmed).",
+        "matchedAt": "http://127.0.0.1:3001/rest/products/search?q=",
+        "source": "active"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "http://127.0.0.1:3001/api/Recycles",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "http://127.0.0.1:3001/api/Recycles",
+        "source": "proxy"
+      },
+      {
+        "name": "CORS wildcard observed (verify data exposure)",
+        "templateId": "http-cors-wildcard",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: access-control-allow-origin: *",
+        "matchedAt": "http://127.0.0.1:3001/api/Recycles",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:06:01.939Z Rule-based automation started",
+      "2026-11-14T02:06:02.082Z Crawled 200 http://127.0.0.1:3001/",
+      "2026-11-14T02:06:02.095Z Crawled 200 http://127.0.0.1:3001/rolldown-runtime-kqx1xuJ_.js",
+      "2026-11-14T02:06:02.406Z Crawled 200 http://127.0.0.1:3001/chunk-3CyVWL1v.js",
+      "2026-11-14T02:06:02.532Z Crawled 200 http://127.0.0.1:3001/chunk-CajNVifV.js",
+      "2026-11-14T02:06:02.562Z Crawled 200 http://127.0.0.1:3001/chunk-CE5v8pBj.js",
+      "2026-11-14T02:06:02.698Z Crawled 200 http://127.0.0.1:3001/polyfills.js",
+      "2026-11-14T02:06:02.816Z Crawled 200 http://127.0.0.1:3001/scripts.js",
+      "2026-11-14T02:06:03.106Z Crawled 200 http://127.0.0.1:3001/main.js",
+      "2026-11-14T02:06:03.531Z Crawled 200 http://127.0.0.1:3001/rest/products/search?q=",
+      "2026-11-14T02:06:03.631Z Crawled 200 http://127.0.0.1:3001/search",
+      "2026-11-14T02:06:03.844Z Crawled 200 http://127.0.0.1:3001/api/Challenges/?key=nftMintChallenge",
+      "2026-11-14T02:06:03.852Z Crawled 401 http://127.0.0.1:3001/rest/user/change-password?current=",
+      "2026-11-14T02:06:04.054Z Crawled 200 http://127.0.0.1:3001/rest/user/security-question?email=",
+      "2026-11-14T02:06:04.095Z Crawled 200 http://127.0.0.1:3001/api/Feedbacks",
+      "2026-11-14T02:06:04.196Z Crawled 500 http://127.0.0.1:3001/rest/web3",
+      "2026-11-14T02:06:04.377Z Crawled 200 http://127.0.0.1:3001/api/Challenges",
+      "2026-11-14T02:06:04.410Z Crawled 200 http://127.0.0.1:3001/rest/repeat-notification",
+      "2026-11-14T02:06:04.508Z Crawled 200 http://127.0.0.1:3001/rest/continue-code",
+      "2026-11-14T02:06:04.647Z Crawled 200 http://127.0.0.1:3001/rest/continue-code-findIt",
+      "2026-11-14T02:06:04.757Z Crawled 200 http://127.0.0.1:3001/rest/continue-code-fixIt",
+      "2026-11-14T02:06:04.833Z Crawled 500 http://127.0.0.1:3001/rest/continue-code/apply/",
+      "2026-11-14T02:06:04.957Z Crawled 500 http://127.0.0.1:3001/rest/continue-code-findIt/apply/",
+      "2026-11-14T02:06:05.058Z Crawled 500 http://127.0.0.1:3001/rest/continue-code-fixIt/apply/",
+      "2026-11-14T02:06:05.162Z Crawled 401 http://127.0.0.1:3001/api/Users",
+      "2026-11-14T02:06:05.264Z Crawled 401 http://127.0.0.1:3001/rest/user/authentication-details/",
+      "2026-11-14T02:06:05.408Z Crawled 500 http://127.0.0.1:3001/rest/user/login",
+      "2026-11-14T02:06:05.409Z Skipped state-changing path: http://127.0.0.1:3001/rest/user/reset-password",
+      "2026-11-14T02:06:05.409Z Crawled ERR http://127.0.0.1:3001/rest/user/reset-password",
+      "2026-11-14T02:06:05.496Z Crawled 200 http://127.0.0.1:3001/rest/user/whoami",
+      "2026-11-14T02:06:05.587Z Crawled 401 http://127.0.0.1:3001/rest/saveLoginIp",
+      "2026-11-14T02:06:05.711Z Crawled 400 http://127.0.0.1:3001/rest/deluxe-membership",
+      "2026-11-14T02:06:05.828Z Crawled 401 http://127.0.0.1:3001/api/Addresss",
+      "2026-11-14T02:06:05.913Z Crawled 200 http://127.0.0.1:3001/api/Recycles",
+      "2026-11-14T02:06:06.042Z Crawled 500 http://127.0.0.1:3001/rest/admin",
+      "2026-11-14T02:06:06.168Z Crawled 500 http://127.0.0.1:3001/rest/country-mapping",
+      "2026-11-14T02:06:06.304Z Crawled 401 http://127.0.0.1:3001/api/BasketItems",
+      "2026-11-14T02:06:08.215Z completed: Selected checks completed; 52 requests, 4 findings"
+    ]
+  },
+  {
+    "name": "VAmPI Docker",
+    "url": "http://127.0.0.1:3004/ui/",
+    "kind": "selfhost",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 14,
+    "pages": 14,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:06:08.705Z",
+    "finishedAt": "2026-11-14T02:06:11.365Z",
+    "findings": [
+      {
+        "name": "Sensitive area reachable without authentication",
+        "templateId": "webvuln-access-sensitive",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A sensitive path (/users/v1) returned 200 and is not a login page. Verify it should require authentication.",
+        "matchedAt": "http://127.0.0.1:3004/users/v1",
+        "source": "active"
+      },
+      {
+        "name": "Sensitive area reachable without authentication",
+        "templateId": "webvuln-access-sensitive",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A sensitive path (/users/v1/_debug) returned 200 and is not a login page. Verify it should require authentication.",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "active"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: Werkzeug/2.2.3 Python/3.11.15 · server=Werkzeug/2.2.3 Python/3.11.15",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Web server technology fingerprint",
+        "templateId": "hdr-server-tech",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: server: Werkzeug · server=Werkzeug/2.2.3 Python/3.11.15",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "JSON Web Token present in response",
+        "templateId": "http-jwt-in-body",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NzAxNjA2MTc",
+        "matchedAt": "http://127.0.0.1:3004/openapi.json",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:06:08.705Z Rule-based automation started",
+      "2026-11-14T02:06:08.741Z Crawled 200 http://127.0.0.1:3004/ui/",
+      "2026-11-14T02:06:09.055Z Crawled 200 http://127.0.0.1:3004/openapi.json",
+      "2026-11-14T02:06:09.242Z Crawled 200 http://127.0.0.1:3004/ui/swagger-ui-bundle.js",
+      "2026-11-14T02:06:09.288Z Crawled 200 http://127.0.0.1:3004/ui/swagger-ui-standalone-preset.js",
+      "2026-11-14T02:06:09.378Z Crawled 404 http://127.0.0.1:3004/debug?url=",
+      "2026-11-14T02:06:10.274Z Crawled 200 http://127.0.0.1:3004/books/v1",
+      "2026-11-14T02:06:10.692Z Crawled 200 http://127.0.0.1:3004/createdb",
+      "2026-11-14T02:06:10.710Z Crawled 401 http://127.0.0.1:3004/me",
+      "2026-11-14T02:06:10.862Z Crawled 200 http://127.0.0.1:3004/users/v1",
+      "2026-11-14T02:06:10.921Z Crawled 200 http://127.0.0.1:3004/users/v1/_debug",
+      "2026-11-14T02:06:11.060Z Crawled 404 http://127.0.0.1:3004/users/v1/login",
+      "2026-11-14T02:06:11.127Z Crawled 404 http://127.0.0.1:3004/users/v1/register",
+      "2026-11-14T02:06:11.253Z Crawled 404 http://127.0.0.1:3004/dist",
+      "2026-11-14T02:06:11.364Z Crawled 404 http://127.0.0.1:3004/oauth2-redirect.html",
+      "2026-11-14T02:06:11.365Z completed: Selected checks completed; 14 requests, 10 findings"
+    ]
+  },
+  {
+    "name": "OWASP WebGoat Docker",
+    "url": "http://127.0.0.1:3002/WebGoat/",
+    "kind": "selfhost",
+    "healthStatus": 302,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 10,
+    "pages": 5,
+    "errors": 0,
+    "startedAt": "2026-11-14T02:06:12.354Z",
+    "finishedAt": "2026-11-14T02:06:19.939Z",
+    "findings": [
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action http://127.0.0.1:3002/WebGoat/login) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/login",
+        "source": "active"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A POST form (action http://127.0.0.1:3002/WebGoat/register.mvc) performs a state-changing action but carries no anti-CSRF token field.",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "source": "active"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T02:06:12.354Z Rule-based automation started",
+      "2026-11-14T02:06:18.486Z Crawled 200 http://127.0.0.1:3002/WebGoat/login",
+      "2026-11-14T02:06:18.733Z Crawled 200 http://127.0.0.1:3002/WebGoat/login",
+      "2026-11-14T02:06:18.805Z Crawled 200 http://127.0.0.1:3002/WebGoat/login",
+      "2026-11-14T02:06:19.609Z Crawled 200 http://127.0.0.1:3002/WebGoat/registration",
+      "2026-11-14T02:06:19.939Z Crawled 302 http://127.0.0.1:3002/WebGoat/login;jsessionid=471295F8540242C9CAA5A13ECF1F3EDD",
+      "2026-11-14T02:06:19.939Z completed: Selected checks completed; 10 requests, 7 findings"
+    ]
+  }
+]

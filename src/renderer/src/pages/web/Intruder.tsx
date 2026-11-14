@@ -59,6 +59,7 @@ export default function Intruder() {
       const filled = template.replace(/§[^§]*§/, p.replace(/"/g, '\\"'))
       const req = parseRawRequest(filled, target)
       const res = await sendLive(req, settings.scope)
+      if (res.authLost || res.blocked) { setNote({ kind: 'error', text: res.error || 'Session expired or scope changed; stopped' }); break }
       if (baseLen < 0 && res.ok) baseLen = res.size
       const outlier = res.ok && ((typeof res.status === 'number' && res.status >= 500) || (baseLen >= 0 && Math.abs(res.size - baseLen) > Math.max(40, baseLen * 0.25)))
       setRows((r) => [...r, {

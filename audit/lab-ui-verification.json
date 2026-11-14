@@ -1,0 +1,22 @@
+{
+  "activeScan": {
+    "labFindings": 150,
+    "flags": 150
+  },
+  "ruleEngine": {
+    "labFindings": 150,
+    "flags": 150
+  },
+  "vulnerabilityDetails": {
+    "flagsOpened": [
+      1,
+      150
+    ]
+  },
+  "automation": {
+    "status": "completed",
+    "requests": 735,
+    "labFindings": 150,
+    "flags": 150
+  }
+}

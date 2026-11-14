@@ -2,12 +2,13 @@ import { app, shell, BrowserWindow, Menu, ipcMain, session } from 'electron'
 import { join } from 'path'
 import http from 'node:http'
 import tls from 'node:tls'
-import { sendHttp } from './http'
-import { startProxy, stopProxy, setIntercept, setScope, resolveIntercept, isRunning, getPort } from './proxy'
-import { exportCA, deleteCA, caFingerprint, CA_COMMON_NAME } from './ca'
+import { sendHttp, setHttpTlsPolicy } from './http'
+import { startProxy, stopProxy, setIntercept, setScope, setProxyTlsPolicy, setProxyLogProtection, resolveIntercept, isRunning, getPort } from './proxy'
+import { exportCA, deleteCA, caFingerprint, CA_COMMON_NAME, verifyInteruCertificate } from './ca'
 import { runScan, cancelScan } from './scan'
-import { openProxiedBrowser, registerBrowserIpc } from './browser'
-import { sendAuthed, registerAuthIpc } from './auth'
+import { discoverInProxiedBrowser, openProxiedBrowser, registerBrowserIpc, tryGeneratedAccount } from './browser'
+import { adoptBrowserCookies, clearAuth, sendAuthed, registerAuthIpc } from './auth'
+import { registerAutomationIpc } from './automation'
 import { hostInScope } from '../shared/http'
 import type { HttpReq } from '../shared/http'
 import { expandTargets, profilePorts, profileGrabsBanner, targetsInScope, MAX_ATTEMPTS } from '../shared/scan'
@@ -38,6 +39,7 @@ process.on('unhandledRejection', (reason) => console.error('[interu] unhandledRe
 
 // Port the proxied browser session is currently configured for (see ruy:proxy:openBrowser).
 let proxiedSessionPort = -1
+let authorizedScope: string[] = []
 
 const isDev = !app.isPackaged
 // RUY_SMOKE_TEST lets CI / build verification confirm the production bundle
@@ -71,7 +73,7 @@ function createWindow(): BrowserWindow {
 
   // Open any external links in the user's real browser, never inside the app.
   mainWindow.webContents.setWindowOpenHandler((details) => {
-    shell.openExternal(details.url)
+    if (/^https?:\/\//i.test(details.url)) void shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
@@ -112,6 +114,13 @@ if (!gotLock) {
   app.quit()
 } else {
   let win: BrowserWindow | null = null
+  const register = ipcMain.handle.bind(ipcMain)
+  const handle: typeof ipcMain.handle = (channel, listener) => {
+    register(channel, (event, ...args) => {
+      if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Untrusted IPC sender')
+      return listener(event, ...args)
+    })
+  }
 
   app.on('second-instance', () => {
     if (win) {
@@ -121,10 +130,10 @@ if (!gotLock) {
   })
 
   // --- Real HTTP sender, gated by the operator-declared authorization scope ---
-  ipcMain.handle('ruy:http', async (_e, payload: { req: HttpReq; scope: string[] }) => {
+  handle('ruy:http', async (_e, payload: { req: HttpReq; scope: string[] }) => {
     const { req, scope } = payload || ({} as { req: HttpReq; scope: string[] })
     if (!req || !req.url) return { ok: false, timingMs: 0, size: 0, error: 'No request' }
-    if (!hostInScope(req.url, scope || [])) {
+    if (!hostInScope(req.url, authorizedScope)) {
       return {
         ok: false,
         blocked: true,
@@ -135,11 +144,13 @@ if (!gotLock) {
     }
     return sendAuthed(req, sendHttp)
   })
-  registerAuthIpc()
+  registerAuthIpc(handle)
+  const automation = registerAutomationIpc(handle, () => authorizedScope, emitToRenderer)
+  app.on('before-quit', () => automation.cancel())
 
   // --- Real TCP connect scanner, gated by the operator-declared scope ---
   let scanSeq = 1
-  ipcMain.handle('ruy:scan:tcp', async (_e, payload: { req: ScanRequest; scope: string[]; scanId?: number }): Promise<ScanResult> => {
+  handle('ruy:scan:tcp', async (_e, payload: { req: ScanRequest; scope: string[]; scanId?: number }): Promise<ScanResult> => {
     const { req, scope } = payload || ({} as { req: ScanRequest; scope: string[] })
     if (!req || !req.target || !req.target.trim()) return { ok: false, error: 'Target kosong.' }
 
@@ -148,7 +159,7 @@ if (!gotLock) {
     if (exp.ips.length === 0) return { ok: false, error: 'Tidak ada IP yang bisa di-scan dari target itu.' }
 
     // Scope gate: every target IP must be authorized (exact IP or a CIDR in scope).
-    const gate = targetsInScope(exp.ips, scope || [])
+    const gate = targetsInScope(exp.ips, authorizedScope)
     if (!gate.ok) {
       return {
         ok: false,
@@ -190,20 +201,22 @@ if (!gotLock) {
       return { ok: false, scanId, error }
     }
   })
-  ipcMain.handle('ruy:scan:cancel', (_e, scanId: number) => { cancelScan(scanId); return { ok: true } })
+  handle('ruy:scan:cancel', (_e, scanId: number) => { cancelScan(scanId); return { ok: true } })
 
   // --- Real intercepting forward proxy ---
-  ipcMain.handle('ruy:proxy:start', (_e, port: number) => startProxy(port || 8080, emitToRenderer))
-  ipcMain.handle('ruy:proxy:stop', () => { proxiedSessionPort = -1; return stopProxy() })
-  ipcMain.handle('ruy:proxy:status', () => ({ running: isRunning() }))
-  ipcMain.handle('ruy:proxy:intercept', (_e, on: boolean) => { setIntercept(!!on); return { ok: true } })
-  ipcMain.handle('ruy:proxy:scope', (_e, scope: string[]) => { setScope(scope); return { ok: true } })
-  ipcMain.handle('ruy:proxy:resolve', (_e, p: { id: number; action: 'forward' | 'drop'; raw?: string }) => {
+  handle('ruy:proxy:start', (_e, port: number) => startProxy(port || 8080, emitToRenderer))
+  handle('ruy:proxy:stop', () => { proxiedSessionPort = -1; return stopProxy() })
+  handle('ruy:proxy:status', () => ({ running: isRunning() }))
+  handle('ruy:proxy:intercept', (_e, on: boolean) => { setIntercept(!!on); return { ok: true } })
+  handle('ruy:proxy:protectLogs', (_e, on: boolean) => { setProxyLogProtection(on === true); return { ok: true } })
+  handle('ruy:proxy:scope', (_e, scope: string[]) => { authorizedScope = Array.isArray(scope) ? scope.filter((s): s is string => typeof s === 'string') : []; setScope(authorizedScope); return { ok: true } })
+  handle('ruy:tls:policy', (_e, allow: boolean) => { setHttpTlsPolicy(allow === true); setProxyTlsPolicy(allow === true); return { ok: true } })
+  handle('ruy:proxy:resolve', (_e, p: { id: number; action: 'forward' | 'drop'; raw?: string }) => {
     resolveIntercept(p.id, p.action, p.raw)
     return { ok: true }
   })
   // Export the Interu root CA so an external browser/OS can trust it.
-  ipcMain.handle('ruy:proxy:exportCA', () => {
+  handle('ruy:proxy:exportCA', () => {
     try {
       return { ok: true, path: exportCA(app.getPath('downloads')) }
     } catch (e) {
@@ -212,17 +225,36 @@ if (!gotLock) {
   })
   // Remove the stored root CA (encrypted key + cert). A fresh CA is minted on
   // next use; re-export & re-trust is then required.
-  ipcMain.handle('ruy:proxy:removeCA', () => {
+  handle('ruy:proxy:removeCA', () => {
     try { deleteCA(); proxiedSessionPort = -1; return { ok: true } } catch (e) { return { ok: false, error: (e as Error).message } }
   })
-  ipcMain.handle('ruy:proxy:caInfo', () => {
+  handle('ruy:proxy:caInfo', () => {
     try { return { ok: true, name: CA_COMMON_NAME, fingerprint: caFingerprint() } } catch (e) { return { ok: false, error: (e as Error).message } }
   })
   registerBrowserIpc()
+  handle('ruy:automation:discoverBrowser', async (_event, target: unknown, maxPages: unknown, autoAccount: unknown) => {
+    if (typeof target !== 'string' || !hostInScope(target, authorizedScope)) throw new Error('Target is outside authorized scope')
+    const url = new URL(target)
+    if (!/^https?:$/.test(url.protocol) || url.username || url.password) throw new Error('Invalid browser discovery URL')
+    if (autoAccount === true) setProxyLogProtection(true)
+    const discovery = await discoverInProxiedBrowser(url.href, typeof maxPages === 'number' ? maxPages : 12)
+    if (autoAccount === true) {
+      clearAuth()
+      discovery.accountFlow = await tryGeneratedAccount(url.href, discovery)
+      if (discovery.accountFlow === 'session-observed') {
+        const cookies = await session.fromPartition('interu-proxied').cookies.get({ url: url.href })
+        const adopted = adoptBrowserCookies(url.href, cookies, authorizedScope)
+        discovery.note = adopted.ok
+          ? `A registration/login form was submitted and ${adopted.count} browser cookies were attached. Authentication is unverified until a protected response confirms it.`
+          : 'A form was submitted, but no usable browser cookie was available; scan will not claim authenticated access.'
+      } else discovery.note = `Account flow: ${discovery.accountFlow}. Scan will not claim authenticated access.`
+    }
+    return discovery
+  })
   // Open a real browser window routed through the proxy (Burp-style). This
   // embedded session trusts the MITM certs automatically, so https is captured.
   // The window itself (address bar, back/forward/reload) lives in ./browser.
-  ipcMain.handle('ruy:proxy:openBrowser', async (_e, startUrl?: string) => {
+  handle('ruy:proxy:openBrowser', async (_e, startUrl?: string) => {
     try {
       if (!isRunning()) return { ok: false, error: 'Start the proxy first' }
       const port = getPort()
@@ -243,9 +275,7 @@ if (!gotLock) {
         // invalid/forged certificate is still rejected. (Previously cb(0) trusted
         // every certificate unconditionally.)
         ses.setCertificateVerifyProc((request, cb) => {
-          const cert = request.certificate as { issuerName?: string; issuer?: { commonName?: string } } | undefined
-          const issuer = cert?.issuerName || cert?.issuer?.commonName || ''
-          cb(issuer === CA_COMMON_NAME || issuer.includes(CA_COMMON_NAME) ? 0 : -3)
+          cb(verifyInteruCertificate(request.certificate.data, request.hostname) ? 0 : -3)
         })
         proxiedSessionPort = port
       }

@@ -29,6 +29,8 @@ import { evalBool, type DslContext } from './dsl'
 import { kevFor, kevByProduct, type KevInfo } from './kev'
 import { detectProducts, type ProductHit } from './fingerprint'
 import { redactSecrets } from './auth'
+import { MODERN_BACKUP_RULES } from './rulepack2025'
+import { LAB_RULES } from './labRulepack'
 
 export type RuleSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info'
 export type Confidence = 'suspected' | 'confirmed'
@@ -335,10 +337,10 @@ function toFinding(t: Template, target: string, evidence: string, source: Findin
     kev: kev.length ? kev : undefined,
     tags: t.info.tags,
     mitre: t.info.mitre,
-    extracted: extra.extracted,
-    matchedAt: extra.matchedAt,
-    request: extra.request,
-    response: extra.response,
+    extracted: extra.extracted ? Object.fromEntries(Object.entries(extra.extracted).map(([k, v]) => [k, v.map((s) => /secret|token|password|credential/i.test(k) ? '<redacted>' : redactSecrets(s))])) : undefined,
+    matchedAt: extra.matchedAt ? redactSecrets(extra.matchedAt) : undefined,
+    request: extra.request ? redactSecrets(extra.request) : undefined,
+    response: extra.response ? redactSecrets(extra.response) : undefined,
     source,
     at
   }
@@ -438,15 +440,47 @@ export function analyzeHttpResponse(entry: ProxyLogEntry, at = new Date().toISOS
   for (const t of TEMPLATES.filter((x) => x.kind === 'http-passive')) {
     if (t.scheme === 'https' && !isHttps) continue
     if (t.scheme === 'http' && isHttps) continue
-    const r = evalTemplate(t, undefined, ctx)
+    // Load-balancer/bot cookies are not application sessions. Keep other
+    // Set-Cookie lines so a real session cookie is still evaluated.
+    const ruleCtx = t.id.startsWith('http-cookie-') ? {
+      ...ctx,
+      headerText: ctx.headerText.split(/\r?\n/).filter(line =>
+        !/^set-cookie:\s*(?:AWSALB(?:CORS|TG|TGCORS)?|__cf_bm|_cfuvid)=/i.test(line)
+      ).join('\n')
+    } : ctx
+    const r = evalTemplate(t, undefined, ruleCtx)
     // Header-only rules describe the whole site: one finding per origin, not per URL.
     const siteWide = t.matchers.every((m) => m.part === 'header')
     if (r.ok) {
-      const extracted = runExtractors(t.extractors, t.kind, undefined, ctx)
+      const extracted = runExtractors(t.extractors, t.kind, undefined, ruleCtx)
       out.push(toFinding(t, siteWide ? origin : entry.url, r.evidence, 'proxy', at, {
         extracted, matchedAt: entry.url, response: clip(parsed.raw)
       }))
     }
+  }
+  // A real user-list JSON response containing password fields is stronger
+  // evidence than a path name. Do not retain the password values in findings.
+  if (entry.method.toUpperCase() === 'GET' && ctx.status === 200 &&
+      /^content-type:\s*application\/(?:json|[^\r\n;]+\+json)/im.test(ctx.headerText) &&
+      parsed.body.length <= 1_000_000) {
+    try {
+      const data = JSON.parse(parsed.body) as { users?: unknown }
+      const users = Array.isArray(data?.users) ? data.users : []
+      const exposed = users.filter(user => user && typeof user === 'object' &&
+        typeof (user as Record<string, unknown>).password === 'string' &&
+        ((user as Record<string, unknown>).password as string).length > 0 &&
+        ['username', 'email', 'id'].some(key => key in (user as Record<string, unknown>)))
+      if (exposed.length) out.push(toFinding({
+        id: 'http-user-password-fields', kind: 'http-passive', confidence: 'confirmed', matchers: [],
+        info: { name: 'User-list JSON includes password fields', severity: 'medium',
+          description: 'The response returned user records with password fields. Verify caller authorization and whether the values are hashes or plaintext.',
+          remediation: 'Do not serialize password or password-hash fields into API responses.',
+          classification: { cwe: ['CWE-200'] }, tags: ['api', 'data-exposure'] }
+      }, entry.url, `HTTP 200 JSON contained ${exposed.length} user record(s) with a password field; values omitted`, 'proxy', at, {
+        matchedAt: entry.url,
+        response: `HTTP 200 JSON\nusers: ${users.length} record(s); ${exposed.length} password field(s) observed. Values intentionally omitted.`
+      }))
+    } catch { /* malformed JSON is not evidence */ }
   }
   // Product fingerprints describe the whole site: one finding per product per origin.
   for (const hit of detectProducts({ headerText: parsed.headerText, body: parsed.body })) {
@@ -519,12 +553,14 @@ export interface Baseline {
   bodyLen: number
   /** server answered 2xx for a guaranteed-missing path → it is a catch-all. */
   catchAll: boolean
+  body?: string
+  headerText?: string
 }
 
 export function computeBaseline(res: HttpRes): Baseline {
   const bodyLen = (res.body || '').length
   const catchAll = !!res.ok && typeof res.status === 'number' && res.status >= 200 && res.status < 300
-  return { ok: !!res.ok, status: res.status, bodyLen, catchAll }
+  return { ok: !!res.ok, status: res.status, bodyLen, catchAll, body: (res.body || '').slice(0, 65536), headerText: res.rawHeaders || '' }
 }
 
 /** True when a template decides solely on the HTTP status (no content marker). */
@@ -540,7 +576,7 @@ export interface MatchActiveOpts {
 
 /** Evaluate an active template against the real response it produced. */
 export function matchActive(t: Template, url: string, res: HttpRes, opts: MatchActiveOpts = {}): Finding | null {
-  if (!res || res.ok === false) return null
+  if (!res || res.ok === false || res.authLost || res.truncated) return null
   const at = opts.at || new Date().toISOString()
   const ctx: HttpCtx = {
     status: res.status,
@@ -558,7 +594,11 @@ export function matchActive(t: Template, url: string, res: HttpRes, opts: MatchA
   // contain their marker.
   const baseline = opts.baseline
   let confidenceNote = ''
-  const demoted = baseline?.catchAll && isStatusOnly(t)
+  const baselineMatches = baseline?.catchAll && evalTemplate(t, undefined, {
+    status: baseline.status, body: baseline.body || '', headerText: baseline.headerText || '',
+    responseRaw: `${baseline.headerText || ''}\n\n${baseline.body || ''}`
+  }).ok
+  const demoted = baseline?.catchAll && (isStatusOnly(t) || baselineMatches)
   const extracted = runExtractors(t.extractors, t.kind, undefined, ctx)
   const reqRaw = opts.req
     ? `${opts.req.method} ${opts.req.url}\n` + Object.entries(opts.req.headers || {}).map(([k, v]) => `${k}: ${v}`).join('\n') + (opts.req.body ? `\n\n${opts.req.body}` : '')
@@ -874,14 +914,14 @@ const CURATED: Template[] = [
   },
   {
     id: 'http-cors-wildcard', kind: 'http-passive', confidence: 'confirmed',
-    info: { name: 'CORS Access-Control-Allow-Origin: *', severity: 'medium', tags: ['http', 'cors'],
-      remediation: 'Do not return a wildcard ACAO on authenticated endpoints; echo a strict allow-list instead.',
+    info: { name: 'CORS wildcard observed (verify data exposure)', severity: 'info', tags: ['http', 'cors'],
+      remediation: 'Verify whether the response contains sensitive data. Restrict allowed origins on authenticated endpoints.',
       classification: { cwe: ['CWE-942'] } },
     matchers: [{ type: 'regex', part: 'header', regex: ['^access-control-allow-origin:\\s*\\*\\s*$'] }]
   },
   {
-    id: 'http-cors-credentials-wildcard', kind: 'http-passive', confidence: 'confirmed',
-    info: { name: 'CORS reflects Origin with credentials', severity: 'high', tags: ['http', 'cors'],
+    id: 'http-cors-credentials-wildcard', kind: 'http-passive', confidence: 'suspected',
+    info: { name: 'Credentialed CORS policy (verify origin allow-list)', severity: 'medium', tags: ['http', 'cors'],
       remediation: 'Never combine Access-Control-Allow-Credentials: true with a reflected/wildcard origin.',
       classification: { cwe: ['CWE-942'] } },
     matchers: [
@@ -1638,5 +1678,7 @@ export const TEMPLATES: Template[] = [
   ...genPanels(),
   ...genSecrets(),
   ...genTechHeaders(),
-  ...genPortVersions()
+  ...genPortVersions(),
+  ...MODERN_BACKUP_RULES,
+  ...LAB_RULES
 ]

@@ -1,0 +1,158 @@
+{
+  "target": "http://demo.testfire.net/",
+  "status": "completed",
+  "reason": "Selected checks completed",
+  "requests": 50,
+  "pages": 35,
+  "errors": 0,
+  "startedAt": "2026-11-14T01:32:51.562Z",
+  "finishedAt": "2026-11-14T01:33:16.860Z",
+  "findings": [
+    {
+      "name": "Unencoded reflection (XSS candidate)",
+      "templateId": "webvuln-xss-reflected",
+      "severity": "high",
+      "confidence": "suspected",
+      "evidence": "Parameter \"query\" reflected the injected tag <x-interu-mwfqemej1> verbatim (unencoded) in an HTML response.",
+      "matchedAt": "http://demo.testfire.net/search.jsp?query=1",
+      "source": "active"
+    },
+    {
+      "name": "Apache Tomcat detected: 6 CVE in CISA KEV (version not verified)",
+      "templateId": "kev-product-tomcat",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "server: Apache-Coyote/1.1",
+      "source": "proxy"
+    },
+    {
+      "name": "State-changing form without anti-CSRF token",
+      "templateId": "webvuln-csrf-missing",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "A POST form (action http://demo.testfire.net/doLogin) performs a state-changing action but carries no anti-CSRF token field.",
+      "matchedAt": "http://demo.testfire.net/login.jsp",
+      "source": "active"
+    },
+    {
+      "name": "State-changing form without anti-CSRF token",
+      "templateId": "webvuln-csrf-missing",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "A POST form (action http://demo.testfire.net/sendFeedback) performs a state-changing action but carries no anti-CSRF token field.",
+      "matchedAt": "http://demo.testfire.net/feedback.jsp",
+      "source": "active"
+    },
+    {
+      "name": "Missing Content-Security-Policy",
+      "templateId": "http-missing-csp",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: content-security-policy",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Frame-Options (clickjacking)",
+      "templateId": "http-missing-xfo",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: x-frame-options, frame-ancestors",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without SameSite attribute",
+      "templateId": "http-cookie-samesite",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: JSESSIONID=<redacted>; Pat",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Server version disclosure",
+      "templateId": "http-server-version",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: server: Apache-Coyote/1.1 · server=Apache-Coyote/1.1",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Content-Type-Options: nosniff",
+      "templateId": "http-missing-xcto",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: x-content-type-options",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Referrer-Policy",
+      "templateId": "http-missing-referrer-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: referrer-policy",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Permissions-Policy",
+      "templateId": "http-missing-permissions-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: permissions-policy, feature-policy",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    },
+    {
+      "name": "Technology fingerprint: Java/Servlet (JSESSIONID)",
+      "templateId": "hdr-java",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: JSESSIONID=",
+      "matchedAt": "http://demo.testfire.net/index.jsp",
+      "source": "proxy"
+    }
+  ],
+  "log": [
+    "2026-11-14T01:32:51.564Z Rule-based automation started",
+    "2026-11-14T01:32:52.167Z Crawled 200 http://demo.testfire.net/",
+    "2026-11-14T01:32:52.404Z Crawled 200 http://demo.testfire.net/search.jsp",
+    "2026-11-14T01:32:52.904Z Crawled 200 http://demo.testfire.net/index.jsp",
+    "2026-11-14T01:32:53.416Z Crawled 200 http://demo.testfire.net/login.jsp",
+    "2026-11-14T01:32:53.925Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_contact.htm",
+    "2026-11-14T01:32:54.441Z Crawled 200 http://demo.testfire.net/feedback.jsp",
+    "2026-11-14T01:32:54.950Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal.htm",
+    "2026-11-14T01:32:55.463Z Crawled 200 http://demo.testfire.net/index.jsp?content=business.htm",
+    "2026-11-14T01:32:55.988Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside.htm",
+    "2026-11-14T01:32:56.480Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_deposit.htm",
+    "2026-11-14T01:32:56.995Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_checking.htm",
+    "2026-11-14T01:32:57.501Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_loans.htm",
+    "2026-11-14T01:32:58.019Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_cards.htm",
+    "2026-11-14T01:32:58.528Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_investments.htm",
+    "2026-11-14T01:32:59.106Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_other.htm",
+    "2026-11-14T01:32:59.542Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_deposit.htm",
+    "2026-11-14T01:33:00.051Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_lending.htm",
+    "2026-11-14T01:33:00.565Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_cards.htm",
+    "2026-11-14T01:33:01.080Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_insurance.htm",
+    "2026-11-14T01:33:01.586Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_retirement.htm",
+    "2026-11-14T01:33:02.092Z Crawled 200 http://demo.testfire.net/index.jsp?content=business_other.htm",
+    "2026-11-14T01:33:02.598Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_about.htm",
+    "2026-11-14T01:33:03.122Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_investor.htm",
+    "2026-11-14T01:33:03.619Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_press.htm",
+    "2026-11-14T01:33:04.131Z Crawled 200 http://demo.testfire.net/index.jsp?content=inside_careers.htm",
+    "2026-11-14T01:33:04.640Z Crawled 200 http://demo.testfire.net/subscribe.jsp",
+    "2026-11-14T01:33:05.271Z Crawled 200 http://demo.testfire.net/index.jsp?content=personal_savings.htm",
+    "2026-11-14T01:33:05.648Z Crawled 200 http://demo.testfire.net/index.jsp?content=privacy.htm",
+    "2026-11-14T01:33:06.167Z Crawled 404 http://demo.testfire.net/default.jsp?content=security.htm",
+    "2026-11-14T01:33:06.673Z Crawled 200 http://demo.testfire.net/survey_questions.jsp",
+    "2026-11-14T01:33:07.186Z Crawled 200 http://demo.testfire.net/index.jsp?content=security.htm",
+    "2026-11-14T01:33:07.692Z Crawled 200 http://demo.testfire.net/status_check.jsp",
+    "2026-11-14T01:33:08.210Z Crawled 200 http://demo.testfire.net/swagger/index.html",
+    "2026-11-14T01:33:08.719Z Crawled 404 http://demo.testfire.net/images/gradient.jpg');padding:0px;margin:0px;",
+    "2026-11-14T01:33:09.739Z Crawled 200 http://demo.testfire.net/index.jsp",
+    "2026-11-14T01:33:16.860Z completed: Selected checks completed; 50 requests, 12 findings"
+  ]
+}

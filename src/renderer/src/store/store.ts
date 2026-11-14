@@ -16,6 +16,7 @@ export interface Settings {
   theme: ThemeName
   persistence: boolean
   reduceMotion: boolean
+  allowInvalidTls: boolean
   operatorName: string
   /** Hosts the operator is authorized to test. Live requests are gated to these. */
   scope: string[]
@@ -25,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   theme: 'dark',
   persistence: true,
   reduceMotion: false,
+  allowInvalidTls: false,
   operatorName: 'Operator',
   scope: []
 }

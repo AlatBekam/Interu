@@ -15,6 +15,7 @@
 
 import type { Finding, RuleSeverity, Confidence } from './rules'
 import type { CrawlForm } from './crawl'
+import { redactSecrets } from './auth'
 
 // --------------------------------------------------------------- SQLi oracle
 
@@ -40,6 +41,7 @@ const SQL_ERRORS: { db: string; re: RegExp }[] = [
   { db: 'Oracle', re: /Oracle error/i },
   { db: 'SQLite', re: /SQLite3?::\w*Exception/i },
   { db: 'SQLite', re: /sqlite3\.OperationalError/i },
+  { db: 'SQLite', re: /\bSQLITE_ERROR\s*:/i },
   { db: 'SQLite', re: /unrecognized token:/i },
   { db: 'SQLite', re: /SQLite\/JDBCDriver/i },
   { db: 'Generic', re: /java\.sql\.SQL(Syntax(Error)?)?Exception/i },
@@ -72,7 +74,7 @@ export function sqliErrorVerdict(baselineBody: string, quoteBody: string, balanc
   if (!err) return null
   if (detectSqlError(baselineBody)) return null // error pre-exists → not attributable
   const balancedClears = balancedBody != null ? detectSqlError(balancedBody) == null : false
-  return { confirmed: true, db: err, balancedClears }
+  return { confirmed: balancedClears, db: err, balancedClears }
 }
 
 // ---------------------------------------------------------------- XSS oracle
@@ -93,6 +95,7 @@ export function xssEncoded(token: string): string {
 export interface XssVerdict {
   confirmed: boolean
   encodedInstead: boolean
+  reflected?: boolean
 }
 
 /**
@@ -105,7 +108,9 @@ export function xssReflectVerdict(body: string, token: string, contentType: stri
   const isHtml = !contentType || /html/i.test(contentType)
   const raw = body.includes(xssTag(token))
   const enc = body.includes(xssEncoded(token))
-  if (raw && isHtml) return { confirmed: true, encodedInstead: false }
+  // Reflection proves unencoded input, not executable JavaScript. Keep it a
+  // candidate until an operator verifies the actual browser context.
+  if (raw && isHtml) return { confirmed: false, encodedInstead: false, reflected: true }
   if (enc) return { confirmed: false, encodedInstead: true } // safe — reported as negative
   return null
 }
@@ -114,10 +119,18 @@ export function xssReflectVerdict(body: string, token: string, contentType: stri
 
 const ID_NAME = /(^|[_-])(id|uid|user(id|_id)?|account|acct|order|invoice|doc|docid|file|fileid|num|no|pid|oid|key)$/i
 
-/** Is this parameter id-like (by name or a purely numeric value)? */
+/** Is the parameter name an object identifier? A numeric search term is not. */
 export function isIdLike(name: string, value: string): boolean {
-  if (ID_NAME.test(name)) return true
-  return /^\d{1,12}$/.test(value)
+  void value
+  return ID_NAME.test(name) || /Id$/.test(name)
+}
+
+const PRIVATE_OBJECT_PATH = /\/(?:users?|accounts?|profiles?|orders?|invoices?|records?|documents?|files?|private|settings|admin)(?:\/|$)/i
+
+/** A single unauthenticated 200 on a public product/blog is not an IDOR signal. */
+export function idorProbeEligible(url: string, name: string, value: string): boolean {
+  if (!isIdLike(name, value) || idNeighbors(value).length === 0) return false
+  try { return PRIVATE_OBJECT_PATH.test(new URL(url).pathname) } catch { return false }
 }
 
 /** Neighbour values to probe for an id (numeric ±1; nothing for non-numeric). */
@@ -172,6 +185,7 @@ const LOGINISH = /(type=["']password["']|name=["']password["']|>\s*log\s*in\s*<|
  *  intentionally public pages. */
 export function accessVerdict(url: string, status: number | undefined, body: string): { suspected: boolean } | null {
   if (status !== 200) return null
+  if (/^\s*(?:\{\s*\}|null|\{\s*"(?:user|account|profile)"\s*:\s*\{\s*\}\s*\})\s*$/i.test(body || '')) return null
   let path = url
   try { const u = new URL(url); path = u.pathname + u.search } catch { /* keep */ }
   if (!SENSITIVE_PATH.test(path)) return null
@@ -191,7 +205,7 @@ export function csrfMissing(form: CrawlForm): boolean {
 
 // ------------------------------------------------------- test-plan builders
 
-export type ProbeKind = 'sqli-quote' | 'sqli-balanced' | 'xss'
+export type ProbeKind = 'sqli-quote' | 'sqli-balanced' | 'xss' | 'lfi' | 'ssti' | 'rce' | 'ssrf' | 'xxe'
 
 export interface ParamProbe {
   kind: ProbeKind
@@ -242,11 +256,55 @@ export function planQueryParams(url: string, mkToken: () => string = nextToken):
       probes: [
         { kind: 'sqli-quote', url: setParam(url, name, (value || '1') + "'") },
         { kind: 'sqli-balanced', url: setParam(url, name, (value || '1') + "''") },
-        { kind: 'xss', url: setParam(url, name, xssPayload(token)), token }
+        { kind: 'xss', url: setParam(url, name, xssPayload(token)), token },
+        { kind: 'ssti', url: setParam(url, name, `{{${700000 + Number(tokenSeq % 100000)}*13}}`), token: String((700000 + Number(tokenSeq % 100000)) * 13) },
+        { kind: 'rce', url: setParam(url, name, `;printf interu_${token};`), token: `interu_${token}` },
+        ...(/(?:file|path|page|template|view|download|include|document|filename)/i.test(name)
+          ? [{ kind: 'lfi' as const, url: setParam(url, name, '../../../../../../etc/passwd') }] : []),
+        ...(/(?:url|uri|target|endpoint|callback|webhook|feed|link|proxy|source)/i.test(name)
+          ? [{ kind: 'ssrf' as const, url: setParam(url, name, 'http://127.0.0.1:1/interu-ssrf-' + token), token }] : []),
+        ...(/(?:xml|document|data|payload|content)/i.test(name)
+          ? [{ kind: 'xxe' as const, url: setParam(url, name, `<?xml version="1.0"?><!DOCTYPE r [<!ENTITY xxe SYSTEM "file:///etc/passwd">]><r>&xxe;</r>`), token }] : [])
       ]
     })
   }
   return plans
+}
+
+/** A body must contain the distinctive file signature absent from the control. */
+export function fileDisclosureVerdict(control: string, probe: string): boolean {
+  return !/(?:^|\n)root:[^\r\n]*:0:0:/m.test(control) && /(?:^|\n)root:[^\r\n]*:0:0:/m.test(probe)
+}
+
+/** Arithmetic output is only a candidate: a parser or unrelated page may emit it. */
+export function expressionVerdict(control: string, probe: string, expected: string, payload: string): boolean {
+  return expected.length >= 6 && !control.includes(expected) && probe.includes(expected) && !probe.includes(payload)
+}
+
+export function commandOutputVerdict(control: string, probe: string, marker: string, payload: string): boolean {
+  return !control.includes(marker) && probe.includes(marker) && !probe.includes(payload)
+}
+
+/** Transport errors after a loopback URL indicate an SSRF candidate, not proof. */
+export function ssrfErrorVerdict(control: string, probe: string): boolean {
+  return !/(?:ECONNREFUSED|connection refused|failed to connect|connect\(\) failed)/i.test(control) &&
+    /(?:ECONNREFUSED|connection refused|failed to connect|connect\(\) failed)/i.test(probe)
+}
+
+export function differentialFinding(kind: 'lfi'|'xxe'|'ssti'|'rce'|'ssrf', url: string, param: string, request: string, response: string): Finding {
+  const data = {
+    lfi: ['Local file disclosure through path parameter', 'high', 'confirmed', 'CWE-22', 'A local passwd-file signature appeared only after the path probe.'],
+    xxe: ['External entity file disclosure', 'high', 'confirmed', 'CWE-611', 'A local passwd-file signature appeared only after the XML entity probe.'],
+    ssti: ['Template expression evaluation candidate', 'high', 'suspected', 'CWE-1336', 'The response contained the arithmetic result absent from the baseline; verify template context.'],
+    rce: ['Command output candidate', 'high', 'suspected', 'CWE-78', 'An inert printf marker appeared without the injected command text; verify execution context.'],
+    ssrf: ['Server-side fetch candidate', 'medium', 'suspected', 'CWE-918', 'A loopback connection error appeared only after the URL probe; verify with an approved callback endpoint.']
+  } as const
+  const [name, severity, confidence, cwe, evidence] = data[kind]
+  return base(`webvuln-${kind}`, name, severity, confidence, origin(url), `webvuln:${kind}:${origin(url)}${pathOf(url)}:${param}`, {
+    evidence: `Parameter "${param}": ${evidence}`, matchedAt: url, request, response,
+    description: evidence, remediation: kind === 'lfi' || kind === 'xxe' ? 'Reject unsafe file/entity resolution and enforce an allowlist.' : 'Treat untrusted input as data and restrict server-side evaluation or fetch destinations.',
+    cwe: [cwe], tags: [kind, 'active', 'differential']
+  })
 }
 
 // ------------------------------------------------------------- findings
@@ -279,10 +337,10 @@ function base(
     target,
     source: 'active',
     at: new Date().toISOString(),
-    evidence: extra.evidence,
+    evidence: redactSecrets(extra.evidence),
     matchedAt: extra.matchedAt,
-    request: extra.request ? clip(extra.request) : undefined,
-    response: extra.response ? clip(extra.response) : undefined,
+    request: extra.request ? clip(redactSecrets(extra.request)) : undefined,
+    response: extra.response ? clip(redactSecrets(extra.response)) : undefined,
     description: extra.description,
     remediation: extra.remediation,
     cwe: extra.cwe,
@@ -299,7 +357,7 @@ function pathOf(url: string): string {
 }
 
 export function sqliFinding(url: string, param: string, v: SqliVerdict, req?: string, res?: string): Finding {
-  return base('webvuln-sqli-error', `SQL Injection (error-based, ${v.db})`, 'critical', 'confirmed', origin(url),
+  return base('webvuln-sqli-error', `SQL Injection (error-based, ${v.db})`, v.confirmed ? 'critical' : 'high', v.confirmed ? 'confirmed' : 'suspected', origin(url),
     `webvuln:sqli:${origin(url)}${pathOf(url)}:${param}`, {
       evidence: `Parameter "${param}" injected with a single quote produced a ${v.db} SQL error absent from the baseline${v.balancedClears ? '; balancing the quote cleared it (confirmed)' : ''}.`,
       matchedAt: url,
@@ -314,13 +372,13 @@ export function sqliFinding(url: string, param: string, v: SqliVerdict, req?: st
 }
 
 export function xssFinding(url: string, param: string, token: string, req?: string, res?: string): Finding {
-  return base('webvuln-xss-reflected', 'Reflected Cross-Site Scripting (XSS)', 'high', 'confirmed', origin(url),
+  return base('webvuln-xss-reflected', 'Unencoded reflection (XSS candidate)', 'high', 'suspected', origin(url),
     `webvuln:xss:${origin(url)}${pathOf(url)}:${param}`, {
       evidence: `Parameter "${param}" reflected the injected tag ${xssTag(token)} verbatim (unencoded) in an HTML response.`,
       matchedAt: url,
       request: req,
       response: res,
-      description: 'Input is reflected into the HTML response without output encoding, so injected markup/script executes in the victim browser.',
+      description: 'Input is reflected without encoding. Verify HTML context and script execution manually; reflection alone does not prove XSS.',
       remediation: 'Context-aware output encoding; a strict Content-Security-Policy as defence in depth.',
       cwe: ['CWE-79'],
       reference: ['https://owasp.org/www-community/attacks/xss/'],

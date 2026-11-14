@@ -46,12 +46,15 @@ describe('isUnsafeAuthedPath', () => {
   it.each([
     'http://a.test/logout', 'http://a.test/Sign-Out', 'http://a.test/account/signout',
     'http://a.test/api/users/delete/5', 'http://a.test/users/remove?id=1', 'http://a.test/x?action=delete',
-    'http://a.test/unsubscribe', 'http://a.test/close-account', 'http://a.test/auth/revoke', 'http://a.test/user/reset_password'
+    'http://a.test/unsubscribe', 'http://a.test/close-account', 'http://a.test/auth/revoke', 'http://a.test/user/reset_password',
+    'http://a.test/createdb', 'http://a.test/start_over', 'http://a.test/rest/continue-code/apply/', 'http://a.test/user/change-password',
+    'http://a.test/eval?s=1', 'http://a.test/api/exec?cmd=1'
   ])('flags %s', (u) => expect(isUnsafeAuthedPath(u)).toBe(true))
 
   it.each([
     'http://a.test/', 'http://a.test/catalog', 'http://a.test/deleted-items', 'http://a.test/profile?tab=settings',
-    'http://a.test/api/orders?id=1001', 'http://a.test/blog/logs'
+    'http://a.test/api/orders?id=1001', 'http://a.test/blog/logs',
+    'http://a.test/tools/1?cmd=%3Bprintf+proof%3B'
   ])('allows %s', (u) => expect(isUnsafeAuthedPath(u)).toBe(false))
 })
 

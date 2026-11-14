@@ -1,0 +1,12 @@
+{
+  "registered": true,
+  "loggedIn": 1,
+  "privateAuthed": 2,
+  "scannerPrivateAuthed": 1,
+  "status": "completed",
+  "requests": 4,
+  "accountFlowShown": true,
+  "hasSecretInUi": false,
+  "hasSecretInProxyLog": false,
+  "hasSessionInProxyLog": false
+}

@@ -1,0 +1,146 @@
+{
+  "target": "https://ginandjuice.shop/",
+  "status": "completed",
+  "reason": "Selected checks completed",
+  "requests": 65,
+  "pages": 30,
+  "errors": 1,
+  "startedAt": "2026-11-14T01:26:40.419Z",
+  "finishedAt": "2026-11-14T01:27:14.083Z",
+  "findings": [
+    {
+      "name": "Cookie without Secure flag (HTTPS)",
+      "templateId": "http-cookie-secure",
+      "severity": "medium",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: AWSALB=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "IDOR candidate (broken object-level access)",
+      "templateId": "webvuln-idor-candidate",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "Changing \"searchTerm\" 1→0 still returned another object: neighbour id → distinct 200 (len 15261→13112), no auth wall. Verify manually with a second identity (needs two accounts to confirm).",
+      "matchedAt": "https://ginandjuice.shop/catalog?searchTerm=1",
+      "source": "active"
+    },
+    {
+      "name": "IDOR candidate (broken object-level access)",
+      "templateId": "webvuln-idor-candidate",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "Changing \"productId\" 3→2 still returned another object: neighbour id → distinct 200 (len 12253→11990), no auth wall. Verify manually with a second identity (needs two accounts to confirm).",
+      "matchedAt": "https://ginandjuice.shop/catalog/product?productId=3",
+      "source": "active"
+    },
+    {
+      "name": "IDOR candidate (broken object-level access)",
+      "templateId": "webvuln-idor-candidate",
+      "severity": "medium",
+      "confidence": "suspected",
+      "evidence": "Changing \"postId\" 4→3 still returned another object: neighbour id → distinct 200 (len 12118→13137), no auth wall. Verify manually with a second identity (needs two accounts to confirm).",
+      "matchedAt": "https://ginandjuice.shop/blog/post?postId=4",
+      "source": "active"
+    },
+    {
+      "name": "Missing HTTP Strict-Transport-Security",
+      "templateId": "http-missing-hsts",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: strict-transport-security",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Content-Security-Policy",
+      "templateId": "http-missing-csp",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "missing: content-security-policy",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without HttpOnly flag",
+      "templateId": "http-cookie-httponly",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: AWSALB=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "Cookie without SameSite attribute",
+      "templateId": "http-cookie-samesite",
+      "severity": "low",
+      "confidence": "confirmed",
+      "evidence": "matched: set-cookie: AWSALB=<redacted>",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing X-Content-Type-Options: nosniff",
+      "templateId": "http-missing-xcto",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: x-content-type-options",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Referrer-Policy",
+      "templateId": "http-missing-referrer-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: referrer-policy",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    },
+    {
+      "name": "Missing Permissions-Policy",
+      "templateId": "http-missing-permissions-policy",
+      "severity": "info",
+      "confidence": "confirmed",
+      "evidence": "missing: permissions-policy, feature-policy",
+      "matchedAt": "https://ginandjuice.shop/resources/footer/js/scanme.js",
+      "source": "proxy"
+    }
+  ],
+  "log": [
+    "2026-11-14T01:26:40.421Z Rule-based automation started",
+    "2026-11-14T01:26:41.351Z Crawled 200 https://ginandjuice.shop/",
+    "2026-11-14T01:26:41.781Z Crawled 200 https://ginandjuice.shop/resources/js/react.development.js",
+    "2026-11-14T01:26:42.769Z Crawled 200 https://ginandjuice.shop/resources/js/react-dom.development.js",
+    "2026-11-14T01:26:43.005Z Crawled 200 https://ginandjuice.shop/resources/js/angular_1-7-7.js",
+    "2026-11-14T01:26:43.473Z Crawled 200 https://ginandjuice.shop/catalog",
+    "2026-11-14T01:26:43.991Z Crawled 200 https://ginandjuice.shop/blog",
+    "2026-11-14T01:26:44.490Z Crawled 200 https://ginandjuice.shop/about",
+    "2026-11-14T01:26:45.064Z Request failed: unexpected end of file",
+    "2026-11-14T01:26:45.064Z Crawled ERR https://ginandjuice.shop/my-account",
+    "2026-11-14T01:26:45.529Z Crawled 200 https://ginandjuice.shop/catalog/cart",
+    "2026-11-14T01:26:46.035Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=1",
+    "2026-11-14T01:26:46.544Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=2",
+    "2026-11-14T01:26:47.052Z Crawled 200 https://ginandjuice.shop/catalog/product?productId=3",
+    "2026-11-14T01:26:47.576Z Crawled 200 https://ginandjuice.shop/blog/post?postId=3",
+    "2026-11-14T01:26:48.079Z Crawled 200 https://ginandjuice.shop/blog/post?postId=4",
+    "2026-11-14T01:26:48.593Z Crawled 200 https://ginandjuice.shop/resources/js/subscribeNow.js",
+    "2026-11-14T01:26:49.096Z Crawled 405 https://ginandjuice.shop/catalog/subscribe",
+    "2026-11-14T01:26:49.619Z Crawled 200 https://ginandjuice.shop/resources/footer/js/scanme.js",
+    "2026-11-14T01:26:50.117Z Crawled 404 https://ginandjuice.shop/resources/js/xlinkHref",
+    "2026-11-14T01:26:50.625Z Crawled 404 https://ginandjuice.shop/resources/js/==",
+    "2026-11-14T01:26:51.140Z Crawled 404 https://ginandjuice.shop/resources/js/newProps.src;",
+    "2026-11-14T01:26:51.641Z Crawled 404 https://ginandjuice.shop/resources/js/update.action;",
+    "2026-11-14T01:26:52.154Z Crawled 404 https://ginandjuice.shop/$",
+    "2026-11-14T01:26:52.667Z Crawled 404 https://ginandjuice.shop/resources/js/b,l.href!==b&&(qa=b)):(m[d?",
+    "2026-11-14T01:26:53.183Z Crawled 404 https://ginandjuice.shop/resources/js/function()%7Bvar",
+    "2026-11-14T01:26:53.690Z Crawled 404 https://ginandjuice.shop/resources/js/a;f.async=!0;m=function(a)%7Bf.removeEventListener(",
+    "2026-11-14T01:26:54.202Z Crawled 404 https://ginandjuice.shop/resources/js/==ga(b).href%7Dfunction",
+    "2026-11-14T01:26:54.702Z Crawled 404 https://ginandjuice.shop/resources/js/a%7D);d.$watch(function()%7Bif(N||m.$$urlUpdatedByLocation)%7Bm.$$urlUpdatedByLocation=",
+    "2026-11-14T01:26:55.222Z Crawled 404 https://ginandjuice.shop/resources/js/",
+    "2026-11-14T01:26:55.741Z Crawled 404 https://ginandjuice.shop/resources/js/b.value;if(a.location.origin===c.origin)return!0;switch(c.protocol)%7Bcase",
+    "2026-11-14T01:26:56.247Z Crawled 404 https://ginandjuice.shop/g,",
+    "2026-11-14T01:27:14.083Z completed: Selected checks completed; 65 requests, 11 findings"
+  ]
+}

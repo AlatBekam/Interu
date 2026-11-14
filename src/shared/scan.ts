@@ -157,7 +157,8 @@ export function serviceName(port: number): string {
 export function profilePorts(profile: ScanProfile): number[] {
   if (profile === 'quick') return dedupeSort(TOP_100_PORTS)
   // standard & deep share the broader common set
-  return dedupeSort([...TOP_100_PORTS, ...COMMON_EXTRA])
+  return dedupeSort([...TOP_100_PORTS, ...COMMON_EXTRA, 1883, 2375, 2376, 2379, 2380,
+    5601, 5672, 5984, 6379, 6443, 9042, 9092, 9300, 10250, 11211, 15672, 27017, 27018, 61616])
 }
 
 export function profileGrabsBanner(profile: ScanProfile): boolean {

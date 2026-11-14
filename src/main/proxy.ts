@@ -5,6 +5,7 @@ import tls from 'node:tls'
 import { URL } from 'node:url'
 import { getHostCert } from './ca'
 import { hostInScope } from '../shared/http'
+import { redactSecrets } from '../shared/auth'
 
 // A real intercepting forward proxy with HTTPS MITM.
 //   * http://  and (via MITM) https:// requests are captured in full and can be
@@ -24,10 +25,28 @@ let seq = 1
 let intercepting = false
 let emit: Emit = () => {}
 let scope: string[] = []
+let allowInvalidTls = false
+let protectLogs = false
+const proxySecrets = new Set<string>()
+
+export function setProxyLogProtection(on: boolean): void { protectLogs = on; if (!on) proxySecrets.clear() }
+export function protectProxySecret(secret: string): void { if (secret) proxySecrets.add(secret) }
+function safeLog(text: string): string {
+  if (!protectLogs) return text
+  let result = redactSecrets(text)
+  for (const secret of proxySecrets) {
+    for (const encoded of [secret, encodeURIComponent(secret), new URLSearchParams({value:secret}).toString().slice(6)]) {
+      if (encoded) result = result.split(encoded).join('<redacted>')
+    }
+  }
+  return result
+}
+export function setProxyTlsPolicy(allow: boolean): void { allowInvalidTls = allow }
 const pending = new Map<number, (d: { action: 'forward' | 'drop'; raw?: string }) => void>()
 
 const now = (): string => new Date().toLocaleTimeString('en-GB', { hour12: false })
 const CAP = 50000
+const MAX_REQUEST = 10 * 1024 * 1024
 
 export function getPort(): number { return listenPort }
 export function isRunning(): boolean { return !!server }
@@ -47,6 +66,7 @@ export function resolveIntercept(id: number, action: 'forward' | 'drop', raw?: s
 
 export function stopProxy(): Promise<void> {
   return new Promise((res) => {
+    setProxyLogProtection(false)
     for (const [id, fn] of pending) { fn({ action: 'drop' }); pending.delete(id) }
     const done = (): void => { if (!server && !mitm) res() }
     if (mitm) { mitm.close(() => { mitm = null; done() }) }
@@ -89,12 +109,25 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
   const id = seq++
   const started = Date.now()
   const reqChunks: Buffer[] = []
+  let requestBytes = 0
+  let oversized = false
   clientReq.on('error', () => { /* client aborted; ignore */ })
   clientRes.on('error', () => { /* response socket closed; ignore */ })
-  clientReq.on('data', (c) => reqChunks.push(c as Buffer))
+  clientReq.on('data', (c: Buffer) => {
+    requestBytes += c.length
+    if (requestBytes > MAX_REQUEST) {
+      oversized = true
+      reqChunks.length = 0
+      if (!clientRes.headersSent) { clientRes.writeHead(413); clientRes.end('Request exceeds Interu 10 MiB limit') }
+      return
+    }
+    reqChunks.push(c)
+  })
   clientReq.on('end', async () => {
+    if (oversized) return
     const reqBody = Buffer.concat(reqChunks)
     let rawReq = buildRawReq(clientReq.method || 'GET', u, clientReq.headers, reqBody)
+    let edited = false
 
     if (intercepting && inScope) {
       emit('ruy:proxy:intercept', { id, raw: rawReq.slice(0, CAP), host: u.host, method: clientReq.method, path: u.pathname + u.search })
@@ -104,14 +137,14 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
         try { clientRes.writeHead(502); clientRes.end('Dropped by Interu') } catch { /* gone */ }
         return
       }
-      if (decision.raw) rawReq = decision.raw
+      if (decision.raw) { rawReq = decision.raw; edited = true }
     }
 
     const parsed = parseRaw(rawReq)
     const headers: Record<string, string> = {}
     for (const [k, v] of Object.entries(parsed.headers)) {
       const lk = k.toLowerCase()
-      if (lk === 'content-length' || lk === 'proxy-connection') continue
+      if (lk === 'content-length' || lk === 'proxy-connection' || lk === 'transfer-encoding') continue
       headers[k] = v
     }
     const lib = u.protocol === 'https:' ? https : http
@@ -122,15 +155,22 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
       path: parsed.path,
       headers,
       timeout: 20000,
-      rejectUnauthorized: false,
+      rejectUnauthorized: !allowInvalidTls,
       servername: u.hostname
     }
     const pReq = lib.request(options, (pRes) => {
       const resChunks: Buffer[] = []
-      pRes.on('data', (c) => resChunks.push(c as Buffer))
+      let totalBytes = 0
+      let capturedBytes = 0
+      clientRes.writeHead(pRes.statusCode || 200, pRes.headers as http.OutgoingHttpHeaders)
+      pRes.pipe(clientRes)
+      pRes.on('data', (c: Buffer) => {
+        totalBytes += c.length
+        if (inScope && capturedBytes < CAP) { const chunk = c.subarray(0, CAP - capturedBytes); resChunks.push(chunk); capturedBytes += chunk.length }
+      })
+      pRes.on('error', () => clientRes.destroy())
       pRes.on('end', () => {
         const resBuf = Buffer.concat(resChunks)
-        try { clientRes.writeHead(pRes.statusCode || 200, pRes.headers as http.OutgoingHttpHeaders); clientRes.end(resBuf) } catch { /* client gone */ }
         if (!inScope) return
         const statusLine = `HTTP/${pRes.httpVersion} ${pRes.statusCode} ${pRes.statusMessage || ''}`.trim()
         // One line per Set-Cookie so cookie rules can check each cookie's flags.
@@ -142,15 +182,16 @@ function handleRequest(clientReq: http.IncomingMessage, clientRes: http.ServerRe
         const bodyText = printable ? resBuf.toString('utf8') : `[${resBuf.length} bytes of ${ctype || 'binary'} omitted]`
         emit('ruy:proxy:log', {
           id, time: now(), method: parsed.method, host: u.host, path: parsed.path, url: u.href,
-          status: pRes.statusCode, length: resBuf.length, ms: Date.now() - started, kind: scheme,
-          request: rawReq.slice(0, CAP),
-          response: `${statusLine}\r\n${resHeaders}\r\n\r\n${bodyText}`.slice(0, CAP)
+          status: pRes.statusCode, length: totalBytes, ms: Date.now() - started, kind: scheme,
+          request: safeLog(rawReq.slice(0, CAP)),
+          response: safeLog(`${statusLine}\r\n${resHeaders}\r\n\r\n${bodyText}`.slice(0, CAP))
         })
       })
     })
     pReq.on('error', (e) => { try { clientRes.writeHead(502); clientRes.end('Upstream error: ' + e.message) } catch { /* noop */ } })
     pReq.on('timeout', () => pReq.destroy())
-    if (parsed.body && parsed.method !== 'GET' && parsed.method !== 'HEAD') pReq.write(parsed.body)
+    const forwardedBody = edited ? Buffer.from(parsed.body, 'utf8') : reqBody
+    if (forwardedBody.length) pReq.write(forwardedBody)
     pReq.end()
   })
 }

@@ -5,6 +5,8 @@
 export interface AuthConfig {
   /** Headers, one `Name: value` per line (Authorization, X-Api-Key, Cookie ...). */
   headers: string
+  /** Exact scheme + hostname + port to which these credentials belong. */
+  origin?: string
 }
 
 // Set by the HTTP stack itself; letting a pasted header override them would break requests or smuggle.
@@ -45,11 +47,11 @@ export function mergeAuth(
 }
 
 // Words as whole path segments / words: logout, sign-out, delete, ... but not "deleted-items" or "logs".
-const UNSAFE = /(^|[/_.=-])(log[-_]?out|sign[-_]?out|log[-_]?off|delete|remove|destroy|unsubscribe|deactivate|close[-_]?account|revoke|reset[-_]?password)([/_.?&=#-]|$)/i
+const UNSAFE = /(^|[/_.=-])(log[-_]?out|sign[-_]?out|log[-_]?off|delete|remove|destroy|unsubscribe|deactivate|close[-_]?account|revoke|reset[-_]?password|change[-_]?password|createdb|initdb|start[-_]?over|reset|wipe|drop|truncate|rebuild|seed|apply|eval|exec|execute|run|shell|command)([/_.?&=#-]|$)/i
 
 /**
- * While logged in, an automated GET to /logout or /delete/... really does it. The scanners skip such
- * URLs when credentials are attached (the operator can still send them by hand in the Repeater).
+ * Automated GETs can change state even without credentials. Scanners skip such
+ * URLs; an operator can still send them deliberately in Repeater.
  */
 export function isUnsafeAuthedPath(url: string): boolean {
   try {
@@ -86,6 +88,22 @@ export function lostSession(status: number | undefined, rawHeaders: string | und
  */
 export function redactSecrets(text: string): string {
   return text
-    .replace(/((?:set-)?cookie:\s*[^=;\s,]+=)[^;\s|]+/gi, '$1<redacted>')
+    .replace(/((?:set-)?cookie:\s*)([^\r\n|]*)/gi, (_all, prefix: string, value: string) => {
+      if (/set-cookie/i.test(prefix)) return prefix + value.replace(/^([^=;\s,]+=)[^;\s]+/, '$1<redacted>')
+      return prefix + value.replace(/([^=;\s,]+=)[^;\s]+/g, '$1<redacted>')
+    })
     .replace(/(authorization:\s*[A-Za-z]+\s+)[^\s|;]+/gi, '$1<redacted>')
+    .replace(/((?:x-api-key|api-key|x-auth-token):\s*)[^\r\n|]+/gi, '$1<redacted>')
+    .replace(/([?&](?:access_token|token|api_key|apikey|password|secret|session)=)[^&#\s]+/gi, '$1<redacted>')
+    .replace(/\b(?:AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z_-]{35}|ghp_[0-9A-Za-z]{36}|github_pat_[0-9A-Za-z_]{40,}|glpat-[0-9A-Za-z_-]{20,}|sk_live_[0-9A-Za-z]{20,}|xox[baprs]-[0-9A-Za-z-]{10,})\b/g, '<redacted>')
+    .replace(/\beyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b/g, '<redacted>')
+    .replace(/-----BEGIN ([A-Z ]*PRIVATE KEY)-----[\s\S]*?(?:-----END \1-----|$)/g, '<redacted private key>')
+    .replace(/((?:["']?)(?:password|passwd|secret|api_key|access_token|DB_PASSWORD|AWS_SECRET_ACCESS_KEY)["']?\s*[:=]\s*)["']?[^\s,;"'}]+["']?/gi, '$1<redacted>')
+}
+
+export function credentialOrigin(value: string | undefined): string | null {
+  try {
+    const u = new URL(value || '')
+    return /^https?:$/.test(u.protocol) && !u.username && !u.password ? u.origin : null
+  } catch { return null }
 }

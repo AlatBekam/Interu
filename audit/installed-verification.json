@@ -1,0 +1,16 @@
+{
+  "version": "1.4.0",
+  "appPath": "C:\\Users\\rangk\\AppData\\Local\\Programs\\Interu\\resources\\app.asar",
+  "userData": "C:\\Users\\rangk\\AppData\\Roaming\\ruy-cybersecurity-platform",
+  "renderer": {
+    "title": "Interu — Cyber Operations",
+    "bridgeHttp": true,
+    "bridgeScan": true,
+    "bridgeAutomation": true,
+    "hasExposureMonitor": true,
+    "settingsStored": true,
+    "findingsStored": true,
+    "automationScreen": true,
+    "top10Categories": 10
+  }
+}

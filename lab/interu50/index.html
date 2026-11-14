@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#081522">
+  <title>RUY Cyber Security Team — Vulnerable Website</title>
+  <style>
+    :root { color-scheme: dark; --ink:#edf5fa; --muted:#9ab0bc; --line:#264353; --navy:#081522; --panel:#102635; --cyan:#75e0d1; --gold:#f0bb72; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:var(--navy); color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:inherit; text-decoration:none; }
+    button, a { -webkit-tap-highlight-color:transparent; }
+    .wrap { width:min(1160px,calc(100% - 48px)); margin:auto; }
+    .site-header { position:relative; z-index:2; border-bottom:1px solid #ffffff16; background:#081522ee; }
+    .header-inner { min-height:82px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
+    .brand { display:flex; align-items:center; gap:13px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; line-height:1.2; }
+    .brand small { display:block; margin-top:4px; color:var(--muted); font-size:10px; letter-spacing:.25em; font-weight:600; }
+    .logo { width:43px; height:49px; flex:none; filter:drop-shadow(0 5px 15px #48ccb650); }
+    .nav { display:flex; gap:34px; color:#bbced7; font-size:13px; font-weight:600; }
+    .nav a:hover, .nav a:focus-visible { color:var(--cyan); }
+    .nav-cta { border:1px solid #66d7c48a; border-radius:7px; padding:10px 16px; color:var(--cyan); font-size:12px; font-weight:800; text-transform:uppercase; letter-spacing:.08em; }
+    .nav-cta:hover { background:#75e0d11b; }
+    .hero { position:relative; overflow:hidden; isolation:isolate; }
+    .hero::before { content:""; position:absolute; inset:0; z-index:-2; background:radial-gradient(circle at 82% 38%,#1e6b7065 0,transparent 38%),radial-gradient(circle at 0 80%,#193a4b 0,transparent 45%),linear-gradient(120deg,#0b1a29,#0a1d2a 55%,#102c39); }
+    .hero::after { content:""; position:absolute; inset:0; z-index:-1; opacity:.26; background-image:linear-gradient(#5db4af1c 1px,transparent 1px),linear-gradient(90deg,#5db4af1c 1px,transparent 1px); background-size:56px 56px; mask-image:linear-gradient(90deg,transparent 25%,black); }
+    .hero-inner { min-height:620px; padding:100px 0 110px; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(340px,.85fr); align-items:center; gap:60px; }
+    .eyebrow { display:inline-flex; align-items:center; gap:9px; color:var(--cyan); font-size:11px; font-weight:800; letter-spacing:.24em; text-transform:uppercase; }
+    .eyebrow::before { content:""; width:24px; height:2px; background:var(--cyan); }
+    h1 { margin:20px 0 22px; font-size:clamp(44px,6vw,76px); line-height:1.07; letter-spacing:-.055em; }
+    h1 span { display:block; color:var(--cyan); }
+    .lead { max-width:570px; color:#b3c6d0; font-size:18px; line-height:1.75; }
+    .actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:34px; }
+    .btn { display:inline-flex; align-items:center; justify-content:center; min-height:48px; border-radius:7px; padding:0 20px; font-size:13px; font-weight:800; letter-spacing:.02em; }
+    .btn-primary { color:#06202b; background:var(--cyan); box-shadow:0 10px 30px #34cab62a; }
+    .btn-primary:hover { background:#a7f4e9; }
+    .btn-quiet { color:#dceaf0; border:1px solid #7597a64d; background:#ffffff08; }
+    .btn-quiet:hover { background:#ffffff12; }
+    .hero-card { position:relative; padding:26px; border:1px solid #6ab7b45c; border-radius:16px; background:linear-gradient(150deg,#1b3a48dd,#102532ef); box-shadow:0 30px 80px #0007, inset 0 1px #ffffff1f; }
+    .hero-card::before { content:""; position:absolute; inset:-8px; z-index:-1; border:1px solid #75e0d11f; border-radius:22px; }
+    .card-top { display:flex; justify-content:space-between; align-items:center; padding-bottom:20px; border-bottom:1px solid #ffffff24; color:#bcd0d7; text-transform:uppercase; font-size:10px; font-weight:800; letter-spacing:.2em; }
+    .status { display:inline-flex; align-items:center; gap:7px; color:var(--cyan); }
+    .dot { width:7px; height:7px; border-radius:50%; background:var(--cyan); box-shadow:0 0 14px var(--cyan); }
+    .emblem { display:grid; place-items:center; height:225px; }
+    .emblem svg { width:154px; height:175px; filter:drop-shadow(0 16px 30px #041521); }
+    .card-bottom { display:flex; justify-content:space-between; align-items:end; gap:14px; border-top:1px solid #ffffff24; padding-top:18px; }
+    .card-bottom strong { display:block; font-size:18px; line-height:1.3; }
+    .card-bottom small { color:#8fb0bc; font-size:11px; text-transform:uppercase; letter-spacing:.16em; }
+    .tag { color:var(--gold); font-size:10px; font-weight:800; letter-spacing:.13em; text-transform:uppercase; border:1px solid #f0bb726b; border-radius:99px; padding:5px 9px; white-space:nowrap; }
+    section { scroll-margin-top:24px; }
+    .section { padding:78px 0; }
+    .section-heading { max-width:690px; }
+    h2 { margin:10px 0 14px; font-size:clamp(30px,4vw,44px); line-height:1.2; letter-spacing:-.035em; }
+    .section-heading p, .about p { color:var(--muted); }
+    .services { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-top:33px; }
+    .service { min-height:225px; padding:25px; background:var(--panel); border:1px solid var(--line); border-radius:11px; transition:transform .2s,border-color .2s; }
+    .service:hover { transform:translateY(-4px); border-color:#75e0d17a; }
+    .service .number { color:var(--cyan); font-size:12px; font-weight:800; letter-spacing:.18em; }
+    .service h3 { margin:25px 0 10px; font-size:20px; }
+    .service p { margin:0; color:var(--muted); font-size:14px; }
+    .about { border-top:1px solid var(--line); background:#0d2030; }
+    .about-grid { display:grid; grid-template-columns:1fr 1fr; align-items:center; gap:70px; }
+    .quote { border-left:3px solid var(--cyan); padding:12px 0 12px 25px; color:#cddce2; font-size:21px; line-height:1.55; }
+    .contact { padding:70px 0; background:linear-gradient(100deg,#133742,#10303d); border-top:1px solid #75e0d133; }
+    .contact-inner { display:flex; justify-content:space-between; align-items:center; gap:24px; }
+    .contact h2 { margin:4px 0; }
+    .contact p { margin:0; color:#b5cbd2; }
+    footer { padding:25px 0; color:#7f9aa7; font-size:12px; border-top:1px solid var(--line); }
+    .footer-inner { display:flex; justify-content:space-between; gap:16px; }
+    @media (max-width:850px) { .nav { display:none; } .hero-inner { grid-template-columns:1fr; gap:45px; padding:75px 0; } .hero-card { max-width:460px; } .services { grid-template-columns:1fr; } .about-grid { grid-template-columns:1fr; gap:20px; } }
+    @media (max-width:560px) { .wrap { width:min(100% - 32px,1160px); } .header-inner { min-height:72px; } .nav-cta { display:none; } .brand { font-size:12px; } .hero-inner { padding:62px 0 75px; } .lead { font-size:16px; } .hero-card { padding:20px; } .contact-inner, .footer-inner { flex-direction:column; align-items:start; } }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <a class="brand" href="#beranda" aria-label="RUY Cyber Security Team, kembali ke beranda">
+        <svg class="logo" viewBox="0 0 48 54" fill="none" role="img" aria-label="Logo RUY"><path d="M24 2 44 9v16c0 13-8 22-20 27C12 47 4 38 4 25V9L24 2Z" fill="#113d4b" stroke="#78dfcf" stroke-width="2"/><path d="m12 30 9-10 6 6 9-11" stroke="#78dfcf" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="35" cy="16" r="3" fill="#efbd78"/></svg>
+        <span>RUY Cyber Security<small>Team · Indonesia</small></span>
+      </a>
+      <nav class="nav" aria-label="Navigasi utama"><a href="#beranda">Beranda</a><a href="#layanan">Layanan</a><a href="#tentang">Tentang</a><a href="#kontak">Kontak</a></nav>
+      <a class="nav-cta" href="#kontak">Hubungi Tim</a>
+    </div>
+  </header>
+  <main>
+    <section class="hero" id="beranda">
+      <div class="wrap hero-inner">
+        <div>
+          <div class="eyebrow">Vulnerable Website · Training Environment</div>
+          <h1>RUY Cyber <span>Security Team.</span></h1>
+          <p class="lead">Perusahaan keamanan siber fiktif untuk latihan pengujian aplikasi web. Jelajahi lingkungan ini sebagai target lokal yang terkendali dan pelajari cara menemukan paparan konfigurasi dengan bukti yang dapat diperiksa.</p>
+          <div class="actions"><a class="btn btn-primary" href="/cases">Jelajahi 100 Modul &nbsp;↗</a><a class="btn btn-quiet" href="#tentang">Tentang Kami</a></div>
+        </div>
+        <div class="hero-card" aria-label="Kartu identitas RUY Cyber Security Team">
+          <div class="card-top"><span>RUY / Cyber Operations</span><span class="status"><i class="dot"></i> Local lab online</span></div>
+          <div class="emblem"><svg viewBox="0 0 160 180" fill="none" role="img" aria-label="Lambang perisai RUY"><path d="M80 8 145 30v52c0 42-25 72-65 90C40 154 15 124 15 82V30L80 8Z" fill="#164354" stroke="#7be1d0" stroke-width="4"/><path d="M80 25 129 42v39c0 31-18 55-49 70-31-15-49-39-49-70V42l49-17Z" stroke="#a4eee0" stroke-opacity=".35"/><path d="m43 94 30-34 23 23 24-29" stroke="#7be1d0" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/><circle cx="118" cy="55" r="8" fill="#f0bb72"/></svg></div>
+          <div class="card-bottom"><div><small>Security Research Unit</small><strong>Observe. Verify. Improve.</strong></div><span class="tag">Fictional Company</span></div>
+        </div>
+      </div>
+    </section>
+    <section class="section" id="layanan"><div class="wrap"><div class="section-heading"><div class="eyebrow">Layanan Kami</div><h2>Keamanan dibangun dari bukti.</h2><p>Tim fiktif ini menggambarkan layanan yang biasa dipakai organisasi untuk memahami permukaan serangan dan memperbaiki kelemahannya.</p></div><div class="services"><article class="service"><span class="number">01 / ASSESS</span><h3>Web Assessment</h3><p>Meninjau permukaan aplikasi, konfigurasi, dan kontrol akses dengan temuan yang dapat direproduksi.</p></article><article class="service"><span class="number">02 / VALIDATE</span><h3>Offensive Testing</h3><p>Melakukan pengujian terukur dalam ruang lingkup yang disetujui dan mengutamakan bukti teknis.</p></article><article class="service"><span class="number">03 / IMPROVE</span><h3>Security Advisory</h3><p>Mengubah hasil pengujian menjadi rekomendasi perbaikan yang jelas bagi tim pengembang.</p></article></div></div></section>
+    <section class="section about" id="tentang"><div class="wrap about-grid"><div><div class="eyebrow">Tentang RUY</div><h2>Simulasi yang terasa seperti dunia kerja.</h2><p>RUY Cyber Security Team adalah identitas perusahaan fiktif untuk website latihan ini. Lingkungan sengaja berisi konfigurasi cadangan yang terekspos agar operator dapat memvalidasi alur deteksi secara aman di localhost.</p></div><div class="quote">“Temuan yang kuat selalu punya jejak: lokasi, respons, dan alasan mengapa sebuah aturan cocok.”</div></div></section>
+    <section class="contact" id="kontak"><div class="wrap contact-inner"><div><div class="eyebrow">Kontak</div><h2>Siap menguji dengan tepat?</h2><p>Gunakan portal ini hanya sebagai target latihan lokal yang Anda kendalikan.</p></div><a class="btn btn-primary" href="mailto:hello@ruy.example.invalid">hello@ruy.example.invalid &nbsp;↗</a></div></section>
+  </main>
+  <footer><div class="wrap footer-inner"><span>© 2026 RUY Cyber Security Team · Fictional Training Website</span><span>Local environment · Authorized testing only</span></div></footer>
+</body>
+</html>

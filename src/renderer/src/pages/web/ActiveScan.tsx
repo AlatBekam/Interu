@@ -11,18 +11,22 @@ import { sendLive, rawFromParts, inScopeOrNote } from '../../lib/http'
 import { setTransfer } from '../../store/transfer'
 import { addFindings } from '../../store/findings'
 import { pushActivity } from '../../store/activity'
-import type { HttpRes } from '../../../../shared/http'
+import type { HttpReq, HttpRes } from '../../../../shared/http'
 import { CrawlController, contentTypeLabel, type CrawlForm } from '../../../../shared/crawl'
 import type { Finding, RuleSeverity, Confidence } from '../../../../shared/rules'
+import { activeTemplates, buildActiveRequest, computeBaseline, matchActive } from '../../../../shared/rules'
 import {
-  planQueryParams, sqliErrorVerdict, xssReflectVerdict, isIdLike, idNeighbors, idorVerdict,
-  accessVerdict, csrfMissing, sqliFinding, xssFinding, idorFinding, accessFinding, csrfFinding
+  planQueryParams, sqliErrorVerdict, xssReflectVerdict, idorProbeEligible, idNeighbors, idorVerdict,
+  accessVerdict, csrfMissing, sqliFinding, xssFinding, idorFinding, accessFinding, csrfFinding,
+  fileDisclosureVerdict, expressionVerdict, commandOutputVerdict, ssrfErrorVerdict, differentialFinding
 } from '../../../../shared/webvuln'
 
 const hasHttp = typeof window !== 'undefined' && !!window.ruy?.http
 const sevPill = (s: RuleSeverity): string => severityPill[s as Severity]
 const confPill = (c: Confidence): string => (c === 'confirmed' ? 'pill-ok' : 'pill-warn')
 const clamp = (n: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, n))
+const MAX_ACTIVE_REQUESTS = 1500
+const MAX_ACTIVE_DURATION_MS = 15 * 60 * 1000
 
 const ctOf = (res: HttpRes): string =>
   contentTypeLabel((res.rawHeaders || '').match(/^content-type:\s*(.+)$/im)?.[1])
@@ -37,6 +41,8 @@ export default function ActiveScan() {
   const [doXss, setDoXss] = useState(true)
   const [doIdor, setDoIdor] = useState(true)
   const [doAccess, setDoAccess] = useState(true)
+  const [doAdvanced, setDoAdvanced] = useState(true)
+  const [doTemplates, setDoTemplates] = useState(true)
 
   const [findings, setFindings] = useState<Finding[]>([])
   const [sel, setSel] = useState<Finding | null>(null)
@@ -48,11 +54,19 @@ export default function ActiveScan() {
   const [stats, setStats] = useState({ pages: 0, tested: 0, requests: 0 })
 
   const stopRef = useRef(false)
+  const issuedRef = useRef(0)
+  const startedRef = useRef(0)
   const navigate = useNavigate()
   const addLog = (s: string): void => setLog((l) => [...l.slice(-500), s])
 
-  const get = async (url: string): Promise<HttpRes> => {
-    const res = await sendLive({ method: 'GET', url, headers: { 'User-Agent': 'Interu/1.0', Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' }, timeoutMs: 12000 }, settings.scope)
+  const get = async (url: string, override?: HttpReq): Promise<HttpRes> => {
+    if (stopRef.current || issuedRef.current >= MAX_ACTIVE_REQUESTS || Date.now() - startedRef.current >= MAX_ACTIVE_DURATION_MS) {
+      if (!stopRef.current) addLog('  ! request or time budget reached; stopped')
+      stopRef.current = true
+      return { ok: false, timingMs: 0, size: 0, error: 'Scan stopped or request budget reached' }
+    }
+    issuedRef.current++
+    const res = await sendLive(override || { method: 'GET', url, headers: { 'User-Agent': 'Interu/1.0', Accept: 'text/html,application/xhtml+xml,*/*;q=0.8' }, timeoutMs: 12000 }, settings.scope)
     if (res.authLost && !stopRef.current) { stopRef.current = true; addLog('  ! login session expired — stopped. Paste a fresh token, then press Refresh.') }
     return res
   }
@@ -68,6 +82,8 @@ export default function ActiveScan() {
 
     setNote(null); setRunning(true); setFindings([]); setSel(null); setProgress(0); setStats({ pages: 0, tested: 0, requests: 0 })
     stopRef.current = false
+    issuedRef.current = 0
+    startedRef.current = Date.now()
     setLog([`> active scan @ ${seed}`])
 
     const scope = settings.scope
@@ -84,7 +100,7 @@ export default function ActiveScan() {
 
     // ---------- Phase 1: crawl to map the attack surface ----------
     setPhase('crawling')
-    const ctrl = new CrawlController([seed + (seed.endsWith('/') ? '' : '/')], { maxDepth: depth, maxPages, sameHostOnly: true, includeSubdomains: true }, scope)
+    const ctrl = new CrawlController([seed], { maxDepth: depth, maxPages, sameHostOnly: true, includeSubdomains: true }, scope)
     const paramTargets = new Map<string, string>() // dedupe key -> a concrete URL with that path+param-set
     const idTargets: { url: string; param: string; value: string }[] = []
     const formSeen = new Set<string>()
@@ -96,7 +112,7 @@ export default function ActiveScan() {
         const res = await get(item.url); reqCount++
         if (res.blocked) { stopRef.current = true; addLog('  ! blocked by scope'); return }
         const type = ctOf(res)
-        const parse = ['html', 'xml', 'js', 'json', 'text'].includes(type)
+        const parse = ['html', 'xml', 'js', 'json', 'text', 'yaml'].includes(type)
         const node = ctrl.record(item, { status: res.ok ? res.status ?? '-' : 'ERR', type, length: res.size, ms: res.timingMs, html: parse ? res.body || '' : '', error: res.ok ? undefined : res.error })
         // Access control (suspected) + CSRF (suspected) evaluated from the crawl hit itself.
         if (doAccess && res.ok) {
@@ -111,9 +127,9 @@ export default function ActiveScan() {
           try {
             const u = new URL(raw)
             if (![...u.searchParams.keys()].length) return
-            const key = u.pathname + '?' + [...u.searchParams.keys()].sort().join(',')
+            const key = u.origin + u.pathname + '?' + [...u.searchParams.keys()].sort().join(',')
             if (!paramTargets.has(key)) paramTargets.set(key, u.toString())
-            if (doIdor) for (const [k, v] of u.searchParams.entries()) if (isIdLike(k, v) && idNeighbors(v).length) idTargets.push({ url: u.toString(), param: k, value: v })
+            if (doIdor) for (const [k, v] of u.searchParams.entries()) if (idorProbeEligible(u.toString(), k, v)) idTargets.push({ url: u.toString(), param: k, value: v })
           } catch { /* ignore */ }
         }
         if (node.params.length) addParamUrl(item.url)
@@ -147,20 +163,35 @@ export default function ActiveScan() {
         for (const plan of planQueryParams(url)) {
           if (stopRef.current) return
           const baseRes = await get(plan.baselineUrl); reqCount++
+          if (!baseRes.ok || baseRes.authLost || baseRes.truncated) continue
           const baseBody = baseRes.body || ''
           if (doSqli) {
             const q = plan.probes.find((p) => p.kind === 'sqli-quote')!
             const b = plan.probes.find((p) => p.kind === 'sqli-balanced')!
             const qRes = await get(q.url); reqCount++
             const bRes = await get(b.url); reqCount++
-            const v = sqliErrorVerdict(baseBody, qRes.body || '', bRes.body || '')
+            const v = qRes.ok && bRes.ok && !qRes.truncated && !bRes.truncated && !qRes.authLost && !bRes.authLost
+              ? sqliErrorVerdict(baseBody, qRes.body || '', bRes.body || '') : null
             if (v) push(sqliFinding(url, plan.param, v, rawFromParts('GET', (() => { try { return new URL(q.url).host } catch { return host } })(), (() => { try { const u = new URL(q.url); return u.pathname + u.search } catch { return '/' } })()), qRes.raw))
           }
           if (doXss) {
             const x = plan.probes.find((p) => p.kind === 'xss')!
             const xRes = await get(x.url); reqCount++
             const v = xssReflectVerdict(xRes.body || '', x.token!, ctOf(xRes) === 'html' ? 'text/html' : 'application/json')
-            if (v?.confirmed) push(xssFinding(url, plan.param, x.token!, rawFromParts('GET', (() => { try { return new URL(x.url).host } catch { return host } })(), (() => { try { const u = new URL(x.url); return u.pathname + u.search } catch { return '/' } })()), xRes.raw))
+            if (xRes.ok && !xRes.truncated && !xRes.authLost && v?.reflected) push(xssFinding(url, plan.param, x.token!, rawFromParts('GET', (() => { try { return new URL(x.url).host } catch { return host } })(), (() => { try { const u = new URL(x.url); return u.pathname + u.search } catch { return '/' } })()), xRes.raw))
+          }
+          if (doAdvanced) for (const kind of ['lfi', 'ssti', 'rce', 'ssrf', 'xxe'] as const) {
+            const probe = plan.probes.find((p) => p.kind === kind)
+            if (!probe || stopRef.current) continue
+            const result = await get(probe.url); reqCount++
+            if (!result.ok || result.truncated || result.authLost || result.blocked) continue
+            const body = result.body || ''
+            const payload = new URL(probe.url).searchParams.get(plan.param) || ''
+            const hit = kind === 'lfi' || kind === 'xxe' ? fileDisclosureVerdict(baseBody, body)
+              : kind === 'ssti' ? expressionVerdict(baseBody, body, probe.token || '', payload)
+              : kind === 'rce' ? commandOutputVerdict(baseBody, body, probe.token || '', payload)
+              : ssrfErrorVerdict(baseBody, body)
+            if (hit) push(differentialFinding(kind, url, plan.param, `GET ${probe.url}`, result.raw || ''))
           }
           tested++
           setStats((s) => ({ ...s, tested, requests: reqCount }))
@@ -192,6 +223,31 @@ export default function ActiveScan() {
       }
     }
 
+    // ---------- Phase 4: use the same exposure templates as Rule Engine ----------
+    if (doTemplates && !stopRef.current) {
+      setPhase('exposure templates')
+      const baseUrl = new URL(seed).origin
+      const soft404 = await get(`${baseUrl}/interu-not-here-${Date.now()}`); reqCount++
+      if (soft404.ok && !soft404.truncated) {
+        const baseline = computeBaseline(soft404)
+        const templates = activeTemplates()
+        let failures = 0
+        for (let i = 0; i < templates.length && !stopRef.current; i++) {
+          const req = buildActiveRequest(templates[i], baseUrl)
+          if (!req || req.method !== 'GET') continue
+          const res = await get(req.url, req); reqCount++
+          if (res.status === 429 || res.status === 503) { stopRef.current = true; addLog(`  ! server backoff HTTP ${res.status}; stopped`); break }
+          if (!res.ok) { if (++failures >= 5) { stopRef.current = true; addLog('  ! five consecutive request failures; stopped') }; continue }
+          failures = 0
+          const hit = matchActive(templates[i], req.url, res, { req, baseline })
+          if (hit) push(hit)
+          setStats((s) => ({ ...s, requests: reqCount }))
+          setProgress(85 + Math.round(((i + 1) / templates.length) * 15))
+          await new Promise((resolve) => window.setTimeout(resolve, 50))
+        }
+      } else addLog('  ! soft-404 baseline unavailable; exposure templates skipped')
+    }
+
     const added = addFindings(collected)
     setProgress(100); setPhase('done'); setRunning(false)
     const conf = collected.filter((f) => f.confidence === 'confirmed').length
@@ -210,15 +266,14 @@ export default function ActiveScan() {
 
   return (
     <>
-      <TopBar title="Active Scan · Automation" sub="SQLi · XSS · IDOR · Access — oracle-based, FP-safe" />
+      <TopBar title="Active Scan · Automation" sub="Parameter probes and Rule Engine exposure templates" />
       <div className="content page">
         <Disclaimer>
           <strong>Active vulnerability scan.</strong> Enter a target: Interu crawls it, then injects oracle-based
-          probes into every parameter. <strong>SQLi</strong> and <strong>XSS</strong> are reported
-          <strong> confirmed</strong> only on a deterministic oracle (a DB error attributable to our quote; our unique
-          tag reflected unencoded). <strong>IDOR</strong>, <strong>access</strong> and <strong>CSRF</strong> are
-          surfaced as <strong>suspected</strong> candidates to verify — never auto-claimed, so there are no false
-          positives. Real requests go only to hosts in your authorized scope. Authorized testing only.
+          probes into query parameters. <strong>SQLi</strong> is confirmed only when a quote introduces a DB error
+          and a balancing control clears it. Reflected XSS, IDOR, access and CSRF checks are
+          <strong> suspected</strong> candidates for manual verification. Exposure templates also check for
+          distinct file content. Real requests go only to hosts in your authorized scope.
         </Disclaimer>
 
         <div className="flex gap-12 items-center mt-16 mb-12 wrap">
@@ -242,6 +297,8 @@ export default function ActiveScan() {
           <label className="flex gap-6 items-center"><input type="checkbox" checked={doXss} disabled={running} onChange={(e) => setDoXss(e.target.checked)} />XSS</label>
           <label className="flex gap-6 items-center"><input type="checkbox" checked={doIdor} disabled={running} onChange={(e) => setDoIdor(e.target.checked)} />IDOR</label>
           <label className="flex gap-6 items-center"><input type="checkbox" checked={doAccess} disabled={running} onChange={(e) => setDoAccess(e.target.checked)} />Access/CSRF</label>
+          <label className="flex gap-6 items-center"><input type="checkbox" checked={doAdvanced} disabled={running} onChange={(e) => setDoAdvanced(e.target.checked)} />LFI/XXE/SSTI/RCE/SSRF signals</label>
+          <label className="flex gap-6 items-center"><input type="checkbox" checked={doTemplates} disabled={running} onChange={(e) => setDoTemplates(e.target.checked)} />Rule Engine exposure templates</label>
         </div>
 
         <ScopeBar withAuth />

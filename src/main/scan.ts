@@ -63,6 +63,7 @@ function probePort(scanId: number, ip: string, port: number, timeoutMs: number):
     sock.setTimeout(timeoutMs)
     sock.once('connect', () => finish('open'))
     sock.once('timeout', () => finish('filtered'))
+    sock.once('close', () => finish('filtered'))
     sock.once('error', (err: NodeJS.ErrnoException) => {
       finish(err.code === 'ECONNREFUSED' ? 'closed' : 'filtered')
     })
@@ -100,6 +101,7 @@ function grabBanner(scanId: number, ip: string, port: number, timeoutMs: number)
     sock.once('timeout', () => finish(buf))
     sock.once('error', () => finish(buf))
     sock.once('end', () => finish(buf))
+    sock.once('close', () => finish(buf))
 
     const sendProbe = (): void => {
       if (isHttp) {

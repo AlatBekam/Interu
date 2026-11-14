@@ -1,244 +1,132 @@
-================================================================================
-  INTERU — CYBER OPERATIONS
-  by RUY CYBERSECURITY TEAM
-  Kartika Cyber Hackathon 2026 — Kategori 01: Penindakan (Offensive Tech)
-================================================================================
+INTERU — CYBER OPERATIONS
+RUY Cybersecurity Team
+Versi aplikasi: 1.4.0 | Windows x64 | 14 November 2026
 
-1. APA INI
---------------------------------------------------------------------------------
-Interu adalah PLATFORM OPERASI SIBER OFENSIF all-in-one buatan Indonesia,
-berbentuk aplikasi DESKTOP WINDOWS (Electron + React + TypeScript).
+APA ITU INTERU
+Interu adalah aplikasi desktop untuk pengujian keamanan jaringan dan web
+pada target yang diizinkan. Otomasi memakai rule engine dan probe deterministik.
+Tidak ada model AI atau layanan AI di alur pemindaian.
 
-Satu aplikasi menggabungkan:
-  - Web Security Suite gaya Burp Suite (Proxy, Repeater, Intruder, Crawler,
-    Active Scan, dll)
-  - Modul Operations (Network Scanner, Vulnerabilities, Exposure Monitor)
-  - Rule Engine (Detection)
-Dilengkapi SCOPE / AUTHORIZATION (legal-by-design): fitur "Live" hanya boleh
-menyerang host yang didaftarkan ke Scope (yang kita punya izinnya).
+PAKAI APLIKASI
+1. Installer: release\Interu-Setup-1.4.0.exe
+   Portabel: release\Interu-Portable-1.4.0.exe
+2. Tambahkan target berizin ke Scope. Scope kosong menolak operasi jaringan
+   aktif ke target.
+3. Buka Pentest Automation untuk crawl, pemeriksaan pasif, probe parameter,
+   dan template aktif dalam satu run dengan batas request/waktu yang dapat
+   diatur. Temuan dapat dibuka di Operations > Vulnerabilities.
 
-Identitas visual: industrial, datar (flat), padat; satu warna aksen, tema Dark + Light
-(warna lewat token peran, lihat docs/092_panduan-tampilan.md).
+FITUR YANG TERSEDIA
+- Web Security Suite: proxy HTTP/HTTPS dan intercept, browser bawaan,
+  Repeater, Intruder, Site Map, Crawler, Active Scan, Decoder, Comparer,
+  dan Sequencer.
+- Active Scan: probe GET terbatas untuk sinyal SQLi, XSS, LFI, XXE, SSTI,
+  RCE, SSRF, IDOR, akses sensitif, dan CSRF. Kandidat tetap diberi label
+  suspected bila dampaknya belum terbukti.
+- Rule Engine: 808 template data (28 port/banner, 47 HTTP pasif, 733 HTTP
+  aktif), matcher DSL, extractor, baseline soft-404, korelasi, dan bukti.
+  Detektor field password pada JSON daftar pengguna ada di luar hitungan
+  template. Isi field password tidak disimpan pada objek temuannya.
+  Temuan terkonfirmasi dapat menampilkan saran verifikasi dan perbaikan
+  melalui advisor Attack/Defense.
+- Network Scanner: TCP connect scan dan pembacaan banner.
+- Exposure Monitor dan Vulnerabilities: aktivitas/temuan lokal serta detail
+  bukti request/response. Flag lab dapat dilihat dari detail temuan.
+- Login dapat dilakukan manual lewat browser bawaan Proxy. Header Cookie
+  dari request setelah login dapat ditempel ke Authenticated scan untuk
+  Crawler, Active Scan, Rule Engine aktif, dan Pentest Automation. Header
+  sesi disimpan dalam memori proses utama selama aplikasi berjalan.
+- Automation memiliki opsi Explore browser + run: membuka browser lewat
+  Proxy, menjelajah halaman satu origin, mencatat form login/register,
+  lalu memakai URL hasilnya sebagai seed scanner.
+- Opsi Explore + create test account + run membuat identitas sementara
+  sendiri, mencoba form registrasi POST dan login pada origin yang sama,
+  kemudian memakai cookie browser yang berubah untuk request scanner.
+  Tidak perlu mengetik kredensial; hasil login tidak diklaim hanya karena
+  cookie ada. Form CAPTCHA/MFA/verifikasi email/SSO bisa menghambat alur.
+- Antarmuka menyediakan tema Dark dan Light. Proxy meneruskan traffic di
+  luar Scope tanpa inspeksi; HTTPS di luar Scope tidak didekripsi.
 
-PENTING: tool pentest ini HANYA untuk target yang kita miliki izinnya
-(lab sendiri / server berizin). Tidak ada mode simulasi: semua halaman LIVE.
+LOGIN MANUAL, LALU SCAN DENGAN SESI
+1. Masukkan host target ke Scope. Jalankan Proxy, pilih Open Browser, dan
+   login dengan akun uji pada situs target.
+2. Di riwayat Proxy, buka request ke halaman yang memerlukan login.
+   Salin baris Cookie: ... dari REQUEST, bukan Set-Cookie dari response.
+3. Di panel Authenticated scan, isi Credential origin yang tepat
+   (protokol, host, port), tempel baris Cookie: ... di Headers, lalu klik
+   Apply credentials. Authorization: Bearer ... juga didukung.
+4. Jalankan Crawler, Active Scan, Rule Engine active checks, atau Pentest
+   Automation. Header dipakai hanya pada origin yang sama dan dalam Scope.
+5. Jika session expired, login ulang, tempel header baru, klik Apply
+   credentials, lalu Refresh sebelum menjalankan ulang scan.
 
+Pada alur manual, cookie masih disalin dari Proxy. Pada opsi akun uji
+otomatis, cookie dihubungkan ke scanner dalam proses utama.
+Pemindaian memakai hak akses akun yang dipakai login; gunakan akun uji.
 
-2. STATUS KESELURUHAN
---------------------------------------------------------------------------------
-  [#######---] ~70% menuju "produk lomba siap pakai"
+PERUBAHAN VERSI 1.4.0
+- Browser Chromium lewat Proxy menjelajah maksimal 12 halaman GET satu
+  origin dengan jeda minimum 500 ms dan memasukkan URL hasil ke Automation.
+- Form login/register dicatat sebagai permukaan; opsi akun uji hanya
+  mencoba form POST yang sesuai dan memakai identitas acak.
+- Sesi lama dibersihkan sebelum percobaan akun baru. Kata sandi sementara
+  dan nilai cookie tidak dikembalikan ke UI Automation.
+- Registrasi/login dapat membuat data akun pada target. Gunakan hanya jika
+  aturan target mengizinkan pembuatan akun uji otomatis.
 
-  Web Security Suite (Burp)  : SELESAI & FUNGSIONAL (bisa dipakai beneran)
-                               + request/response kini bisa di-COPY di semua tool
-  Crawler + Active Scan      : BARU — autopilot: Crawler petakan endpoint/form,
-                               Active Scan uji SQLi/XSS (Confirmed) + IDOR/
-                               access/CSRF (Suspected), oracle FP-safe
-  Network Scanner            : REAL — TCP connect scan asli, scope-gated
-  Rule Engine (Detection)    : NUCLEI-GRADE — 408 template data-driven, matcher
-                               DSL (tanpa eval), extractor, interpolasi, baseline
-                               soft-404, korelasi Suspected->Confirmed, bukti
-                               lengkap, + ADVISOR ATTACK/DEFENSE per temuan  (BARU)
-  Exposure Monitor           : REAL — hanya temuan & aktivitas nyata (landing page)
-  Halaman palsu              : DIHAPUS (Dashboard, Firewall Rules, Reports)
+PERUBAHAN VERSI 1.3.0
+- Crawler lebih selektif pada tautan HTML dan JavaScript; menemukan rute
+  GET dari OpenAPI JSON/YAML dan memprioritaskan URL berparameter.
+- Deteksi SQLi SQLite memakai baseline, input petik, dan kontrol penyeimbang.
+- Probe IDOR tidak menilai perubahan ID objek publik sebagai bypass akses.
+- Cookie infrastruktur dikenal diabaikan dalam pemeriksaan cookie sesi;
+  CORS wildcard dicatat sebagai informasi tanpa bukti paparan data.
+- Path GET yang dapat mengubah state, seperti /createdb dan /start_over,
+  dilewati crawler.
 
+PENGUJIAN YANG SUDAH DILAKUKAN
+- Typecheck dan 300 tes otomatis berjalan lulus pada sumber 1.4.0.
+- Tes akun lokal membuktikan browser membuat akun, login, dan request
+  scanner membaca halaman privat; kata sandi tidak muncul di UI.
+  Bukti: audit\browser-account-verification.json.
+- Pada lab RUY Docker, paket 1.3.0 menampilkan 150/150 kasus masing-masing
+  melalui Active Scan, Rule Engine, dan Pentest Automation. Detail flag 1
+  dan 150 dibuka lewat antarmuka. Bukti: audit\lab-ui-verification.json.
+- Pentest Automation diuji terbatas tanpa header sesi login pada 10 target
+  latihan independen: 7 online dan 3 Docker lokal.
+  Bukti: audit\multi-target-benchmark.json.
+  Run itu mencatat 3 sinyal SQLi MySQL dan 1 disclosure file di DVWA online,
+  serta 1 sinyal SQLi SQLite pada Juice Shop lokal. Run tambahan VAmPI
+  menemukan respons JSON dengan field password tanpa menyimpan nilainya:
+  audit\multi-target-single.json. Kandidat XSS Altoro tetap kandidat.
+- Installer 1.4.0 sudah terpasang; pemeriksaan aplikasi terpasang tersimpan
+  di audit\installed-verification.json. Versi aplikasi dan layar Automation
+  berhasil diperiksa.
+- Run browser pada 10 target tersimpan di audit\ten-browser-benchmark.json.
+  Tidak ada form registrasi yang cocok dalam run tersebut dan jumlah temuan
+  inti terkonfirmasi tidak bertambah. Rangkuman ada di
+  LAPORAN-PERBANDINGAN-10-TARGET-1.4.0.md.
 
-3. STACK & CARA MENJALANKAN
---------------------------------------------------------------------------------
-Stack  : Electron 33 + React 18 + TypeScript + Vite (electron-vite),
-         packaging pakai electron-builder, MITM pakai node-forge.
+BATAS YANG PERLU DIKETAHUI
+- Lab 150 kasus dibuat khusus sebagai target uji Interu. Hasilnya tidak
+  menyatakan cakupan atau akurasi pada semua aplikasi nyata.
+- Belum ada ground truth lengkap per endpoint untuk menghitung tingkat
+  kesalahan temuan. Header/cookie yang teramati tidak otomatis berarti
+  dampak keamanan telah dibuktikan.
+- Uji 10 target tanpa sesi tidak mengukur kemampuan pemindaian di balik
+  login. Interu mendukung header sesi manual seperti dijelaskan di atas.
+- Browser discovery merender JavaScript, tetapi probe kerentanan otomatis
+  berfokus pada GET. Alur POST/GraphQL dan logika SPA kompleks bisa terlewat.
+- Paket installer belum ditandatangani dengan sertifikat penerbit kode.
 
-A) CUMA MAU PAKAI (tanpa ngoding):
-   - Jalankan file installer: Interu-Setup-1.0.0.exe  (atau Portable .exe)
-   - Kalau SmartScreen muncul -> More info -> Run anyway (wajar, belum signed)
-   - Setelah install, cari "Interu" di pencarian Windows / shortcut Desktop
+PENGEMBANGAN DARI SUMBER
+Windows x64, Node.js 20+, npm. Jalankan di folder proyek:
+  npm install
+  npm run typecheck
+  npm test
+  npm run dist
+Output installer/portabel ada di release/. Kode ada di src/main,
+src/shared, src/preload, dan src/renderer. Lab lokal ada di lab/.
 
-B) MAU NGODING / NGEMBANGIN BARENG:
-   1. Install Node.js LTS (v20+; dibangun pakai v24) dari nodejs.org
-   2. Extract source (TANPA folder: node_modules, out, release)
-   3. Buka terminal di folder project, jalankan:
-        npm install        -> restore semua dependency
-        npm run dev         -> mode development (hot reload)
-        npm run build       -> build produksi ke folder out/
-        npm run dist        -> build + bikin installer .exe ke folder release/
-   - Wajib ikutkan package-lock.json biar versi sama persis.
-   - Kalau 'npm run dist' error 'Cannot create symbolic link ... winCodeSign':
-     lihat README (ada solusi pre-extract / nyalain Developer Mode).
-
-Struktur penting:
-  src/main/        -> proses Electron (window, proxy, MITM CA, HTTP, scanner)
-    index.ts       -> window + semua IPC (termasuk ruy:scan:tcp)
-    proxy.ts       -> forward proxy + HTTPS MITM
-    ca.ts          -> root CA + cert per-host (untuk MITM)
-    http.ts        -> HTTP client asli (Repeater/Intruder/Target live)
-    scan.ts        -> TCP connect scanner ASLI (Node net) + banner grab  (BARU)
-  src/preload/     -> jembatan aman renderer <-> main (http, proxy, scan)
-  src/shared/      -> dipakai bareng main & renderer:
-    http.ts        -> tipe HTTP + scope gate host (hostInScope)
-    proxy.ts       -> tipe event proxy
-    scan.ts        -> parse target CIDR/range, daftar port, ipInScope
-    rules.ts       -> Rule Engine: 408 template + matcher + extractor +
-                      interpolasi + baseline + korelasi + CVE
-    dsl.ts         -> evaluator ekspresi DSL aman (tanpa eval)             (BARU)
-    crawl.ts       -> crawler BFS: temukan link/form/endpoint fetch()      (BARU)
-    webvuln.ts     -> oracle SQLi/XSS/IDOR/access/CSRF (FP-safe)           (BARU)
-    advice.ts      -> advisor Attack/Defense per temuan                    (BARU)
-  src/renderer/src/
-    pages/web/     -> Web Security Suite (Target, Crawler, ActiveScan, Proxy,
-                      Repeater, Intruder, Decoder, Comparer, Sequencer)
-    pages/         -> NetworkScanner (REAL), RuleEngine, Vulnerabilities,
-                      ThreatMonitor (Exposure Monitor), Settings
-    components/    -> Sidebar, TopBar, ThemeToggle, ScopeBar, ContextMenu,
-                      CopyButton, Crest, icons, ui
-    data/          -> burp.ts (hanya PAYLOAD_SETS Intruder)
-    lib/           -> severity.ts (Severity, SEVERITY_ORDER, severityPill)
-    store/         -> store.ts (settings+persist), transfer.ts (send-to bus),
-                      findings.ts (store temuan Rule Engine)               (BARU)
-    lib/http.ts    -> parse raw request, curl, sendLive
-
-
-4. STATUS PER-MODUL (semua LIVE)
---------------------------------------------------------------------------------
-== WEB SECURITY SUITE (SELESAI / REAL) ==
-  [DONE] Proxy        : Forward proxy ASLI + HTTPS MITM (dekripsi TLS).
-                        - Start di 127.0.0.1:8080, Intercept Forward/Drop/Edit
-                        - Open Browser (jendela browser bawaan lewat proxy, auto-trust CA;
-                          ada address bar, back/forward, reload/stop; tanpa tab)
-                        - Export CA (buat browser eksternal)
-                        - HTTP History live + Inspector
-                        - Klik kanan baris: Send to Repeater/Intruder, Copy URL,
-                          Copy request, Copy response, Copy as curl, Inspect
-                        - Inspector request/response bisa diseleksi + tombol Copy
-  [DONE] Repeater     : kirim HTTP asli (awal: GET / ke localhost:3000)
-  [DONE] Intruder     : serang payload asli (template POST /api/login)
-  [DONE] Target/Site  : Live content discovery (fuzzing path asli)
-                        + klik kanan: Send to Repeater/Intruder
-  [DONE] Decoder      : URL/Base64/Hex/HTML/ASCII encode-decode (offline, REAL)
-  [DONE] Comparer     : Diff dua pane (LCS, offline, REAL; mulai dengan pane kosong)
-  [DONE] Sequencer    : Analisa entropi token yang di-paste operator (satu per baris)
-  [DONE] Crawler      : autopilot BFS crawler (scope-gated) — petakan page,
-                        link, form, endpoint inline fetch(); passive per page
-                        (auto-detect hanya pada 2xx non-binary -> anti-FP)   (BARU)
-  [DONE] Active Scan  : autopilot scanner vuln (scope-gated), oracle FP-safe:
-                        SQLi error-based + reflected XSS -> Confirmed;
-                        IDOR / access-control / CSRF -> Suspected (tak auto)  (BARU)
-  [DONE] Scan terautentikasi : scan di balik login. Kredensial = header yang DITEMPEL operator
-                        (Authorization: Bearer ..., Cookie: ...), hanya di memori main process.
-                        Hanya terkirim ke host in-scope; URL logout/delete dilewati;
-                        scan berhenti saat sesi habis (401 / redirect ke login);
-                        nilai cookie/token disamarkan di evidence       (BARU)
-  [DONE] Scope gate   : semua Live digerbang host berizin
-
-== OPERATIONS (REAL) ==
-  [DONE] Network Scanner  : TCP connect scan ASLI (Node net), scope-gated.
-                            - Target IP / CIDR / range / list, parse otomatis
-                            - Profile Quick/Standard/Deep (deep = banner/versi)
-                            - open/closed/filtered nyata, progress streaming,
-                              bisa di-Stop (cancel); hanya Live (bridge hilang
-                              -> "Scanner bridge unavailable", Run Scan nonaktif)
-                            - hasil otomatis difeed ke Rule Engine
-  [DONE] Vulnerabilities  : temuan Rule Engine (Confirmed/Suspected + bukti + CVE),
-                            hanya tampilan Live
-  [DONE] Exposure Monitor : feed temuan & aktivitas nyata (bukan IDS)
-
-(Dashboard, Firewall Rules, dan Reports dihapus karena 100% data palsu.
- Ide laporan dari temuan asli & ekspor firewall tercatat sebagai halaman BARU
- di roadmap.)
-
-== DETECTION (NUCLEI-GRADE) ==
-  [DONE] Rule Engine      : engine ala-Nuclei, template sebagai DATA (408 template:
-                            28 port/banner, 47 HTTP pasif, 333 HTTP aktif).
-                            - Matcher: status/word/regex/time/port/service + DSL
-                              (evaluator ekspresi AMAN tanpa eval), kombinasi and/or,
-                              negative; EXTRACTOR (versi/token/username ke field);
-                              interpolasi {{BaseURL}} di request
-                            - Pasif: makan hasil Network Scanner (port/banner->CVE)
-                              + respons Proxy (header hilang, cookie, CORS, secret
-                              leak, error SQL, dll)
-                            - Aktif (oracle): 333 GET baca-saja (/.git/config, /.env,
-                              backup, actuator, panel, dll) scope-gated -> Confirmed
-                            - Anti-FP: baseline soft-404 (catch-all 2xx -> demote),
-                              tiap probe WAJIB penanda konten, korelasi group
-                              (confirmed menggeser suspected), guard host mati
-                            - Keyakinan jujur: Confirmed (teramati) vs Suspected
-                            - Bukti lengkap: request/response + extracted per temuan
-                            - ADVISOR ATTACK/DEFENSE per temuan confirmed:
-                              * Defense = langkah patching + snippet config siap-salin
-                                + tombol Re-test fix (jalankan ulang oracle)
-                              * Attack = verify (baca-saja, nol FP) / operator (payload
-                                disiapkan, Send to Repeater/Intruder) / info (PoC lokal)
-                            - Halaman Detection: library template + active checks
-                            - Diuji: 262 tes (vitest) rules/dsl/advice/crawl/
-                              webvuln/scope
-                            -> TODO: oracle boolean/time/OOB, template eksternal
-                               YAML/JSON, Attack Path Graph
-
-
-5. SISA YANG HARUS DIBIKIN (ROADMAP — urut prioritas)
---------------------------------------------------------------------------------
-PRIORITAS 1 — RULE ENGINE / DETECTION (inti & paling "wow")  [NUCLEI-GRADE]
-  [x] Aturan sebagai DATA (array of rules): kondisi -> temuan+severity+saran
-  [x] 408 template (28 port/banner, 47 HTTP pasif, 333 HTTP aktif)
-  [x] Tahap 1 PASIF: baca sinyal dari traffic proxy & hasil scan
-        (header hilang, banner versi -> CVE, CORS, secret leak, error SQL, dll)
-  [~] Tahap 2 VERIFIKASI (oracle): 333 active HTTP probe scope-gated -> "Confirmed"
-        [ ] sisa: boolean-based / time-based / out-of-band (OOB)
-  [x] Matcher DSL (evaluator ekspresi aman tanpa eval)
-  [x] Extractor (versi/token/username) -> field terstruktur
-  [x] Interpolasi variabel {{BaseURL}}/{{Hostname}}/dll di request aktif
-  [x] Baseline soft-404 (anti false-positive) + korelasi Suspected->Confirmed
-  [x] Tingkat keyakinan: Suspected vs Confirmed (dipisah)
-  [x] Tempel BUKTI di tiap temuan (request/response + extracted)
-  [x] ADVISOR ATTACK/DEFENSE per temuan (patching + PoC verify/operator/info)
-  [x] Crawler autopilot (BFS) + Active Scan: SQLi error-based & reflected XSS
-        -> Confirmed; IDOR/access/CSRF -> Suspected (oracle FP-safe)
-  [x] Tes unit (vitest) rules, DSL, advisor, crawler, webvuln, scope, auth, browser (262 tes)
-
-PRIORITAS 2 — OPERATIONS JADI REAL
-  [x] Network Scanner: TCP connect scan asli (Node 'net'), scope-gated,
-        deteksi port/service/banner
-  [x] Vulnerabilities: tampil dari temuan Rule Engine (Confirmed/Suspected)
-
-  [ ] (Opsional) Exposure Monitor: baca log lokal asli (telemetri host)
-  [ ] (Opsional, halaman baru) Ekspor rule / integrasi Windows Firewall (hati-hati)
-
-PRIORITAS 3 — ANALYSIS (nilai jual besar)
-  [ ] ATTACK PATH GRAPH: visual node recon->vuln->akses (dari temuan Confirmed)
-  [ ] Auto-report (halaman baru): laporan dari temuan Confirmed asli, Bahasa Indonesia + export PDF
-  [ ] Pemetaan MITRE ATT&CK di tiap temuan (metadata, murah, kelihatan pro)
-
-CROSS-CUTTING
-  [ ] Audit log tiap aksi (legal-by-design, disukai juri militer)
-  [ ] (Opsional rilis) Code signing pakai sertifikat (hilangin SmartScreen)
-  [ ] HTTPS MITM: sudah jalan; next bisa tambah CA install helper otomatis
-
-CATATAN STRATEGI (buat lomba):
-  - Jangan pamer 15 menu setengah jadi. Kunci 1 ALUR DEMO MULUS:
-    target -> scan/proxy -> Rule Engine nemu & buktikan -> Attack Path Graph ->
-    laporan otomatis. Itu "momen wow" yang bikin juri melongo.
-  - Tekankan: mandiri/buatan Indonesia, legal-by-design, bisa jadi alat latihan
-    Tentara Siber (semua halaman LIVE, scope-gated).
-
-
-6. CATATAN PENTING
---------------------------------------------------------------------------------
-  - Installer belum DI-SIGN -> SmartScreen muncul sekali, klik "Run anyway".
-    Antivirus kadang curiga (wajar untuk tool proxy/MITM) -> whitelist.
-  - Proxy dengerin di 127.0.0.1 saja. Saat Start/Open Browser, Windows Firewall
-    bisa minta izin -> Allow.
-  - Semua modul LIVE (nembak target asli) WAJIB isi Scope dulu. Tanpa itu ditolak.
-  - Open Browser: kalau Intercept ON, halaman "nahan" nunggu di-Forward
-    (app otomatis maju minta Forward). Kalau mau browsing santai, matikan
-    Intercept dulu.
-  - HTTPS di browser eksternal butuh "Export CA" lalu di-trust di OS/browser.
-    Open Browser bawaan Interu sudah auto-trust (langsung kebaca).
-  - Tidak ada data demo/mock. Settings -> Local data -> Reset local data menghapus
-    data lokal (scope, temuan, pengaturan).
-
-7. TIM
---------------------------------------------------------------------------------
-  RUY CYBERSECURITY TEAM
-  Produk: INTERU — Cyber Operations
-  Versi: 1.0.0 (tahap: Web Suite + Network Scanner REAL, Rule Engine NUCLEI-GRADE
-         408 template + advisor Attack/Defense, + Crawler & Active Scan autopilot
-         (SQLi/XSS/IDOR/access/CSRF, FP-safe); halaman mock dihapus, UI industrial)
-================================================================================
+Gunakan hanya pada sistem sendiri atau target yang jelas mengizinkan
+pengujian. Atur laju, modul, dan batas target sesuai aturan pemiliknya.

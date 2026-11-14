@@ -6,6 +6,7 @@
 // gate (in the main process) as the single source of truth for what is allowed.
 
 import { hostInScope } from './http'
+import { isUnsafeAuthedPath } from './auth'
 
 export interface CrawlOptions {
   /** How many link-hops from a seed to follow (seed = depth 0). */
@@ -92,26 +93,109 @@ export function isFetchable(url: string): boolean {
   return !SKIP_EXT.test(url)
 }
 
+function crawlPriority(url: string): number {
+  const u = new URL(url)
+  const path = u.pathname.toLowerCase()
+  return (/(?:^|\/)(?:search|query)(?:\/|\.|$)/.test(path) ? 8 : 0) +
+    (u.search ? 4 : 0) +
+    (/\/(?:api|rest)\//.test(path) ? 2 : 0) -
+    (/\.js$/.test(path) ? 1 : 0)
+}
+
+const HTML_TAG = /<(?:a|area|link|script|img|iframe|form|source|video|audio|object)\b[^>]{0,4096}>/gi
 const ATTR_URL = /(?:href|src|action|data-href|data-url)\s*=\s*("([^"]*)"|'([^']*)'|([^\s"'>]+))/gi
 // Bare URLs inside inline scripts / JSON (e.g. fetch("/api/x")) — a lightweight
 // endpoint sniffer that catches API paths that never appear as an <a href>.
-const INLINE_URL = /["'`](\/[A-Za-z0-9._~!$&'()*+,;=:@%/-]+)["'`]/g
+const INLINE_URL = /(["'`])(\/[A-Za-z0-9][A-Za-z0-9._~/%?&=+:-]{0,199})\1/g
+const TEMPLATE_API_URL = /\$\{[^}]{1,80}\}(\/(?:api|rest)\/[A-Za-z0-9][A-Za-z0-9._~/%?&=+:-]{0,199})/gi
+
+/** Read only GET routes from an OpenAPI document; request bodies and mutations are ignored. */
+export function extractOpenApiGetUrls(body: string, base: string): string[] {
+  if (body.length > 2_000_000) return []
+  const out = new Set<string>()
+  const add = (path: string, names: string[]): void => {
+    if (!path.startsWith('/') || path.startsWith('//') || out.size >= 100) return
+    const url = normalizeUrl(path.replace(/\{[^{}]{1,60}\}/g, '1'), base)
+    if (!url) return
+    const u = new URL(url)
+    for (const name of names.slice(0, 5)) if (/^[A-Za-z_][A-Za-z0-9_-]{0,63}$/.test(name)) u.searchParams.set(name, '1')
+    out.add(u.href)
+  }
+  if (body.trimStart().startsWith('{')) {
+    try {
+      const spec = JSON.parse(body) as { openapi?: unknown; swagger?: unknown; paths?: Record<string, {
+        get?: { parameters?: { name?: string; in?: string }[] }; parameters?: { name?: string; in?: string }[]
+      }> }
+      if (spec.openapi || spec.swagger) for (const [path, item] of Object.entries(spec.paths || {})) {
+        if (!item?.get) continue
+        const names = [...(item.parameters || []), ...(item.get.parameters || [])]
+          .filter(param => param?.in === 'query').map(param => param.name || '')
+        add(path, names)
+      }
+    } catch { /* invalid JSON is not an API spec */ }
+    return [...out]
+  }
+  if (!/^(?:openapi|swagger):\s*\S/m.test(body)) return []
+  let path = ''
+  let method = ''
+  let hasGet = false
+  let inParams = false
+  let paramIn = ''
+  let paramName = ''
+  let names: string[] = []
+  const flushParam = (): void => { if (paramIn === 'query' && paramName) names.push(paramName); paramIn = ''; paramName = '' }
+  const flushPath = (): void => { flushParam(); if (hasGet) add(path, names); names = []; hasGet = false }
+  for (const line of body.split(/\r?\n/)) {
+    const nextPath = /^  (\/[^:\r\n]*):\s*$/.exec(line)
+    if (nextPath) { flushPath(); path = nextPath[1]; method = ''; inParams = false; continue }
+    if (!path) continue
+    const nextMethod = /^    (get|post|put|patch|delete|options|head):\s*$/i.exec(line)
+    if (nextMethod) { flushParam(); method = nextMethod[1].toLowerCase(); hasGet ||= method === 'get'; inParams = false; continue }
+    if (method !== 'get') continue
+    if (/^      parameters:\s*$/.test(line)) { inParams = true; continue }
+    if (/^      [A-Za-z][A-Za-z0-9_-]*:\s*/.test(line)) { flushParam(); inParams = false }
+    if (!inParams) continue
+    const nextParam = /^      -\s*(.*)$/.exec(line)
+    if (nextParam) { flushParam(); const field = /^(in|name):\s*(\S+)/.exec(nextParam[1]); if (field?.[1] === 'in') paramIn = field[2]; if (field?.[1] === 'name') paramName = field[2]; continue }
+    const field = /^        (in|name):\s*(\S+)/.exec(line)
+    if (field?.[1] === 'in') paramIn = field[2]
+    if (field?.[1] === 'name') paramName = field[2]
+  }
+  flushPath()
+  return [...out]
+}
 
 /** Extract candidate links from an HTML (or JS/JSON) document, normalised & deduped. */
-export function extractLinks(html: string, base: string): string[] {
+export function extractLinks(html: string, base: string, type: string = 'html'): string[] {
   if (!html) return []
   const out = new Set<string>()
   let m: RegExpExecArray | null
-  ATTR_URL.lastIndex = 0
-  while ((m = ATTR_URL.exec(html))) {
-    const n = normalizeUrl(m[2] ?? m[3] ?? m[4] ?? '', base)
-    if (n) out.add(n)
+  if (type === 'html' || type === 'xml') {
+    HTML_TAG.lastIndex = 0
+    while ((m = HTML_TAG.exec(html))) {
+      ATTR_URL.lastIndex = 0
+      let attrMatch: RegExpExecArray | null
+      while ((attrMatch = ATTR_URL.exec(m[0]))) {
+        const n = normalizeUrl(attrMatch[2] ?? attrMatch[3] ?? attrMatch[4] ?? '', base)
+        if (n) out.add(n)
+      }
+    }
   }
-  INLINE_URL.lastIndex = 0
-  while ((m = INLINE_URL.exec(html))) {
-    const n = normalizeUrl(m[1], base)
-    if (n) out.add(n)
+  if (type === 'html' || type === 'js' || type === 'json') {
+    INLINE_URL.lastIndex = 0
+    while ((m = INLINE_URL.exec(html))) {
+      const before = html.slice(Math.max(0, m.index - 16), m.index)
+      if (/(?:href|src|action|data-href|data-url)\s*=\s*$/i.test(before)) continue
+      const n = normalizeUrl(m[2], base)
+      if (n) out.add(n)
+    }
+    TEMPLATE_API_URL.lastIndex = 0
+    while ((m = TEMPLATE_API_URL.exec(html))) {
+      const n = normalizeUrl(m[1], base)
+      if (n) out.add(n)
+    }
   }
+  if (type === 'json' || type === 'yaml') for (const url of extractOpenApiGetUrls(html, base)) out.add(url)
   return [...out]
 }
 
@@ -165,6 +249,7 @@ export function contentTypeLabel(ct: string | undefined): string {
   if (t.includes('html')) return 'html'
   if (t.includes('json')) return 'json'
   if (t.includes('javascript') || t.includes('ecmascript')) return 'js'
+  if (t.includes('yaml') || t.includes('yml')) return 'yaml'
   if (t.includes('css')) return 'css'
   if (t.includes('xml')) return 'xml'
   if (t.startsWith('image/')) return 'image'
@@ -197,6 +282,7 @@ export class CrawlController {
   readonly rootHosts: string[]
   private queue: { url: string; depth: number }[] = []
   private seen = new Set<string>()
+  private shapeCounts = new Map<string, number>()
   private started = 0
   private _nodes: CrawlNode[] = []
 
@@ -239,7 +325,15 @@ export class CrawlController {
     const key = dedupeKey(url)
     if (this.seen.has(key)) return false
     if (!isFetchable(url)) return false
+    if (isUnsafeAuthedPath(url)) return false
     if (!this.allowedHost(url)) return false
+    const u = new URL(url)
+    if (u.search) {
+      const shape = `${u.origin}${u.pathname}?${[...new Set(u.searchParams.keys())].sort().join(',')}`
+      const count = this.shapeCounts.get(shape) || 0
+      if (count >= 4) return false
+      this.shapeCounts.set(shape, count + 1)
+    }
     this.seen.add(key)
     this.queue.push({ url, depth })
     return true
@@ -248,7 +342,13 @@ export class CrawlController {
   /** Next URL to fetch, or null when the queue is empty or the budget is spent. */
   take(): { url: string; depth: number } | null {
     if (this.started >= this.opts.maxPages) return null
-    const next = this.queue.shift()
+    if (this.queue.length === 0) return null
+    const depth = this.queue[0].depth
+    let best = 0
+    for (let i = 1; i < this.queue.length && this.queue[i].depth === depth; i++) {
+      if (crawlPriority(this.queue[i].url) > crawlPriority(this.queue[best].url)) best = i
+    }
+    const next = this.queue.splice(best, 1)[0]
     if (!next) return null
     this.started++
     return next
@@ -271,15 +371,16 @@ export class CrawlController {
     }
   ): CrawlNode {
     const html = res.html || ''
-    const forms = html ? extractForms(html, item.url) : []
+    const extractType = res.type === 'text' && /\.ya?ml(?:\?|$)/i.test(item.url) ? 'yaml' : res.type || 'html'
+    const forms = html && extractType === 'html' ? extractForms(html, item.url) : []
     let links = 0
     if (html && item.depth < this.opts.maxDepth) {
-      for (const l of extractLinks(html, item.url)) {
+      for (const l of extractLinks(html, item.url, extractType)) {
         if (this.enqueue(l, item.depth + 1)) links++
       }
     } else if (html) {
       // At max depth we still count in-scope links for visibility, without queuing.
-      for (const l of extractLinks(html, item.url)) if (this.allowedHost(l)) links++
+      for (const l of extractLinks(html, item.url, extractType)) if (this.allowedHost(l)) links++
     }
     const node: CrawlNode = {
       url: item.url,

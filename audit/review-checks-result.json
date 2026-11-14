@@ -1,0 +1,77 @@
+{
+  "templateCounts": {
+    "total": 408,
+    "port": 28,
+    "http-passive": 47,
+    "http-active": 333
+  },
+  "backupVariantCount": 96,
+  "kevSnapshot": {
+    "version": "2026.10.30",
+    "count": 1766
+  },
+  "ports": {
+    "quick": 103,
+    "standard": 705,
+    "missingCommonPorts": [
+      2375,
+      2376,
+      2379,
+      2380,
+      6379,
+      6443,
+      10250,
+      11211,
+      27017
+    ]
+  },
+  "xssCommentOnly": {
+    "confirmed": true,
+    "encodedInstead": false
+  },
+  "sqliErrorPersistsWhenBalanced": {
+    "confirmed": true,
+    "db": "MySQL",
+    "balancedClears": false
+  },
+  "allowedFixedOriginCors": [
+    {
+      "name": "CORS reflects Origin with credentials",
+      "confidence": "confirmed"
+    }
+  ],
+  "evidenceRedactedButRawResponseContainsSecret": [
+    {
+      "evidence": "matched: Set-Cookie: sid=<redacted>",
+      "responseContainsFakeSecret": true
+    }
+  ],
+  "multipleCookiesRedaction": "Cookie: first=<redacted>; second=FAKE_TWO",
+  "catchAllWithSameMarker": {
+    "confidence": "confirmed",
+    "evidence": "status 200 · matched: repositoryformatversion"
+  },
+  "networkFailureMatch": null,
+  "deterministicTokens": {
+    "count": 4,
+    "avgLen": 10,
+    "bitsPerChar": 3.321928094887362,
+    "maxBitsPerChar": 3.321928094887362,
+    "charset": "digits",
+    "bitsPerToken": 33.219280948873624,
+    "qualityPct": 100,
+    "positional": [
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2,
+      2
+    ]
+  },
+  "repeatedTokenSample": 2
+}

@@ -19,6 +19,7 @@ import {
 } from './icons'
 
 const NAV = [
+  { to: '/automation', label: 'Pentest Automation', icon: IconFlask, group: 'Operations' },
   { to: '/web/target', label: 'Target / Site Map', icon: IconTarget, group: 'Web Security Suite' },
   { to: '/web/crawler', label: 'Crawler', icon: IconSpider, group: 'Web Security Suite' },
   { to: '/web/activescan', label: 'Active Scan', icon: IconFlask, group: 'Web Security Suite' },
@@ -40,7 +41,7 @@ const NAV = [
 
 export default function Sidebar() {
   let lastGroup = ''
-  const appVersion = '1.0.0'
+  const appVersion = '1.4.0'
   const electron = typeof window !== 'undefined' && window.ruy ? window.ruy.versions.electron : '—'
 
   return (

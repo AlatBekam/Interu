@@ -4,6 +4,7 @@ import {
   queryParams,
   isFetchable,
   extractLinks,
+  extractOpenApiGetUrls,
   extractForms,
   pageTitle,
   contentTypeLabel,
@@ -70,6 +71,35 @@ describe('extractLinks', () => {
     expect(links).not.toContain('mailto:x@y.z')
     // /one appears twice (href + inline) but is deduped
     expect(links.filter((l) => l === 'http://demo.test/one')).toHaveLength(1)
+  })
+  it('does not treat minified JavaScript fragments as links', () => {
+    const js = `const x='href="/fake"'; const a="/api/products"; const b="/null;get"; const c="/r??this._platformLocation.getBaseHrefFromDOM()"; const d="/!1";`
+    expect(extractLinks(js, 'http://demo.test/main.js', 'js')).toEqual(['http://demo.test/api/products'])
+  })
+  it('does not parse attribute text inside script bodies as HTML tags', () => {
+    const html = `<script>const x='href="/fake"'; fetch('/api/items')</script><a href="/real">real</a>`
+    const links = extractLinks(html, base, 'html')
+    expect(links).toContain('http://demo.test/real')
+    expect(links).toContain('http://demo.test/api/items')
+    expect(links).not.toContain('http://demo.test/fake')
+  })
+  it('discovers a static API path and query key inside a JavaScript template string', () => {
+    const js = 'return this.http.get(`${this.hostServer}/rest/products/search?q=${term}`)'
+    expect(extractLinks(js, 'http://demo.test/main.js', 'js')).toContain('http://demo.test/rest/products/search?q=')
+  })
+})
+
+describe('OpenAPI GET discovery', () => {
+  it('extracts JSON GET paths with query parameters and ignores POST', () => {
+    const spec = JSON.stringify({ openapi: '3.0.1', paths: {
+      '/items/{id}': { get: { parameters: [{ in: 'query', name: 'q' }] } },
+      '/delete': { post: { parameters: [{ in: 'query', name: 'id' }] } }
+    } })
+    expect(extractOpenApiGetUrls(spec, base)).toEqual(['http://demo.test/items/1?q=1'])
+  })
+  it('extracts YAML GET query keys without POST body endpoints', () => {
+    const spec = `openapi: 3.0.1\npaths:\n  /eval:\n    get:\n      parameters:\n      - in: query\n        name: s\n      responses:\n        '200': {}\n  /search:\n    post:\n      requestBody: {}\n`
+    expect(extractLinks(spec, 'http://demo.test/openapi.yaml', 'yaml')).toEqual(['http://demo.test/eval?s=1'])
   })
 })
 
@@ -169,6 +199,22 @@ describe('CrawlController BFS', () => {
     expect(c.take()).not.toBeNull() // 2nd
     expect(c.take()).toBeNull() // budget (2) spent
   })
+  it('caps repeated values for one path and parameter shape', () => {
+    const c = new CrawlController(['http://demo.test/'], opts({ maxPages: 20 }), scope)
+    for (let i = 1; i <= 12; i++) c.enqueue(`http://demo.test/catalog/product?productId=${i}`, 1)
+    c.enqueue('http://demo.test/search?term=1', 1)
+    const urls: string[] = []
+    let item
+    while ((item = c.take())) urls.push(item.url)
+    expect(urls.filter(url => url.includes('/catalog/product'))).toHaveLength(4)
+    expect(urls).toContain('http://demo.test/search?term=1')
+  })
+  it('visits a search query before less useful URLs at the same depth', () => {
+    const c = new CrawlController(['http://demo.test/'], opts(), scope)
+    const root = c.take()!
+    c.record(root, { status: 200, type: 'html', html: '<a href="/about">about</a><a href="/api/search?q=1">search</a><script src="/main.js"></script>' })
+    expect(c.take()?.url).toBe('http://demo.test/api/search?q=1')
+  })
 
   it('skips asset extensions when queuing', () => {
     const c = new CrawlController(['http://demo.test/'], opts(), scope)
@@ -178,6 +224,13 @@ describe('CrawlController BFS', () => {
     let it
     while ((it = c.take())) urls.push(it.url)
     expect(urls).toEqual(['http://demo.test/c'])
+  })
+  it('never queues known state-changing GET paths', () => {
+    const c = new CrawlController(['http://demo.test/'], opts(), scope)
+    const seed = c.take()!
+    c.record(seed, { status: 200, type: 'html', html: '<a href="/createdb">db</a><a href="/start_over">reset</a><a href="/rest/items">items</a>' })
+    expect(c.take()?.url).toBe('http://demo.test/rest/items')
+    expect(c.take()).toBeNull()
   })
 })
 

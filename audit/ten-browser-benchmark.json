@@ -1,0 +1,1123 @@
+[
+  {
+    "name": "PortSwigger Gin and Juice Shop",
+    "url": "https://ginandjuice.shop/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:15:21.956Z",
+    "browserPages": 6,
+    "browserUrls": 6,
+    "forms": [
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://ginandjuice.shop/catalog"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://ginandjuice.shop/blog"
+      },
+      {
+        "kind": "login",
+        "method": "POST",
+        "url": "https://ginandjuice.shop/my-account"
+      }
+    ],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 73,
+    "pages": 25,
+    "errors": 1,
+    "findings": [
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://ginandjuice.shop/resources/js/deparam.js",
+        "evidence": "missing: strict-transport-security"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://ginandjuice.shop/resources/js/deparam.js",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://ginandjuice.shop/catalog?category=Gin",
+        "evidence": "matched: set-cookie: TrackingId=<redacted>"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://ginandjuice.shop/resources/js/deparam.js",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://ginandjuice.shop/resources/js/deparam.js",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://ginandjuice.shop/resources/js/deparam.js",
+        "evidence": "missing: permissions-policy, feature-policy"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:16:45.606Z"
+  },
+  {
+    "name": "HCL Altoro Mutual",
+    "url": "http://demo.testfire.net/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:16:45.747Z",
+    "browserPages": 6,
+    "browserUrls": 6,
+    "forms": [
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "http://demo.testfire.net/"
+      },
+      {
+        "kind": "login",
+        "method": "GET",
+        "url": "http://demo.testfire.net/login.jsp"
+      },
+      {
+        "kind": "login",
+        "method": "POST",
+        "url": "http://demo.testfire.net/login.jsp"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "http://demo.testfire.net/index.jsp"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "http://demo.testfire.net/index.jsp?content=inside_contact.htm"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "http://demo.testfire.net/feedback.jsp"
+      },
+      {
+        "kind": "other",
+        "method": "POST",
+        "url": "http://demo.testfire.net/feedback.jsp"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "http://demo.testfire.net/index.jsp?content=personal.htm"
+      }
+    ],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 49,
+    "pages": 22,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "Unencoded reflection (XSS candidate)",
+        "templateId": "webvuln-xss-reflected",
+        "confidence": "suspected",
+        "severity": "high",
+        "matchedAt": "http://demo.testfire.net/search.jsp?query=1",
+        "evidence": "Parameter \"query\" reflected the injected tag <x-interu-mwg0k190a> verbatim (unencoded) in an HTML response."
+      },
+      {
+        "name": "Apache Tomcat detected: 6 CVE in CISA KEV (version not verified)",
+        "templateId": "kev-product-tomcat",
+        "confidence": "suspected",
+        "severity": "medium",
+        "evidence": "server: Apache-Coyote/1.1"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "http://demo.testfire.net/login.jsp",
+        "evidence": "A POST form (action http://demo.testfire.net/doLogin) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "http://demo.testfire.net/feedback.jsp",
+        "evidence": "A POST form (action http://demo.testfire.net/sendFeedback) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://demo.testfire.net/survey_questions.jsp?step=a",
+        "evidence": "matched: set-cookie: JSESSIONID=<redacted>; Pat"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "evidence": "matched: server: Apache-Coyote/1.1 · server=Apache-Coyote/1.1"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://demo.testfire.net/swagger/swagger-ui-standalone-preset.js",
+        "evidence": "missing: permissions-policy, feature-policy"
+      },
+      {
+        "name": "Technology fingerprint: Java/Servlet (JSESSIONID)",
+        "templateId": "hdr-java",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://demo.testfire.net/survey_questions.jsp?step=a",
+        "evidence": "matched: set-cookie: JSESSIONID="
+      }
+    ],
+    "finishedAt": "2026-11-14T06:17:28.681Z"
+  },
+  {
+    "name": "Google Firing Range",
+    "url": "https://public-firing-range.appspot.com/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:17:28.717Z",
+    "browserPages": 6,
+    "browserUrls": 6,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "limited",
+    "reason": "Request budget reached",
+    "requests": 120,
+    "pages": 25,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "Unencoded reflection (XSS candidate)",
+        "templateId": "webvuln-xss-reflected",
+        "confidence": "suspected",
+        "severity": "high",
+        "matchedAt": "https://public-firing-range.appspot.com/remoteinclude/parameter/script?q=http://g00gle.com/typosquatting_domain.js",
+        "evidence": "Parameter \"q\" reflected the injected tag <x-interu-mwg0lp1xs> verbatim (unencoded) in an HTML response."
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://public-firing-range.appspot.com/dom/index.html",
+        "evidence": "missing: strict-transport-security"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://public-firing-range.appspot.com/dom/index.html",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://public-firing-range.appspot.com/dom/index.html",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://public-firing-range.appspot.com/dom/index.html",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://public-firing-range.appspot.com/dom/index.html",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://public-firing-range.appspot.com/dom/index.html",
+        "evidence": "missing: permissions-policy, feature-policy"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:18:40.347Z"
+  },
+  {
+    "name": "Pentest Ground DVWA",
+    "url": "https://pentest-ground.com:4280/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:18:40.410Z",
+    "browserPages": 1,
+    "browserUrls": 1,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 104,
+    "pages": 25,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "SQL Injection (error-based, MySQL)",
+        "templateId": "webvuln-sqli-error",
+        "confidence": "confirmed",
+        "severity": "critical",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/brute/?username=1&password=1&Login=1",
+        "evidence": "Parameter \"username\" injected with a single quote produced a MySQL SQL error absent from the baseline; balancing the quote cleared it (confirmed)."
+      },
+      {
+        "name": "SQL Injection (error-based, MySQL)",
+        "templateId": "webvuln-sqli-error",
+        "confidence": "confirmed",
+        "severity": "critical",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/sqli/?id=1&Submit=1",
+        "evidence": "Parameter \"id\" injected with a single quote produced a MySQL SQL error absent from the baseline; balancing the quote cleared it (confirmed)."
+      },
+      {
+        "name": "SQL Injection (error-based, MySQL)",
+        "templateId": "webvuln-sqli-error",
+        "confidence": "confirmed",
+        "severity": "critical",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/sqli_blind/?id=1&Submit=1",
+        "evidence": "Parameter \"id\" injected with a single quote produced a MySQL SQL error absent from the baseline; balancing the quote cleared it (confirmed)."
+      },
+      {
+        "name": "Local file disclosure through path parameter",
+        "templateId": "webvuln-lfi",
+        "confidence": "confirmed",
+        "severity": "high",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "Parameter \"page\": A local passwd-file signature appeared only after the path probe."
+      },
+      {
+        "name": "Unencoded reflection (XSS candidate)",
+        "templateId": "webvuln-xss-reflected",
+        "confidence": "suspected",
+        "severity": "high",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/xss_r/?name=1",
+        "evidence": "Parameter \"name\" reflected the injected tag <x-interu-mwg0n82e15> verbatim (unencoded) in an HTML response."
+      },
+      {
+        "name": "Cookie without Secure flag (HTTPS)",
+        "templateId": "http-cookie-secure",
+        "confidence": "confirmed",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "matched: set-cookie: security=<redacted>; path=/"
+      },
+      {
+        "name": "PHP detected: 4 CVE in CISA KEV (version not verified)",
+        "templateId": "kev-product-php",
+        "confidence": "suspected",
+        "severity": "medium",
+        "evidence": "x-powered-by: PHP/8.5.12"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/captcha/",
+        "evidence": "A POST form (action https://pentest-ground.com:4280/vulnerabilities/captcha/) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "Stack trace / debug output in response",
+        "templateId": "http-stacktrace",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:4280/instructions.php",
+        "evidence": "matched: <b>Warning</b>:"
+      },
+      {
+        "name": "Stack trace / debug output in response",
+        "templateId": "http-stacktrace",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/xss_s/",
+        "evidence": "matched: <b>Fatal error</b>:"
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "missing: strict-transport-security"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Cookie without HttpOnly flag",
+        "templateId": "http-cookie-httponly",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "matched: set-cookie: security=<redacted>; path=/"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "matched: set-cookie: security=<redacted>; path=/"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "missing: permissions-policy, feature-policy"
+      },
+      {
+        "name": "Technology disclosure via X-Powered-By",
+        "templateId": "http-powered-by",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "matched: x-powered-by · powered-by=PHP/8.5.12"
+      },
+      {
+        "name": "Technology fingerprint: PHP (PHPSESSID)",
+        "templateId": "hdr-php",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:4280/vulnerabilities/fi/?page=file3.php",
+        "evidence": "matched: set-cookie: PHPSESSID="
+      }
+    ],
+    "finishedAt": "2026-11-14T06:19:50.663Z"
+  },
+  {
+    "name": "Pentest Ground DVGA",
+    "url": "https://pentest-ground.com:5013/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:19:50.687Z",
+    "browserPages": 6,
+    "browserUrls": 6,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 18,
+    "pages": 18,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "Cookie without Secure flag (HTTPS)",
+        "templateId": "http-cookie-secure",
+        "confidence": "confirmed",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:5013/",
+        "evidence": "matched: set-cookie: env=<redacted>; Path=/"
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "missing: strict-transport-security"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Cookie without HttpOnly flag",
+        "templateId": "http-cookie-httponly",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:5013/",
+        "evidence": "matched: set-cookie: env=<redacted>; Path=/"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:5013/",
+        "evidence": "matched: set-cookie: env=<redacted>; Path=/"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:5013/static/jquery/graphql.js",
+        "evidence": "missing: permissions-policy, feature-policy"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:20:08.782Z"
+  },
+  {
+    "name": "Pentest Ground RestFlaw",
+    "url": "https://pentest-ground.com:9000/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:20:08.813Z",
+    "browserPages": 3,
+    "browserUrls": 3,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 5,
+    "pages": 5,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "missing: strict-transport-security"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:9000/uptime/1",
+        "evidence": "missing: permissions-policy, feature-policy"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:20:18.892Z"
+  },
+  {
+    "name": "Pentest Ground GuardianLeaks",
+    "url": "https://pentest-ground.com:81/",
+    "kind": "online",
+    "startedAt": "2026-11-14T06:20:18.943Z",
+    "browserPages": 6,
+    "browserUrls": 6,
+    "forms": [
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/"
+      },
+      {
+        "kind": "login",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/login"
+      },
+      {
+        "kind": "login",
+        "method": "POST",
+        "url": "https://pentest-ground.com:81/login"
+      },
+      {
+        "kind": "login",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/login"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/about"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/about"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/services"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/services"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/blog"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/blog"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/contact"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/contact"
+      },
+      {
+        "kind": "other",
+        "method": "GET",
+        "url": "https://pentest-ground.com:81/contact"
+      }
+    ],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 14,
+    "pages": 14,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "Cookie without Secure flag (HTTPS)",
+        "templateId": "http-cookie-secure",
+        "confidence": "confirmed",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "evidence": "matched: set-cookie: SessionID=<redacted>; Path=/"
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:81/login",
+        "evidence": "A POST form (action https://pentest-ground.com:81/login) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:81/create",
+        "evidence": "A POST form (action https://pentest-ground.com:81/create) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:81/1/edit",
+        "evidence": "A POST form (action https://pentest-ground.com:81/1/edit) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "https://pentest-ground.com:81/2/edit",
+        "evidence": "A POST form (action https://pentest-ground.com:81/2/edit) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "Missing HTTP Strict-Transport-Security",
+        "templateId": "http-missing-hsts",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "missing: strict-transport-security"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Cookie without HttpOnly flag",
+        "templateId": "http-cookie-httponly",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "evidence": "matched: set-cookie: SessionID=<redacted>; Path=/"
+      },
+      {
+        "name": "Cookie without SameSite attribute",
+        "templateId": "http-cookie-samesite",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "evidence": "matched: set-cookie: SessionID=<redacted>; Path=/"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "matched: server: nginx/1.31.8 · server=nginx/1.31.8"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:81/static/js/bootstrap.js",
+        "evidence": "missing: permissions-policy, feature-policy"
+      },
+      {
+        "name": "CORS wildcard observed (verify data exposure)",
+        "templateId": "http-cors-wildcard",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "https://pentest-ground.com:81/",
+        "evidence": "matched: access-control-allow-origin: *"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:20:50.084Z"
+  },
+  {
+    "name": "OWASP Juice Shop Docker",
+    "url": "http://127.0.0.1:3001/",
+    "kind": "selfhost",
+    "startedAt": "2026-11-14T06:20:50.108Z",
+    "browserPages": 1,
+    "browserUrls": 1,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 53,
+    "pages": 35,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "SQL Injection (error-based, SQLite)",
+        "templateId": "webvuln-sqli-error",
+        "confidence": "confirmed",
+        "severity": "critical",
+        "matchedAt": "http://127.0.0.1:3001/rest/products/search?q=",
+        "evidence": "Parameter \"q\" injected with a single quote produced a SQLite SQL error absent from the baseline; balancing the quote cleared it (confirmed)."
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://127.0.0.1:3001/rest/captcha",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3001/rest/captcha",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "CORS wildcard observed (verify data exposure)",
+        "templateId": "http-cors-wildcard",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3001/rest/captcha",
+        "evidence": "matched: access-control-allow-origin: *"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:21:41.955Z"
+  },
+  {
+    "name": "VAmPI Docker",
+    "url": "http://127.0.0.1:3004/ui/",
+    "kind": "selfhost",
+    "startedAt": "2026-11-14T06:21:42.115Z",
+    "browserPages": 1,
+    "browserUrls": 1,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 16,
+    "pages": 16,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "User-list JSON includes password fields",
+        "templateId": "http-user-password-fields",
+        "confidence": "confirmed",
+        "severity": "medium",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "evidence": "HTTP 200 JSON contained 3 user record(s) with a password field; values omitted"
+      },
+      {
+        "name": "Sensitive area reachable without authentication",
+        "templateId": "webvuln-access-sensitive",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "http://127.0.0.1:3004/users/v1",
+        "evidence": "A sensitive path (/users/v1) returned 200 and is not a login page. Verify it should require authentication."
+      },
+      {
+        "name": "Sensitive area reachable without authentication",
+        "templateId": "webvuln-access-sensitive",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "evidence": "A sensitive path (/users/v1/_debug) returned 200 and is not a login page. Verify it should require authentication."
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "matched: server: Werkzeug/2.2.3 Python/3.11.15 · server=Werkzeug/2.2.3 Python/3.11.15"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "missing: permissions-policy, feature-policy"
+      },
+      {
+        "name": "Web server technology fingerprint",
+        "templateId": "hdr-server-tech",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "evidence": "matched: server: Werkzeug · server=Werkzeug/2.2.3 Python/3.11.15"
+      },
+      {
+        "name": "JSON Web Token present in response",
+        "templateId": "http-jwt-in-body",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3004/openapi.json",
+        "evidence": "matched: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NzAxNjA2MTc"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:22:08.974Z"
+  },
+  {
+    "name": "OWASP WebGoat Docker",
+    "url": "http://127.0.0.1:3002/WebGoat/",
+    "kind": "selfhost",
+    "startedAt": "2026-11-14T06:22:09.038Z",
+    "browserPages": 1,
+    "browserUrls": 1,
+    "forms": [],
+    "accountFlow": "no-registration-form",
+    "accountNote": "Account flow: no-registration-form. Scan will not claim authenticated access.",
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 10,
+    "pages": 5,
+    "errors": 0,
+    "findings": [
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/login",
+        "evidence": "A POST form (action http://127.0.0.1:3002/WebGoat/login) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "State-changing form without anti-CSRF token",
+        "templateId": "webvuln-csrf-missing",
+        "confidence": "suspected",
+        "severity": "medium",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "evidence": "A POST form (action http://127.0.0.1:3002/WebGoat/register.mvc) performs a state-changing action but carries no anti-CSRF token field."
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "evidence": "missing: content-security-policy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "confidence": "confirmed",
+        "severity": "low",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "evidence": "missing: x-frame-options, frame-ancestors"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "evidence": "missing: x-content-type-options"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "evidence": "missing: referrer-policy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "confidence": "confirmed",
+        "severity": "info",
+        "matchedAt": "http://127.0.0.1:3002/WebGoat/registration",
+        "evidence": "missing: permissions-policy, feature-policy"
+      }
+    ],
+    "finishedAt": "2026-11-14T06:22:30.087Z"
+  }
+]

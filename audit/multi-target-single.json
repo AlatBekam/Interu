@@ -1,0 +1,136 @@
+[
+  {
+    "name": "VAmPI Docker",
+    "url": "http://127.0.0.1:3004/ui/",
+    "kind": "selfhost",
+    "healthStatus": 200,
+    "status": "completed",
+    "reason": "Selected checks completed",
+    "requests": 16,
+    "pages": 16,
+    "errors": 0,
+    "startedAt": "2026-11-14T05:20:56.185Z",
+    "finishedAt": "2026-11-14T05:20:57.944Z",
+    "findings": [
+      {
+        "name": "User-list JSON includes password fields",
+        "templateId": "http-user-password-fields",
+        "severity": "medium",
+        "confidence": "confirmed",
+        "evidence": "HTTP 200 JSON contained 3 user record(s) with a password field; values omitted",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "proxy"
+      },
+      {
+        "name": "Sensitive area reachable without authentication",
+        "templateId": "webvuln-access-sensitive",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A sensitive path (/users/v1) returned 200 and is not a login page. Verify it should require authentication.",
+        "matchedAt": "http://127.0.0.1:3004/users/v1",
+        "source": "active"
+      },
+      {
+        "name": "Sensitive area reachable without authentication",
+        "templateId": "webvuln-access-sensitive",
+        "severity": "medium",
+        "confidence": "suspected",
+        "evidence": "A sensitive path (/users/v1/_debug) returned 200 and is not a login page. Verify it should require authentication.",
+        "matchedAt": "http://127.0.0.1:3004/users/v1/_debug",
+        "source": "active"
+      },
+      {
+        "name": "Missing Content-Security-Policy",
+        "templateId": "http-missing-csp",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: content-security-policy",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Frame-Options (clickjacking)",
+        "templateId": "http-missing-xfo",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "missing: x-frame-options, frame-ancestors",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "Server version disclosure",
+        "templateId": "http-server-version",
+        "severity": "low",
+        "confidence": "confirmed",
+        "evidence": "matched: server: Werkzeug/2.2.3 Python/3.11.15 · server=Werkzeug/2.2.3 Python/3.11.15",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing X-Content-Type-Options: nosniff",
+        "templateId": "http-missing-xcto",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: x-content-type-options",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Referrer-Policy",
+        "templateId": "http-missing-referrer-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: referrer-policy",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "Missing Permissions-Policy",
+        "templateId": "http-missing-permissions-policy",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "missing: permissions-policy, feature-policy",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "Web server technology fingerprint",
+        "templateId": "hdr-server-tech",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: server: Werkzeug · server=Werkzeug/2.2.3 Python/3.11.15",
+        "matchedAt": "http://127.0.0.1:3004/",
+        "source": "proxy"
+      },
+      {
+        "name": "JSON Web Token present in response",
+        "templateId": "http-jwt-in-body",
+        "severity": "info",
+        "confidence": "confirmed",
+        "evidence": "matched: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE2NzAxNjA2MTc",
+        "matchedAt": "http://127.0.0.1:3004/openapi.json",
+        "source": "proxy"
+      }
+    ],
+    "log": [
+      "2026-11-14T05:20:56.188Z Rule-based automation started",
+      "2026-11-14T05:20:56.232Z Crawled 200 http://127.0.0.1:3004/ui/",
+      "2026-11-14T05:20:56.432Z Crawled 200 http://127.0.0.1:3004/openapi.json",
+      "2026-11-14T05:20:56.570Z Crawled 200 http://127.0.0.1:3004/ui/swagger-ui-bundle.js",
+      "2026-11-14T05:20:56.615Z Crawled 200 http://127.0.0.1:3004/ui/swagger-ui-standalone-preset.js",
+      "2026-11-14T05:20:56.685Z Crawled 404 http://127.0.0.1:3004/debug?url=",
+      "2026-11-14T05:20:56.964Z Crawled 200 http://127.0.0.1:3004/books/v1",
+      "2026-11-14T05:20:56.980Z Crawled 401 http://127.0.0.1:3004/me",
+      "2026-11-14T05:20:57.092Z Crawled 200 http://127.0.0.1:3004/users/v1",
+      "2026-11-14T05:20:57.191Z Crawled 200 http://127.0.0.1:3004/users/v1/_debug",
+      "2026-11-14T05:20:57.303Z Crawled 404 http://127.0.0.1:3004/users/v1/login",
+      "2026-11-14T05:20:57.404Z Crawled 404 http://127.0.0.1:3004/users/v1/register",
+      "2026-11-14T05:20:57.512Z Crawled 200 http://127.0.0.1:3004/",
+      "2026-11-14T05:20:57.621Z Crawled 401 http://127.0.0.1:3004/books/v1/1",
+      "2026-11-14T05:20:57.734Z Crawled 404 http://127.0.0.1:3004/users/v1/1",
+      "2026-11-14T05:20:57.835Z Crawled 404 http://127.0.0.1:3004/dist",
+      "2026-11-14T05:20:57.943Z Crawled 404 http://127.0.0.1:3004/oauth2-redirect.html",
+      "2026-11-14T05:20:57.944Z completed: Selected checks completed; 16 requests, 11 findings"
+    ]
+  }
+]
